@@ -221,5 +221,7 @@
 - [x] `PreferenceService` создаёт свой `SessionLocal()` — FIXED in Phase 4A
 - [x] FIFO eviction в кэше вместо LRU — FIXED in Phase 4A
 - [x] Кэш не инвалидируется при изменении preferences — FIXED in Phase 4A
+- [x] Frontend lint не настроен — FIXED 2026-05-20 (`eslint` + `eslint-config-next` + `.eslintrc.json`)
+- [x] Execution session endpoint принимал query params вместо JSON body — FIXED 2026-05-20 (`ExecutionSessionCreate` schema + body param)
 - [ ] Binance WebSocket heartbeat timeouts — reconnect works, non-critical
 - [ ] `deltagrid.db` SQLite — migrate to PostgreSQL for production

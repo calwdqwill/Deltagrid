@@ -62,6 +62,12 @@ class OrderEventResponse(BaseModel):
     created_at: datetime
 
 
+class ExecutionSessionCreate(BaseModel):
+    name: Optional[str] = None
+    strategy: Optional[str] = None
+    is_live: bool = False
+
+
 class ExecutionRunResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

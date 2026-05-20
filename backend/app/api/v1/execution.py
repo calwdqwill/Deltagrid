@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.schemas.common import ApiResponse
-from app.schemas.execution import OrderIntentCreate, OrderIntentResponse, OrderResponse
+from app.schemas.execution import OrderIntentCreate, OrderIntentResponse, OrderResponse, ExecutionSessionCreate
 from app.services.execution.execution_service import ExecutionService
 from app.core.dependencies import get_db, require_auth
 from app.core.exceptions import NotFoundError, ValidationError
@@ -159,17 +159,15 @@ async def list_sessions(
 
 @router.post("/sessions", response_model=ApiResponse)
 async def start_session(
-    name: Optional[str] = None,
-    strategy: Optional[str] = None,
-    is_live: bool = False,
+    data: ExecutionSessionCreate,
     user_id: str = Depends(require_auth),
     db: Session = Depends(get_db),
 ):
     session = ExecutionRun(
         user_id=user_id,
-        name=name or "Manual Session",
-        strategy=strategy,
-        is_live=is_live,
+        name=data.name or "Manual Session",
+        strategy=data.strategy,
+        is_live=data.is_live,
         status="running",
     )
     db.add(session)

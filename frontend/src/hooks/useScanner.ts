@@ -46,7 +46,7 @@ export function useScannerData(refreshInterval: number = 60) {
 
       setFilteredRecords(records);
     }
-  }, [query.data, query.isLoading, query.isError, filters, favorites, pinned, setData, setLoading, setError, setFilteredRecords]);
+  }, [query.data, query.isLoading, query.isError, query.error, filters, favorites, pinned, setData, setLoading, setError, setFilteredRecords]);
 
   return query;
 }

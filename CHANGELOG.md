@@ -1,5 +1,19 @@
 # Changelog — DeltaGrid
 
+## [2026-05-20] — [FIX] — Execution session endpoint принимает JSON body вместо query params
+- **FIX**: `POST /execution/sessions` раньше принимал `name`, `strategy`, `is_live` как query params, а frontend отправлял JSON body → параметры игнорировались
+- **FIX**: Добавлен Pydantic schema `ExecutionSessionCreate` в `app/schemas/execution.py`
+- **FIX**: Endpoint обновлён на приём `data: ExecutionSessionCreate` (JSON body)
+- **FIX**: Default `is_live=False` сохранён (безопасный default для live trading)
+- **RESULT**: Старт сессии из UI теперь корректно сохраняет `name`, `strategy`, `is_live`
+
+## [2026-05-20] — [FIX] — Настроен полноценный frontend lint
+- **FIX**: Добавлены `eslint` и `eslint-config-next` в `frontend/package.json` devDependencies
+- **FIX**: Создан `frontend/.eslintrc.json` с `extends: "next/core-web-vitals"`, совместимый с Next.js 14
+- **FIX**: `npm run lint` теперь запускается неинтерактивно (раньше вызывал prompt из-за отсутствия конфига)
+- **FIX**: Исправлен `react-hooks/exhaustive-deps` warning в `useScanner.ts` — добавлен `query.error` в dependency array
+- **RESULT**: `npm run lint` проходит без prompt, `npm run build` проходит без ошибок, остались только некритичные warnings по `<img>` (out of scope)
+
 ## [2026-05-13] — [ARCH] — Phase 1 MVP Scanner реализован
 - Создана полная архитектура backend (FastAPI) + frontend (Next.js 14)
 - Реализованы: Scanner, Detail View, Settings, KPI Cards, Search/Sort/Filter
