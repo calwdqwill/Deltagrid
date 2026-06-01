@@ -1,5 +1,26 @@
 # Changelog — DeltaGrid
 
+## [2026-06-02] — [ARCH] — Phase 7 Data Layer — Production Integration
+- **NEW**: `backend/app/adapters/data/` — 9-модульный Data Layer (BaseDataAdapter, DataWriter, SymbolMapper, BackfillOrchestrator, RateLimiter, CircuitBreaker)
+- **NEW**: 15 SQLAlchemy таблиц — instruments, ohlcv, funding_rates, open_interest, liquidations, long_short_ratio, basis_premium, exchange_fees, provider_sync_runs, data_quality_logs, backtest_configs/results/trades/equity
+- **NEW**: Alembic migration `d08fc5113b42` с seed data (BTC, ETH, SOL, HYPE + 28 aliases + 4 exchange fees)
+- **NEW**: `CoinGeckoDataAdapter` — OHLCV + market data через Pro/Analyst API с quality logging
+- **NEW**: `CoinGlassDataAdapter` — V4 API (`open-api-v4.coinglass.com`) funding + OI + liquidations + L/S ratio
+- **RESULT**: 52 таблиц в БД, приёмочные тесты пройдены с реальными API-ключами
+
+## [2026-05-20] — [AUDIT/FIX] — Техническое ревью Codex
+- Проведён технический аудит структуры проекта, frontend build, backend import/compile, зависимостей, Alembic-состояния и базового health endpoint.
+- Исправлено восстановление frontend auth-состояния после reload: валидный persisted JWT снова выставляет `isAuthenticated=true`.
+- Исправлен auto-refresh JWT: ответ `/auth/refresh` теперь приводится к camelCase перед чтением `accessToken`.
+- Исправлен импорт `async_database.py` на дефолтном SQLite URL через нормализацию async driver URL.
+- Docker Compose теперь пишет SQLite базу в примонтированный volume `/app/data` и разрешает CORS для `localhost` и `127.0.0.1`.
+- Убрано устаревшее поле `version` из `docker-compose.yml`.
+- Добавлена пустая `frontend/public/.gitkeep`, чтобы production Dockerfile не падал на `COPY /app/public`.
+- Исправлено двойное чтение HTTP error body в backend test helper scripts.
+- Startup seeding и scanner warm-up теперь логируют warning при ошибке вместо полного silent failure.
+- RWA/Treasury UI теперь безопаснее обрабатывает `null`/`undefined` в числовых snapshot-полях.
+- Отложено: настройка ESLint, полноценные backend tests, проверка реальных API/рыночных данных, архитектурное разделение sync/async persistence перед PostgreSQL.
+
 ## [2026-05-20] — [FIX] — Execution session endpoint принимает JSON body вместо query params
 - **FIX**: `POST /execution/sessions` раньше принимал `name`, `strategy`, `is_live` как query params, а frontend отправлял JSON body → параметры игнорировались
 - **FIX**: Добавлен Pydantic schema `ExecutionSessionCreate` в `app/schemas/execution.py`

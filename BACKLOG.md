@@ -1,5 +1,17 @@
 # Backlog — DeltaGrid
 
+## Codex Technical Review — 2026-05-20
+- [x] Проверить frontend production build (`npm run build`) и базовые TypeScript ошибки.
+- [x] Проверить backend import/compile, `pip check`, Alembic current и `/api/v1/health` через TestClient.
+- [x] Исправить persisted auth rehydration и JWT refresh response transform.
+- [x] Исправить async SQLite URL в `async_database.py`.
+- [x] Исправить Docker Compose persistence/CORS и отсутствие `frontend/public`.
+- [ ] Настроить полноценный frontend lint: добавить ESLint config и devDependencies (`eslint`, `eslint-config-next`) с обновлением lock-файла.
+- [ ] Восстановить проектные управляющие документы по текущим правилам: `AGENTS.md`, `PROJECT_PLAN.md`, `ARCHITECTURE.md` либо явно задокументировать замену на `CURRENT_TASK.md` и `DATA_ARCHITECTURE.md`.
+- [ ] Подготовить отдельную задачу на разделение sync/async persistence перед реальным переходом на PostgreSQL.
+- [ ] Добавить минимальные автоматические backend regression tests без требования предварительно запущенного сервера.
+- [ ] Пройти UI/i18n sweep: убрать hardcoded English labels в защищённых dashboard-страницах.
+
 ## Phase 1 MVP Scanner ✅ DONE
 - [x] Backend FastAPI scaffolding
 - [x] CoinGecko adapter + mock fallback

@@ -60,7 +60,9 @@ api.interceptors.response.use(
         const res = await axios.post("/api/v1/auth/refresh", {
           refresh_token: refreshTokenValue,
         });
-        const data = res.data?.data;
+        const data = snakeToCamel(res.data?.data) as
+          | { accessToken?: string; refreshToken?: string }
+          | undefined;
         if (data?.accessToken) {
           useAuthStore.getState().setToken(data.accessToken);
           if (data.refreshToken) {

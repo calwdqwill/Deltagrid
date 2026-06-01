@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +16,7 @@ from app.persistence.database import SessionLocal
 from app.core.middleware import RequestIDMiddleware, add_exception_handlers
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -28,7 +30,7 @@ async def lifespan(app: FastAPI):
         TreasuryService.seed_entities(db)
         TreasuryService.seed_platforms(db)
     except Exception:
-        pass  # Best-effort seeding
+        logger.warning("Startup seeding failed", exc_info=True)
     finally:
         db.close()
     # Warm up scanner cache on startup so first frontend request is fast
@@ -38,7 +40,7 @@ async def lifespan(app: FastAPI):
         scanner_service = ScannerService(scanner._cache, scanner._cg_service, scanner._perp_service, pref_service)
         await scanner_service.fetch_all()
     except Exception:
-        pass  # Warm-up is best-effort; endpoint will fetch on demand
+        logger.warning("Scanner cache warm-up failed", exc_info=True)
     finally:
         if pref_service:
             pref_service.close()

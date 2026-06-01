@@ -97,7 +97,7 @@ export default function RwaDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-secondary-text">Price</span>
                       <span className="text-primary-text">
-                        {asset.latestSnapshot.priceUsd !== null
+                        {asset.latestSnapshot.priceUsd != null
                           ? `$${asset.latestSnapshot.priceUsd.toLocaleString()}`
                           : "—"}
                       </span>
@@ -105,7 +105,7 @@ export default function RwaDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-secondary-text">NAV</span>
                       <span className="text-primary-text">
-                        {asset.latestSnapshot.navUsd !== null
+                        {asset.latestSnapshot.navUsd != null
                           ? `$${asset.latestSnapshot.navUsd.toLocaleString()}`
                           : "—"}
                       </span>
@@ -113,7 +113,7 @@ export default function RwaDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-secondary-text">Market Cap</span>
                       <span className="text-primary-text">
-                        {asset.latestSnapshot.marketCapUsd !== null
+                        {asset.latestSnapshot.marketCapUsd != null
                           ? `$${asset.latestSnapshot.marketCapUsd.toLocaleString()}`
                           : "—"}
                       </span>
