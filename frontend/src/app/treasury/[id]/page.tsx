@@ -88,7 +88,7 @@ export default function TreasuryDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-secondary-text">BTC Holdings</span>
                       <span className="text-primary-text">
-                        {entity.latestSnapshot.btcHoldings !== null
+                        {entity.latestSnapshot.btcHoldings != null
                           ? `${entity.latestSnapshot.btcHoldings.toLocaleString()} BTC`
                           : "—"}
                       </span>
@@ -96,7 +96,7 @@ export default function TreasuryDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-secondary-text">BTC Value</span>
                       <span className="text-primary-text">
-                        {entity.latestSnapshot.btcValueUsd !== null
+                        {entity.latestSnapshot.btcValueUsd != null
                           ? `$${entity.latestSnapshot.btcValueUsd.toLocaleString()}`
                           : "—"}
                       </span>
@@ -104,7 +104,7 @@ export default function TreasuryDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-secondary-text">BTC / Share</span>
                       <span className="text-primary-text">
-                        {entity.latestSnapshot.btcPerShare !== null
+                        {entity.latestSnapshot.btcPerShare != null
                           ? entity.latestSnapshot.btcPerShare.toFixed(6)
                           : "—"}
                       </span>

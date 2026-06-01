@@ -58,10 +58,10 @@ export default function TreasuryPage() {
                   <div key={row.entityId} className="bg-white rounded-xl border border-border p-4">
                     <div className="text-sm text-secondary-text">{row.name}</div>
                     <div className="text-xl font-bold text-primary-text mt-1">
-                      {row.btcHoldings !== null ? `${row.btcHoldings.toLocaleString()} BTC` : "—"}
+                      {row.btcHoldings != null ? `${row.btcHoldings.toLocaleString()} BTC` : "—"}
                     </div>
                     <div className="text-xs text-secondary-text mt-1">
-                      {row.btcValueUsd !== null ? `$${(row.btcValueUsd / 1e9).toFixed(2)}B` : "—"}
+                      {row.btcValueUsd != null ? `$${(row.btcValueUsd / 1e9).toFixed(2)}B` : "—"}
                     </div>
                   </div>
                 ))}
@@ -106,7 +106,7 @@ export default function TreasuryPage() {
                         <td className="px-4 py-3 text-secondary-text">{entity.ticker || "—"}</td>
                         <td className="px-4 py-3 text-secondary-text">{entity.sector || "—"}</td>
                         <td className="px-4 py-3 text-primary-text">
-                          {entity.latestSnapshot?.btcHoldings
+                          {entity.latestSnapshot?.btcHoldings != null
                             ? `${entity.latestSnapshot.btcHoldings.toLocaleString()} BTC`
                             : "—"}
                         </td>
@@ -147,7 +147,7 @@ export default function TreasuryPage() {
                     </span>
                   )}
                 </div>
-                {platform.tvlUsd !== null && (
+                {platform.tvlUsd != null && (
                   <div className="text-sm text-primary-text pt-1">
                     TVL: ${platform.tvlUsd.toLocaleString()}
                   </div>

@@ -10,9 +10,17 @@ from app.config import get_settings
 
 settings = get_settings()
 
+def _to_async_database_url(database_url: str) -> str:
+    if database_url.startswith("sqlite:///"):
+        return database_url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+    if database_url.startswith("postgresql://"):
+        return database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return database_url
+
+
 # Async engine for PostgreSQL (or aiosqlite for async SQLite)
 async_engine = create_async_engine(
-    settings.database_url,
+    _to_async_database_url(settings.database_url),
     echo=settings.debug,
     pool_pre_ping=True,
 )

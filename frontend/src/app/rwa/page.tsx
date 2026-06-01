@@ -95,7 +95,7 @@ export default function RwaPage() {
                     </td>
                     <td className="px-4 py-3 text-secondary-text">{asset.issuer || "—"}</td>
                     <td className="px-4 py-3 text-primary-text">
-                      {asset.latestSnapshot?.priceUsd
+                      {asset.latestSnapshot?.priceUsd != null
                         ? `$${asset.latestSnapshot.priceUsd.toLocaleString()}`
                         : "—"}
                     </td>

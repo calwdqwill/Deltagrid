@@ -15,7 +15,8 @@ def request(path, method="GET", data=None, token=None):
         with urllib.request.urlopen(req, timeout=15) as r:
             return r.status, json.loads(r.read().decode())
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read().decode()) if e.read() else {}
+        body = e.read().decode()
+        return e.code, json.loads(body) if body else {}
 
 # Register
 status, auth = request("/auth/register", "POST", {"email":"paper@test.com","password":"password123"})

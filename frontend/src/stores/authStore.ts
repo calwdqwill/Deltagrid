@@ -67,6 +67,8 @@ export const useAuthStore = create<AuthState>()(
           state.refreshToken = null;
           state.user = null;
           state.isAuthenticated = false;
+        } else if (state) {
+          state.isAuthenticated = Boolean(state.user && state.token);
         }
       },
     }

@@ -1,5 +1,18 @@
 # Changelog — DeltaGrid
 
+## [2026-05-20] — [AUDIT/FIX] — Техническое ревью Codex
+- Проведён технический аудит структуры проекта, frontend build, backend import/compile, зависимостей, Alembic-состояния и базового health endpoint.
+- Исправлено восстановление frontend auth-состояния после reload: валидный persisted JWT снова выставляет `isAuthenticated=true`.
+- Исправлен auto-refresh JWT: ответ `/auth/refresh` теперь приводится к camelCase перед чтением `accessToken`.
+- Исправлен импорт `async_database.py` на дефолтном SQLite URL через нормализацию async driver URL.
+- Docker Compose теперь пишет SQLite базу в примонтированный volume `/app/data` и разрешает CORS для `localhost` и `127.0.0.1`.
+- Убрано устаревшее поле `version` из `docker-compose.yml`.
+- Добавлена пустая `frontend/public/.gitkeep`, чтобы production Dockerfile не падал на `COPY /app/public`.
+- Исправлено двойное чтение HTTP error body в backend test helper scripts.
+- Startup seeding и scanner warm-up теперь логируют warning при ошибке вместо полного silent failure.
+- RWA/Treasury UI теперь безопаснее обрабатывает `null`/`undefined` в числовых snapshot-полях.
+- Отложено: настройка ESLint, полноценные backend tests, проверка реальных API/рыночных данных, архитектурное разделение sync/async persistence перед PostgreSQL.
+
 ## [2026-05-13] — [ARCH] — Phase 1 MVP Scanner реализован
 - Создана полная архитектура backend (FastAPI) + frontend (Next.js 14)
 - Реализованы: Scanner, Detail View, Settings, KPI Cards, Search/Sort/Filter

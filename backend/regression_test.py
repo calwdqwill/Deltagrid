@@ -15,7 +15,7 @@ def request(path, method="GET", data=None, token=None):
         with urllib.request.urlopen(req, timeout=60) as r:
             return r.status, json.loads(r.read().decode())
     except urllib.error.HTTPError as e:
-        body = e.read().decode() if e.read() else "{}"
+        body = e.read().decode() or "{}"
         try:
             return e.code, json.loads(body)
         except:
