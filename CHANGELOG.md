@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-02] — [UI] — MVP-навигация frontend
+- Sidebar переведён на MVP-набор разделов: Market, Strategy Lab, Backtests, Data Health, Watchlist и Settings.
+- Старые product-разделы скрыты только из навигации; route-файлы и существующая реализация не удалялись.
+- Добавлены placeholder-страницы `/strategy-lab`, `/backtests`, `/data-health`.
+- Добавлен route `/watchlist` как alias на текущий scanner/watchlist-интерфейс, чтобы новый пункт меню не вёл в 404.
+- На `/market` добавлен mock-индикатор свежести данных `Updated 2 min ago`.
+
 ## [2026-05-20] — [AUDIT/FIX] — Техническое ревью Codex
 - Проведён технический аудит структуры проекта, frontend build, backend import/compile, зависимостей, Alembic-состояния и базового health endpoint.
 - Исправлено восстановление frontend auth-состояния после reload: валидный persisted JWT снова выставляет `isAuthenticated=true`.

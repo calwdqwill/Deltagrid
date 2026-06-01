@@ -11,7 +11,7 @@ import { useMarketData } from "@/hooks/useMarket";
 import { useLocale } from "@/hooks/useLocale";
 import { useRealtime } from "@/hooks/useRealtime";
 import { RealtimeIndicator } from "@/components/market/RealtimeIndicator";
-import { RefreshCw } from "lucide-react";
+import { Clock3, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function MarketPage() {
@@ -26,6 +26,10 @@ export default function MarketPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold text-primary-text">{t.market.title}</h1>
             <RealtimeIndicator />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-secondary-text ring-1 ring-border">
+              <Clock3 className="h-3.5 w-3.5" />
+              Updated 2 min ago
+            </span>
           </div>
           <button
             onClick={() => refetch()}

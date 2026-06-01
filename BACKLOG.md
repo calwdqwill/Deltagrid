@@ -1,5 +1,11 @@
 # Backlog — DeltaGrid
 
+## MVP UI Navigation — 2026-06-02
+- [x] Скрыть из sidebar разделы вне текущего MVP: paper-trading, execution, exchange-accounts, risk-rules, RWA, treasury, billing, options, social/news, advanced-alerts.
+- [x] Добавить placeholder-страницы `/strategy-lab`, `/backtests`, `/data-health`.
+- [x] Показать в sidebar только Market, Strategy Lab, Backtests, Data Health, Watchlist и Settings.
+- [x] Добавить простой mock-индикатор свежести данных на `/market`.
+
 ## Codex Technical Review — 2026-05-20
 - [x] Проверить frontend production build (`npm run build`) и базовые TypeScript ошибки.
 - [x] Проверить backend import/compile, `pip check`, Alembic current и `/api/v1/health` через TestClient.

@@ -14,6 +14,10 @@ import { LoginModal } from "@/components/auth/LoginModal";
 const PAGE_TITLE_MAP: Record<string, string> = {
   "/": "scanner.title",
   "/market": "market.title",
+  "/strategy-lab": "Strategy Lab",
+  "/backtests": "Backtest History",
+  "/data-health": "Data Health",
+  "/watchlist": "Watchlist",
   "/paper-trading": "paper.title",
   "/execution": "execution.title",
   "/exchange-accounts": "exchangeAccounts.title",
@@ -32,6 +36,10 @@ function getPageTitleKey(pathname: string): string {
 
 function getPageTitle(t: any, pathname: string): string {
   const key = getPageTitleKey(pathname);
+  if (!key.includes(".")) {
+    return key;
+  }
+
   const parts = key.split(".");
   let obj = t;
   for (const part of parts) {

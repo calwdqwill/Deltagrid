@@ -2,36 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Settings, ChevronLeft, ChevronRight, TrendingUp, User, Activity, Zap, Link2, Shield, Bell, Mail, Landmark, Building2 } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  Database,
+  FlaskConical,
+  History,
+  Settings,
+  Star,
+} from "lucide-react";
 import { useUIStore } from "@/stores/uiStore";
 import { useLocale } from "@/hooks/useLocale";
-import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
+
+const navItems = [
+  { href: "/market", label: "Market", icon: Activity },
+  { href: "/strategy-lab", label: "Strategy Lab", icon: FlaskConical },
+  { href: "/backtests", label: "Backtests", icon: History },
+  { href: "/data-health", label: "Data Health", icon: Database },
+  { href: "/watchlist", label: "Watchlist", icon: Star },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const pathname = usePathname();
   const { t } = useLocale();
-  const { isAuthenticated } = useAuthStore();
-
-  const navItems = [
-    { href: "/", label: t.nav.scanner, icon: BarChart3 },
-    { href: "/market", label: t.nav.market, icon: Activity },
-    { href: "/rwa", label: t.nav.rwa, icon: Landmark },
-    { href: "/treasury", label: t.nav.treasury, icon: Building2 },
-    ...(isAuthenticated
-      ? [
-          { href: "/paper-trading", label: t.nav.paperTrading, icon: TrendingUp },
-          { href: "/execution", label: t.nav.execution, icon: Zap },
-          { href: "/exchange-accounts", label: t.nav.exchangeAccounts, icon: Link2 },
-          { href: "/risk-rules", label: t.nav.riskRules, icon: Shield },
-          { href: "/alerts", label: t.nav.alerts || "Alerts", icon: Bell },
-          { href: "/notifications", label: t.nav.notifications || "Notifications", icon: Mail },
-          { href: "/profile", label: t.nav.profile, icon: User },
-        ]
-      : []),
-    { href: "/settings", label: t.nav.settings, icon: Settings },
-  ];
 
   return (
     <aside
