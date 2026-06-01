@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, Date, Float, Boolean, Integer, create_engine, ForeignKey, Text, DECIMAL, UniqueConstraint
+from sqlalchemy import Column, String, DateTime, Date, Float, Boolean, Integer, create_engine, ForeignKey, Text, DECIMAL, UniqueConstraint, PrimaryKeyConstraint, Index
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 Base = declarative_base()
@@ -596,3 +596,277 @@ class FeatureFlag(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (UniqueConstraint("user_id", "flag_key", name="uix_user_flag"),)
+
+
+# =============================================================================
+# Data Layer — Backtesting + Market Data Ingestion
+# =============================================================================
+
+class Instrument(Base):
+    __tablename__ = "instruments"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    canonical_symbol = Column(String, nullable=False)
+    base_asset = Column(String, nullable=False)
+    quote_asset = Column(String, nullable=False)
+    instrument_type = Column(String, nullable=False)   # perp | spot | future
+    exchange = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    metadata_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    aliases = relationship("InstrumentAlias", back_populates="instrument", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        UniqueConstraint("canonical_symbol", "exchange", "instrument_type", name="uix_instrument"),
+    )
+
+
+class InstrumentAlias(Base):
+    __tablename__ = "instrument_aliases"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    instrument_id = Column(String, ForeignKey("instruments.id", ondelete="CASCADE"), nullable=False)
+    provider = Column(String, nullable=False)
+    alias = Column(String, nullable=False)
+    alias_type = Column(String, nullable=False)   # ticker | cg_id | cg_symbol
+    is_primary = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    instrument = relationship("Instrument", back_populates="aliases")
+
+    __table_args__ = (
+        UniqueConstraint("provider", "alias", name="uix_provider_alias"),
+    )
+
+
+class DataOhlcv(Base):
+    __tablename__ = "ohlcv"
+
+    timestamp = Column(Integer, nullable=False)
+    symbol = Column(String, nullable=False)
+    exchange = Column(String, nullable=False)
+    interval = Column(String, nullable=False)
+    open = Column(Float, nullable=True)
+    high = Column(Float, nullable=True)
+    low = Column(Float, nullable=True)
+    close = Column(Float, nullable=True)
+    volume = Column(Float, nullable=True)
+    quote_volume = Column(Float, nullable=True)
+    trades_count = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("timestamp", "symbol", "exchange", "interval", name="pk_ohlcv"),
+        Index("idx_ohlcv_lookup", "symbol", "exchange", "interval", "timestamp"),
+    )
+
+
+class DataFundingRate(Base):
+    __tablename__ = "funding_rates"
+
+    timestamp = Column(Integer, nullable=False)
+    symbol = Column(String, nullable=False)
+    exchange = Column(String, nullable=False)
+    funding_rate = Column(Float, nullable=True)
+    next_funding_time = Column(Integer, nullable=True)
+    interval = Column(String, default="8h")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("timestamp", "symbol", "exchange", name="pk_funding_rates"),
+        Index("idx_funding_lookup", "symbol", "exchange", "timestamp"),
+    )
+
+
+class DataOpenInterest(Base):
+    __tablename__ = "open_interest"
+
+    timestamp = Column(Integer, nullable=False)
+    symbol = Column(String, nullable=False)
+    exchange = Column(String, nullable=False)
+    interval = Column(String, nullable=False)
+    oi_usd = Column(Float, nullable=True)
+    oi_coins = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("timestamp", "symbol", "exchange", "interval", name="pk_open_interest"),
+        Index("idx_oi_lookup", "symbol", "exchange", "interval", "timestamp"),
+    )
+
+
+class DataLiquidation(Base):
+    __tablename__ = "liquidations"
+
+    timestamp = Column(Integer, nullable=False)
+    symbol = Column(String, nullable=False)
+    exchange = Column(String, nullable=False)
+    side = Column(String, nullable=False)
+    quantity = Column(Float, nullable=True)
+    price = Column(Float, nullable=True)
+    value_usd = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("timestamp", "symbol", "exchange", "side", name="pk_liquidations"),
+        Index("idx_liq_lookup", "symbol", "exchange", "timestamp"),
+    )
+
+
+class DataLongShortRatio(Base):
+    __tablename__ = "long_short_ratio"
+
+    timestamp = Column(Integer, nullable=False)
+    symbol = Column(String, nullable=False)
+    exchange = Column(String, nullable=False)
+    interval = Column(String, nullable=False)
+    long_ratio = Column(Float, nullable=True)
+    short_ratio = Column(Float, nullable=True)
+    long_account_ratio = Column(Float, nullable=True)
+    short_account_ratio = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        PrimaryKeyConstraint("timestamp", "symbol", "exchange", "interval", name="pk_long_short_ratio"),
+        Index("idx_ls_lookup", "symbol", "exchange", "interval", "timestamp"),
+    )
+
+
+class BasisPremium(Base):
+    __tablename__ = "basis_premium"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    symbol = Column(String, nullable=False, index=True)
+    exchange = Column(String, nullable=False, index=True)
+    spot_price = Column(Float, nullable=True)
+    perp_price = Column(Float, nullable=True)
+    basis_pct = Column(Float, nullable=True)
+    premium_pct = Column(Float, nullable=True)
+    timestamp = Column(Integer, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ExchangeFee(Base):
+    __tablename__ = "exchange_fees"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    exchange = Column(String, nullable=False, unique=True)
+    maker_fee_pct = Column(Float, nullable=True)
+    taker_fee_pct = Column(Float, nullable=True)
+    withdrawal_fee_json = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ProviderSyncRun(Base):
+    __tablename__ = "provider_sync_runs"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    provider_name = Column(String, nullable=False, index=True)
+    sync_type = Column(String, nullable=False)
+    status = Column(String, nullable=False)
+    start_time = Column(Integer, nullable=True)
+    end_time = Column(Integer, nullable=True)
+    records_fetched = Column(Integer, default=0)
+    records_inserted = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_sync_runs_provider", "provider_name", "sync_type", "created_at"),
+    )
+
+
+class DataQualityLog(Base):
+    __tablename__ = "data_quality_logs"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    table_name = Column(String, nullable=False)
+    symbol = Column(String, nullable=True)
+    exchange = Column(String, nullable=True)
+    check_type = Column(String, nullable=False)   # gap | duplicate | outlier | stale
+    severity = Column(String, default="warning")  # info | warning | critical
+    description = Column(Text, nullable=True)
+    timestamp = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class BacktestConfig(Base):
+    __tablename__ = "backtest_configs"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    strategy = Column(String, nullable=False)
+    symbols_json = Column(Text, nullable=False)          # ["BTC", "ETH"]
+    exchanges_json = Column(Text, nullable=False)        # ["binance"]
+    start_time = Column(Integer, nullable=False)
+    end_time = Column(Integer, nullable=False)
+    interval = Column(String, default="1m")
+    initial_balance = Column(DECIMAL(18, 8), default=10000)
+    fee_pct = Column(Float, default=0.1)
+    config_json = Column(Text, nullable=True)            # strategy-specific params
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class BacktestResult(Base):
+    __tablename__ = "backtest_results"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    config_id = Column(String, ForeignKey("backtest_configs.id", ondelete="CASCADE"), nullable=False, index=True)
+    status = Column(String, default="pending")   # pending | running | completed | failed
+    total_trades = Column(Integer, default=0)
+    win_count = Column(Integer, default=0)
+    loss_count = Column(Integer, default=0)
+    total_pnl = Column(DECIMAL(18, 8), default=0)
+    total_pnl_pct = Column(DECIMAL(10, 4), default=0)
+    max_drawdown_pct = Column(DECIMAL(10, 4), nullable=True)
+    sharpe_ratio = Column(DECIMAL(10, 4), nullable=True)
+    sortino_ratio = Column(DECIMAL(10, 4), nullable=True)
+    win_rate_pct = Column(DECIMAL(10, 4), nullable=True)
+    avg_trade_pnl = Column(DECIMAL(18, 8), nullable=True)
+    profit_factor = Column(DECIMAL(10, 4), nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class BacktestTrade(Base):
+    __tablename__ = "backtest_trades"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    result_id = Column(String, ForeignKey("backtest_results.id", ondelete="CASCADE"), nullable=False, index=True)
+    symbol = Column(String, nullable=False)
+    exchange = Column(String, nullable=False)
+    side = Column(String, nullable=False)   # long | short
+    entry_time = Column(Integer, nullable=False)
+    exit_time = Column(Integer, nullable=True)
+    entry_price = Column(DECIMAL(18, 8), nullable=False)
+    exit_price = Column(DECIMAL(18, 8), nullable=True)
+    quantity = Column(DECIMAL(18, 8), nullable=False)
+    pnl = Column(DECIMAL(18, 8), nullable=True)
+    pnl_pct = Column(DECIMAL(10, 4), nullable=True)
+    fee = Column(DECIMAL(18, 8), default=0)
+    status = Column(String, default="open")   # open | closed
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class BacktestEquity(Base):
+    __tablename__ = "backtest_equity"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    result_id = Column(String, ForeignKey("backtest_results.id", ondelete="CASCADE"), nullable=False, index=True)
+    timestamp = Column(Integer, nullable=False)
+    equity = Column(DECIMAL(18, 8), nullable=False)
+    realized_pnl = Column(DECIMAL(18, 8), default=0)
+    unrealized_pnl = Column(DECIMAL(18, 8), default=0)
+    drawdown_pct = Column(DECIMAL(10, 4), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_equity_result_ts", "result_id", "timestamp"),
+    )
