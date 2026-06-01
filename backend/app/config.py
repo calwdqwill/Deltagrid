@@ -49,7 +49,12 @@ class Settings(BaseSettings):
     # Phase 4: Provider API keys
     coinglass_api_key: str | None = None
     coinglass_base_url: str = "https://open-api.coinglass.com"
+    coinglass_standard_base_url: str = "https://open-api-v4.coinglass.com"
     geckoterminal_base_url: str = "https://api.geckoterminal.com/api/v2"
+
+    # Phase 7: Data Layer
+    data_layer_enabled: bool = True
+    backfill_chunk_size: int = 1500
 
     class Config:
         env_file = ".env"
