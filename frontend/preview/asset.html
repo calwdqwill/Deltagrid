@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DeltaGrid Preview - Asset</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="back-link" href="index.html">&larr; Back to Scanner</a>
+        <nav class="topnav" aria-label="Preview navigation">
+          <a href="index.html">Scanner</a>
+          <a id="strategyNavLink" href="strategy-lab.html?symbol=BTC">Strategy Lab</a>
+          <a href="data-health.html">Data Health</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="asset-hero">
+          <div>
+            <p class="eyebrow">Asset</p>
+            <h1 id="assetSymbol">BTC</h1>
+          </div>
+          <div class="metric-row" aria-label="Asset metrics">
+            <div class="metric">
+              <span>Price</span>
+              <strong id="assetPrice">$67,420</strong>
+            </div>
+            <div class="metric">
+              <span>24h Change</span>
+              <strong id="assetChange" class="positive">+2.3%</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="tabs" role="tablist" aria-label="Asset analytics tabs">
+            <button class="tab-button active" type="button" role="tab" aria-selected="true" data-tab="overview">Overview</button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="funding">Funding</button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="oi">OI</button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="liquidations">Liquidations</button>
+            <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="long-short">Long/Short</button>
+          </div>
+
+          <div class="tab-panels">
+            <section class="tab-panel active" data-panel="overview" role="tabpanel">
+              <div class="chart-placeholder">
+                <div class="bars">
+                  <span style="height: 38%"></span>
+                  <span style="height: 64%"></span>
+                  <span style="height: 51%"></span>
+                  <span style="height: 72%"></span>
+                  <span style="height: 58%"></span>
+                  <span style="height: 83%"></span>
+                </div>
+                <p>Overview Chart &mdash; Coming Soon</p>
+              </div>
+            </section>
+
+            <section class="tab-panel" data-panel="funding" role="tabpanel" hidden>
+              <div class="chart-placeholder">
+                <div class="bars funding-bars">
+                  <span style="height: 24%"></span>
+                  <span style="height: 44%"></span>
+                  <span style="height: 36%"></span>
+                  <span style="height: 68%"></span>
+                  <span style="height: 49%"></span>
+                  <span style="height: 74%"></span>
+                </div>
+                <p>Funding Chart &mdash; Coming Soon</p>
+              </div>
+            </section>
+
+            <section class="tab-panel" data-panel="oi" role="tabpanel" hidden>
+              <div class="chart-placeholder">
+                <div class="bars oi-bars">
+                  <span style="height: 30%"></span>
+                  <span style="height: 52%"></span>
+                  <span style="height: 47%"></span>
+                  <span style="height: 60%"></span>
+                  <span style="height: 76%"></span>
+                  <span style="height: 70%"></span>
+                </div>
+                <p>OI Chart &mdash; Coming Soon</p>
+              </div>
+            </section>
+
+            <section class="tab-panel" data-panel="liquidations" role="tabpanel" hidden>
+              <div class="chart-placeholder">
+                <div class="bars liquidation-bars">
+                  <span style="height: 18%"></span>
+                  <span style="height: 35%"></span>
+                  <span style="height: 80%"></span>
+                  <span style="height: 45%"></span>
+                  <span style="height: 57%"></span>
+                  <span style="height: 69%"></span>
+                </div>
+                <p>Liquidations Chart &mdash; Coming Soon</p>
+              </div>
+            </section>
+
+            <section class="tab-panel" data-panel="long-short" role="tabpanel" hidden>
+              <div class="chart-placeholder">
+                <div class="bars long-short-bars">
+                  <span style="height: 55%"></span>
+                  <span style="height: 48%"></span>
+                  <span style="height: 62%"></span>
+                  <span style="height: 57%"></span>
+                  <span style="height: 66%"></span>
+                  <span style="height: 52%"></span>
+                </div>
+                <p>Long/Short Chart &mdash; Coming Soon</p>
+              </div>
+            </section>
+          </div>
+
+          <div class="panel-footer">
+            <a id="runBacktestLink" class="primary-button" href="strategy-lab.html?symbol=BTC">Run Backtest</a>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const assetMap = {
+        BTC: { price: "$67,420", change: "+2.3%" },
+        ETH: { price: "$3,520", change: "-1.1%" },
+        SOL: { price: "$142.80", change: "+6.8%" },
+        HYPE: { price: "$18.50", change: "+0.4%" },
+      };
+
+      const params = new URLSearchParams(window.location.search);
+      const symbol = (params.get("symbol") || "BTC").toUpperCase();
+      const asset = assetMap[symbol] || assetMap.BTC;
+      const symbolForLinks = assetMap[symbol] ? symbol : "BTC";
+
+      document.getElementById("assetSymbol").textContent = symbolForLinks;
+      document.getElementById("assetPrice").textContent = asset.price;
+      document.getElementById("assetChange").textContent = asset.change;
+      document.getElementById("assetChange").className = asset.change.startsWith("-") ? "negative" : "positive";
+      document.getElementById("runBacktestLink").href = `strategy-lab.html?symbol=${symbolForLinks}`;
+      document.getElementById("strategyNavLink").href = `strategy-lab.html?symbol=${symbolForLinks}`;
+
+      const tabButtons = Array.from(document.querySelectorAll(".tab-button"));
+      const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+
+      tabButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const tab = button.dataset.tab;
+
+          tabButtons.forEach((item) => {
+            const isActive = item === button;
+            item.classList.toggle("active", isActive);
+            item.setAttribute("aria-selected", String(isActive));
+          });
+
+          tabPanels.forEach((panel) => {
+            const isActive = panel.dataset.panel === tab;
+            panel.classList.toggle("active", isActive);
+            panel.hidden = !isActive;
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

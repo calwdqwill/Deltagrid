@@ -1,5 +1,13 @@
 # Backlog — DeltaGrid
 
+## Standalone HTML Preview — 2026-06-02
+- [x] Создать `frontend/preview/index.html` как backend-free Market Scanner preview с mock-данными, фильтрами и кликабельными строками.
+- [x] Создать `frontend/preview/asset.html` с asset summary, табами и переходом в Strategy Lab.
+- [x] Создать `frontend/preview/strategy-lab.html` с selector стратегий, параметрами backtest и disabled execution state.
+- [x] Создать `frontend/preview/data-health.html` со статусом провайдеров данных.
+- [x] Добавить `frontend/preview/styles.css` с dark theme, responsive rules, hover states и позитивной/негативной окраской метрик.
+- [ ] Подключить preview-flow к реальному backtest engine после готовности Phase 7 data/backtesting layer.
+
 ## MVP UI Navigation — 2026-06-02
 - [x] Скрыть из sidebar разделы вне текущего MVP: paper-trading, execution, exchange-accounts, risk-rules, RWA, treasury, billing, options, social/news, advanced-alerts.
 - [x] Добавить placeholder-страницы `/strategy-lab`, `/backtests`, `/data-health`.

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DeltaGrid Preview - Strategy Lab</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="index.html">DeltaGrid</a>
+        <nav class="topnav" aria-label="Preview navigation">
+          <a href="index.html">Scanner</a>
+          <a href="strategy-lab.html?symbol=BTC" aria-current="page">Strategy Lab</a>
+          <a href="data-health.html">Data Health</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">Backtest workspace</p>
+            <h1>Strategy Lab <span id="strategySymbol" class="muted-symbol">BTC</span></h1>
+          </div>
+          <a id="assetLink" class="secondary-button" href="asset.html?symbol=BTC">Open Asset</a>
+        </section>
+
+        <section class="lab-grid">
+          <div class="panel">
+            <h2>Strategy selector</h2>
+            <div class="strategy-selector" role="group" aria-label="Strategy selector">
+              <button class="strategy-button active" type="button">Funding Mean Reversion</button>
+              <button class="strategy-button" type="button">Basis Compression</button>
+              <button class="strategy-button" type="button">Liquidation Cascade</button>
+            </div>
+          </div>
+
+          <div class="panel parameters-panel">
+            <h2>Parameters</h2>
+            <div class="form-grid">
+              <label>
+                Slippage %
+                <input type="number" value="0.05" min="0" step="0.01">
+              </label>
+
+              <label>
+                Fee tier
+                <select>
+                  <option>maker</option>
+                  <option>taker</option>
+                </select>
+              </label>
+
+              <label>
+                Funding model
+                <select>
+                  <option>exact</option>
+                  <option>interpolated</option>
+                </select>
+              </label>
+
+              <label>
+                Start
+                <input type="date" value="2026-05-01">
+              </label>
+
+              <label>
+                End
+                <input type="date" value="2026-06-01">
+              </label>
+            </div>
+          </div>
+
+          <div class="panel warning-panel">
+            <div class="warning-block">
+              <strong>&#9888;&#65039; Backtest engine coming soon</strong>
+              <span>Execution is disabled until Phase 6 backtest engine is wired to historical funding, OI and liquidation data.</span>
+            </div>
+
+            <button class="primary-button disabled" type="button" disabled>Run Backtest</button>
+            <p class="phase-note">Coming in Phase 6</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const symbol = (params.get("symbol") || "BTC").toUpperCase();
+      const allowedSymbols = ["BTC", "ETH", "SOL", "HYPE"];
+      const normalizedSymbol = allowedSymbols.includes(symbol) ? symbol : "BTC";
+
+      document.getElementById("strategySymbol").textContent = normalizedSymbol;
+      document.getElementById("assetLink").href = `asset.html?symbol=${normalizedSymbol}`;
+
+      document.querySelectorAll(".strategy-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".strategy-button").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+        });
+      });
+    </script>
+  </body>
+</html>

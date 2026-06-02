@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DeltaGrid Preview - Market Scanner</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="index.html" aria-label="DeltaGrid scanner">DeltaGrid</a>
+        <nav class="topnav" aria-label="Preview navigation">
+          <a href="index.html" aria-current="page">Scanner</a>
+          <a href="strategy-lab.html?symbol=BTC">Strategy Lab</a>
+          <a href="data-health.html">Data Health</a>
+        </nav>
+        <div class="freshness" aria-label="Data freshness">
+          <span class="status-dot"></span>
+          <span>Updated 2 min ago</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">Market Scanner</p>
+            <h1>Perp opportunities</h1>
+          </div>
+          <div class="summary-strip" aria-label="Scanner summary">
+            <span><strong>4</strong> symbols</span>
+            <span><strong>2</strong> actionable</span>
+            <span><strong>1</strong> extreme</span>
+          </div>
+        </section>
+
+        <section class="panel scanner-panel" aria-label="Scanner controls and results">
+          <div class="filters">
+            <label>
+              Exchange
+              <select id="exchangeFilter">
+                <option value="All">All</option>
+                <option value="Binance">Binance</option>
+                <option value="Bybit">Bybit</option>
+                <option value="OKX">OKX</option>
+                <option value="Hyperliquid">Hyperliquid</option>
+              </select>
+            </label>
+
+            <label>
+              Signal
+              <select id="signalFilter">
+                <option value="All">All</option>
+                <option value="Extreme">Extreme</option>
+                <option value="High">High</option>
+                <option value="Neutral">Neutral</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table" aria-label="Market scanner">
+              <thead>
+                <tr>
+                  <th scope="col">Symbol</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">Funding Rate</th>
+                  <th scope="col">OI Change 24h</th>
+                  <th scope="col">Liq 24h</th>
+                  <th scope="col">Signal</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody id="scannerRows">
+                <tr data-href="asset.html?symbol=BTC" data-exchange="Binance" data-signal="High">
+                  <td><span class="symbol">BTC</span></td>
+                  <td>$67,420</td>
+                  <td class="positive">+0.012%</td>
+                  <td class="positive">+5.2%</td>
+                  <td>$1.2M</td>
+                  <td><span class="signal high">Funding High</span></td>
+                  <td><a class="action-link" href="strategy-lab.html?symbol=BTC">Backtest</a></td>
+                </tr>
+                <tr data-href="asset.html?symbol=ETH" data-exchange="Bybit" data-signal="High">
+                  <td><span class="symbol">ETH</span></td>
+                  <td>$3,520</td>
+                  <td class="negative">-0.008%</td>
+                  <td class="negative">-2.1%</td>
+                  <td>$800K</td>
+                  <td><span class="signal warning">OI Drop</span></td>
+                  <td><a class="action-link" href="strategy-lab.html?symbol=ETH">Backtest</a></td>
+                </tr>
+                <tr data-href="asset.html?symbol=SOL" data-exchange="Hyperliquid" data-signal="Extreme">
+                  <td><span class="symbol">SOL</span></td>
+                  <td>$142.80</td>
+                  <td class="positive">+0.045%</td>
+                  <td class="positive">+12.4%</td>
+                  <td>$2.1M</td>
+                  <td><span class="signal extreme">Extreme</span></td>
+                  <td><a class="action-link" href="strategy-lab.html?symbol=SOL">Backtest</a></td>
+                </tr>
+                <tr data-href="asset.html?symbol=HYPE" data-exchange="OKX" data-signal="Neutral">
+                  <td><span class="symbol">HYPE</span></td>
+                  <td>$18.50</td>
+                  <td class="positive">+0.003%</td>
+                  <td class="positive">+0.8%</td>
+                  <td>$120K</td>
+                  <td><span class="signal neutral">Neutral</span></td>
+                  <td><a class="action-link" href="strategy-lab.html?symbol=HYPE">Backtest</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p id="emptyState" class="empty-state" hidden>No symbols match the selected filters.</p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const exchangeFilter = document.getElementById("exchangeFilter");
+      const signalFilter = document.getElementById("signalFilter");
+      const rows = Array.from(document.querySelectorAll("#scannerRows tr"));
+      const emptyState = document.getElementById("emptyState");
+
+      function applyFilters() {
+        const exchange = exchangeFilter.value;
+        const signal = signalFilter.value;
+        let visibleRows = 0;
+
+        rows.forEach((row) => {
+          const matchesExchange = exchange === "All" || row.dataset.exchange === exchange;
+          const matchesSignal = signal === "All" || row.dataset.signal === signal;
+          const isVisible = matchesExchange && matchesSignal;
+
+          row.hidden = !isVisible;
+          if (isVisible) visibleRows += 1;
+        });
+
+        emptyState.hidden = visibleRows > 0;
+      }
+
+      rows.forEach((row) => {
+        row.addEventListener("click", (event) => {
+          if (event.target.closest("a, button, select")) return;
+          window.location.href = row.dataset.href;
+        });
+      });
+
+      exchangeFilter.addEventListener("change", applyFilters);
+      signalFilter.addEventListener("change", applyFilters);
+      applyFilters();
+    </script>
+  </body>
+</html>

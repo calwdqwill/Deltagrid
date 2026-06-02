@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DeltaGrid Preview - Data Health</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="index.html">DeltaGrid</a>
+        <nav class="topnav" aria-label="Preview navigation">
+          <a href="index.html">Scanner</a>
+          <a href="strategy-lab.html?symbol=BTC">Strategy Lab</a>
+          <a href="data-health.html" aria-current="page">Data Health</a>
+        </nav>
+        <div class="freshness" aria-label="Data freshness">
+          <span class="status-dot"></span>
+          <span>Updated 2 min ago</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">Data Health</p>
+            <h1>Provider status</h1>
+          </div>
+          <div class="summary-strip" aria-label="Data quality summary">
+            <span><strong>2</strong> online</span>
+            <span><strong>4,923</strong> records</span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="table-wrap">
+            <table class="data-table" aria-label="Provider status">
+              <thead>
+                <tr>
+                  <th scope="col">Provider</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Last Sync</th>
+                  <th scope="col">Records</th>
+                  <th scope="col">Quality</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>CoinGlass</td>
+                  <td><span class="status-label ok">&#9989;</span></td>
+                  <td>2 min ago</td>
+                  <td>4,875</td>
+                  <td><span class="positive">98%</span></td>
+                </tr>
+                <tr>
+                  <td>CoinGecko</td>
+                  <td><span class="status-label ok">&#9989;</span></td>
+                  <td>5 min ago</td>
+                  <td>48</td>
+                  <td><span class="positive">85%</span></td>
+                </tr>
+                <tr>
+                  <td>Binance</td>
+                  <td><span class="status-label pending">&#9203;</span></td>
+                  <td>&mdash;</td>
+                  <td>&mdash;</td>
+                  <td>&mdash;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

@@ -18,6 +18,15 @@ Production-ready crypto arbitrage scanner. Spot and perp markets across CEX and 
 - Python 3.11+
 - Node.js 20+
 
+### Standalone HTML Preview
+Для быстрого просмотра будущего scanner/backtest UX без backend и без Next.js откройте файл:
+
+```text
+frontend/preview/index.html
+```
+
+Preview работает как статический HTML: страницы связаны через обычные `<a href="">`, mock-данные находятся внутри HTML, фильтры и табы используют только минимальный inline JavaScript.
+
 ### Backend
 ```bash
 cd backend

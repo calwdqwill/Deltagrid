@@ -1,5 +1,13 @@
 # Changelog — DeltaGrid
 
+## [2026-06-02] — [UI] — Standalone HTML preview frontend
+- Добавлен автономный preview-интерфейс в `frontend/preview/`, который открывается напрямую через `index.html` без Next.js, React, backend API и сборки.
+- Реализованы страницы `index.html`, `asset.html`, `strategy-lab.html`, `data-health.html` и общий `styles.css` в тёмной dashboard-теме.
+- Scanner содержит mock-данные по BTC, ETH, SOL и HYPE, фильтры по exchange/signal, кликабельные строки и переходы в asset/backtest flow.
+- Asset preview поддерживает табы Overview/Funding/OI/Liquidations/Long/Short и переход в Strategy Lab с передачей `symbol` через query string.
+- Strategy Lab показывает selector стратегий, параметры backtest и disabled-кнопку `Run Backtest` до появления engine.
+- Data Health показывает mock-статусы CoinGlass, CoinGecko и Binance.
+
 ## [2026-06-02] — [UI] — MVP-навигация frontend
 - Sidebar переведён на MVP-набор разделов: Market, Strategy Lab, Backtests, Data Health, Watchlist и Settings.
 - Старые product-разделы скрыты только из навигации; route-файлы и существующая реализация не удалялись.
