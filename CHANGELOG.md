@@ -1,5 +1,17 @@
 # Changelog — DeltaGrid
 
+## [2026-06-02] — [FEAT] — Phase 7.0–7.4 — Incremental Update, Data Quality, Scheduler
+- **NEW**: `scripts/incremental_update.py` — Incremental Update Service (OHLCV 1m from Binance + CoinGlass funding/OI/liq/L/S)
+- **NEW**: `app/backtest/quality_monitor.py` — Data Quality Monitor (gap detection, stale data, coverage scoring 0-100)
+- **NEW**: `app/backtest/gate.py` — Pre-backtest Quality Gate (5 checks, blocks backtest on poor data)
+- **NEW**: `app/api/v1/data.py` — Data Quality API (`GET /data/health`, `GET /data/quality/{symbol}`)
+- **NEW**: `scripts/check_quality.py` — CLI для проверки качества данных
+- **NEW**: `app/scheduler.py` — APScheduler с 3 background jobs (OHLCV каждые 5 мин, CoinGlass каждые 5 мин, Quality каждые 15 мин)
+- **INTEGRATION**: Quality Gate встроен в `BacktestEngine.run()` — бэктест не запускается при coverage < 95% или stale data
+- **INTEGRATION**: Data router + scheduler lifecycle в `main.py` (lifespan-based startup/shutdown)
+- **DEPS**: `apscheduler>=3.10.0` добавлен в `requirements.txt`
+- **RESULT**: Backend стартует без ошибок, scheduler регистрирует 3 job, API endpoints отвечают 200
+
 ## [2026-06-02] — [ARCH] — Phase 7 Data Layer — Production Integration
 - **NEW**: `backend/app/adapters/data/` — 9-модульный Data Layer (BaseDataAdapter, DataWriter, SymbolMapper, BackfillOrchestrator, RateLimiter, CircuitBreaker)
 - **NEW**: 15 SQLAlchemy таблиц — instruments, ohlcv, funding_rates, open_interest, liquidations, long_short_ratio, basis_premium, exchange_fees, provider_sync_runs, data_quality_logs, backtest_configs/results/trades/equity

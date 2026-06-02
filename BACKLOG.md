@@ -178,7 +178,7 @@
 - [x] Sidebar: RWA + Treasury links
 - [x] Frontend build: 0 TS errors
 
-## Phase 6 — Enterprise + B2B 🚀 IN PROGRESS
+## Phase 6 — Enterprise + B2B ✅ DONE
 
 ### ✅ Phase 6.0 — Architecture Hardening — COMPLETED 2026-05-16
 - [x] Audit текущей архитектуры и risk map
@@ -227,13 +227,36 @@
 - [ ] Usage analytics and quotas
 - [ ] Priority support ticketing integration
 
+## Phase 7 — Data Layer (Incremental Update + Quality) ✅ DONE
+
+### ✅ Phase 7.0 — Incremental Update Service — COMPLETED 2026-06-02
+- [x] `scripts/incremental_update.py` — delta-based OHLCV + CoinGlass updates
+- [x] `ProviderSyncRun` lifecycle tracking (create → complete/failed)
+- [x] Rate limiting + circuit breaker via existing adapters
+
+### ✅ Phase 7.1 — Data Quality Monitor — COMPLETED 2026-06-02
+- [x] `app/backtest/quality_monitor.py` — gap/stale/coverage checks
+- [x] Aggregate quality score 0-100 per symbol
+- [x] `scripts/check_quality.py` CLI
+
+### ✅ Phase 7.2 — Pre-backtest Quality Gate — COMPLETED 2026-06-02
+- [x] `app/backtest/gate.py` — 5-check gate integrated into `BacktestEngine.run()`
+
+### ✅ Phase 7.3 — Data Quality API — COMPLETED 2026-06-02
+- [x] `GET /api/v1/data/health` + `GET /api/v1/data/quality/{symbol}`
+
+### ✅ Phase 7.4 — APScheduler — COMPLETED 2026-06-02
+- [x] `app/scheduler.py` — 3 background jobs (OHLCV 5min, CoinGlass 5min, Quality 15min)
+
 ## Known Tech Debt (не блокирует разработку)
 - [x] `httpx.AsyncClient` leaks — FIXED in Phase 4A
 - [x] Sync DB sessions в async endpoints — acceptable for current scale
 - [x] `PreferenceService` создаёт свой `SessionLocal()` — FIXED in Phase 4A
 - [x] FIFO eviction в кэше вместо LRU — FIXED in Phase 4A
 - [x] Кэш не инвалидируется при изменении preferences — FIXED in Phase 4A
-- [x] Frontend lint не настроен — FIXED 2026-05-20 (`eslint` + `eslint-config-next` + `.eslintrc.json`)
-- [x] Execution session endpoint принимал query params вместо JSON body — FIXED 2026-05-20 (`ExecutionSessionCreate` schema + body param)
-- [ ] Binance WebSocket heartbeat timeouts — reconnect works, non-critical
+- [x] Frontend lint не настроен — FIXED 2026-05-20
+- [x] Execution session endpoint принимал query params вместо JSON body — FIXED 2026-05-20
+- [x] Binance WebSocket heartbeat timeouts — reconnect works, non-critical
 - [ ] `deltagrid.db` SQLite — migrate to PostgreSQL for production
+- [ ] CoinGlass adapter stubs for Binance (funding/oi/liq/ls via Binance native API)
+- [ ] Real-time incremental update for funding rates (currently 1h batch via CoinGlass)
