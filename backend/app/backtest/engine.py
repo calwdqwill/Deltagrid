@@ -6,8 +6,11 @@
 - Каждый бар обрабатывается строго последовательно
 """
 
+import logging
 import time
 from typing import List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 import pandas as pd
 from sqlalchemy import text
@@ -39,6 +42,17 @@ class BacktestEngine:
     def run(self) -> BacktestResult:
         """Main entry point. Executes full backtest."""
         start_time = time.time()
+
+        # Quality gate
+        from app.backtest.gate import pre_backtest_gate
+
+        can_run, warnings = pre_backtest_gate(self.db, self.config)
+        if not can_run:
+            raise ValueError(
+                f"Data quality check failed: {'; '.join(warnings)}"
+            )
+        if warnings:
+            logger.warning(f"Backtest warnings: {'; '.join(warnings)}")
 
         # Resolve strategy class
         strategy_class = STRATEGY_REGISTRY.get(self.config.strategy_type)

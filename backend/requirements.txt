@@ -22,3 +22,6 @@ python-jose[cryptography]==3.3.0
 # Phase 6: Backtest Engine
 pandas>=2.0.0
 numpy>=1.24.0
+
+# Phase 7: Data Layer — Scheduler & Incremental Updates
+apscheduler>=3.10.0

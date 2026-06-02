@@ -1,17 +1,17 @@
 """BinanceAdapter — market data ingestion for Binance futures.
 
-Implements fetch_ohlcv_1m with rate limiting, retry, and circuit breaker.
-Uses mock data for prototype testing (no real API calls in demo mode).
+Fetches 1m (and other intervals) OHLCV from Binance USD-M Futures API.
+Implements gap detection and data-quality logging.
 """
 
 import logging
 from typing import Optional
 
-import httpx
-
 from .base_adapter import BaseDataAdapter
 from .data_models import OHLCVCandle, ProviderHealthStatus
+from .data_writer import DataWriter
 from .rate_limiter import GlobalRateLimiter, RetryPolicy
+from .symbol_mapper import SymbolMapper
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +27,22 @@ class BinanceAdapter(BaseDataAdapter):
         self,
         rate_limiter: GlobalRateLimiter,
         retry_policy: Optional[RetryPolicy] = None,
-        use_mock: bool = False,
+        symbol_mapper: Optional[SymbolMapper] = None,
+        data_writer: Optional[DataWriter] = None,
     ):
         super().__init__(rate_limiter, retry_policy)
-        self.use_mock = use_mock
+        self.symbol_mapper = symbol_mapper or SymbolMapper()
+        self.writer = data_writer or DataWriter()
+
+    def _native_symbol(self, canonical: str) -> str:
+        """Canonical symbol -> Binance-native symbol (e.g. BTC -> BTCUSDT)."""
+        try:
+            return self.symbol_mapper.to_provider(canonical, "binance", alias_type="ticker")
+        except ValueError:
+            return f"{canonical}USDT"
 
     # ------------------------------------------------------------------
-    # Public API
+    # OHLCV
     # ------------------------------------------------------------------
 
     async def fetch_ohlcv(
@@ -44,18 +53,11 @@ class BinanceAdapter(BaseDataAdapter):
         end_ms: int,
         limit: int = 1500,
     ) -> list[OHLCVCandle]:
-        """Fetch OHLCV from Binance futures API.
-
-        Args:
-            symbol: Binance-native symbol, e.g. "BTCUSDT".
-            interval: "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d".
-        """
-        if self.use_mock:
-            return self._mock_ohlcv(symbol, interval, start_ms, end_ms, limit)
-
+        """Fetch OHLCV candles (single request)."""
+        native_symbol = self._native_symbol(symbol)
         url = f"{BINANCE_FAPI_BASE}/fapi/v1/klines"
         params = {
-            "symbol": symbol,
+            "symbol": native_symbol,
             "interval": interval,
             "startTime": start_ms,
             "endTime": end_ms,
@@ -68,39 +70,63 @@ class BinanceAdapter(BaseDataAdapter):
             return resp.json()
 
         data = await self._execute_with_protection(_do_request)
-        return [self._normalize_candle(raw, symbol, interval) for raw in data]
+        candles: list[OHLCVCandle] = []
+        interval_ms = self._interval_to_ms(interval)
+
+        for i, raw in enumerate(data):
+            candle = self._normalize_candle(raw, symbol, interval)
+            candles.append(candle)
+
+            # Gap detection within chunk
+            if i > 0:
+                prev_ts = candles[i - 1].timestamp_ms
+                gap = candle.timestamp_ms - prev_ts
+                if gap > 2 * interval_ms:
+                    logger.warning(
+                        f"[Binance] Gap >2 intervals for {symbol}: "
+                        f"{gap // interval_ms} intervals between {prev_ts} and {candle.timestamp_ms}"
+                    )
+                    self.writer.log_data_quality(
+                        table_name="ohlcv",
+                        check_type="gap",
+                        severity="warning",
+                        symbol=symbol,
+                        exchange="binance",
+                        interval=interval,
+                        gap_start=prev_ts,
+                        gap_end=candle.timestamp_ms,
+                        details_json=f'{{"gap_ms": {gap}, "interval_ms": {interval_ms}}}',
+                    )
+
+        return candles
+
+    # ------------------------------------------------------------------
+    # Stubs for other data types
+    # ------------------------------------------------------------------
 
     async def fetch_funding(self, symbol: str, start_ms: int, end_ms: int) -> list:
         """Stub — funding rates for Binance."""
-        # TODO: implement /fapi/v1/fundingRate
         return []
 
     async def fetch_oi(self, symbol: str, interval: str = "1h") -> list:
         """Stub — open interest for Binance."""
-        # TODO: implement /fapi/v1/openInterestHist
         return []
 
     async def fetch_liquidations(self, symbol: str, start_ms: int, end_ms: int) -> list:
         """Stub — liquidations for Binance."""
-        # TODO: implement /fapi/v1/allForceOrders or /fapi/v1/forceOrders
         return []
 
     async def fetch_long_short_ratio(
         self, symbol: str, interval: str, start_ms: int, end_ms: int
     ) -> list:
         """Stub — long/short ratio for Binance."""
-        # TODO: implement /futures/data/globalLongShortAccountRatio
         return []
 
-    async def health_check(self) -> ProviderHealthStatus:
-        if self.use_mock:
-            return ProviderHealthStatus(
-                source_name=self.source_name,
-                is_healthy=True,
-                latency_ms=50,
-                circuit_breaker_state=self.circuit_breaker.state.value,
-            )
+    # ------------------------------------------------------------------
+    # Health check
+    # ------------------------------------------------------------------
 
+    async def health_check(self) -> ProviderHealthStatus:
         url = f"{BINANCE_FAPI_BASE}/fapi/v1/ping"
         try:
             import time as _time
@@ -129,7 +155,7 @@ class BinanceAdapter(BaseDataAdapter):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _normalize_candle(raw: list, symbol: str, interval: str) -> OHLCVCandle:
+    def _normalize_candle(raw: list, canonical_symbol: str, interval: str) -> OHLCVCandle:
         """Normalize Binance kline array into OHLCVCandle.
 
         Binance kline format:
@@ -153,64 +179,12 @@ class BinanceAdapter(BaseDataAdapter):
             low=float(raw[3]),
             close=float(raw[4]),
             volume=float(raw[5]),
-            quote_volume=float(raw[7]),
-            trades_count=int(raw[8]),
-            symbol=symbol,
+            quote_volume=float(raw[7]) if len(raw) > 7 else None,
+            trades_count=int(raw[8]) if len(raw) > 8 else None,
+            symbol=canonical_symbol,
             exchange="binance",
             interval=interval,
         )
-
-    # ------------------------------------------------------------------
-    # Mock data for prototype testing
-    # ------------------------------------------------------------------
-
-    def _mock_ohlcv(
-        self,
-        symbol: str,
-        interval: str,
-        start_ms: int,
-        end_ms: int,
-        limit: int,
-    ) -> list[OHLCVCandle]:
-        """Generate deterministic mock OHLCV candles."""
-        import random as _random
-
-        _random.seed(symbol + str(start_ms))
-        candles = []
-        interval_ms = self._interval_to_ms(interval)
-        current = start_ms
-        price = 50000.0 if "BTC" in symbol else 3000.0
-
-        count = 0
-        while current < end_ms and count < limit:
-            change = _random.uniform(-0.002, 0.002)
-            open_p = price
-            close_p = price * (1 + change)
-            high_p = max(open_p, close_p) * (1 + _random.uniform(0, 0.001))
-            low_p = min(open_p, close_p) * (1 - _random.uniform(0, 0.001))
-            volume = _random.uniform(10.0, 1000.0)
-
-            candles.append(
-                OHLCVCandle(
-                    timestamp_ms=current,
-                    open=round(open_p, 2),
-                    high=round(high_p, 2),
-                    low=round(low_p, 2),
-                    close=round(close_p, 2),
-                    volume=round(volume, 4),
-                    quote_volume=round(volume * close_p, 2),
-                    trades_count=int(_random.uniform(100, 5000)),
-                    symbol=symbol,
-                    exchange="binance",
-                    interval=interval,
-                )
-            )
-            price = close_p
-            current += interval_ms
-            count += 1
-
-        logger.info(f"[MOCK] Generated {len(candles)} candles for {symbol} {interval}")
-        return candles
 
     @staticmethod
     def _interval_to_ms(interval: str) -> int:

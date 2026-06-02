@@ -23,6 +23,7 @@ from .rate_limiter import (
 from .symbol_mapper import SymbolMapper
 from .data_writer import DataWriter
 from .backfill_orchestrator import BackfillJob, BackfillOrchestrator
+from .binance_adapter import BinanceAdapter
 from .coingecko_adapter import CoinGeckoDataAdapter
 from .coinglass_adapter import CoinGlassDataAdapter
 
@@ -46,6 +47,7 @@ __all__ = [
     "RetryPolicy",
     "SymbolMapper",
     "DataWriter",
+    "BinanceAdapter",
     "CoinGeckoDataAdapter",
     "CoinGlassDataAdapter",
 ]

@@ -256,6 +256,7 @@ class DataWriter:
         end_ms: int,
     ) -> str:
         import uuid
+        from datetime import datetime
 
         run_id = str(uuid.uuid4())
         session = self._session()
