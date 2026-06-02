@@ -18,3 +18,7 @@ redis==5.0.1
 pyjwt==2.8.0
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
+
+# Phase 6: Backtest Engine
+pandas>=2.0.0
+numpy>=1.24.0

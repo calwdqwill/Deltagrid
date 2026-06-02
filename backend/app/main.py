@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.persistence.database import init_db
-from app.api.v1 import scanner, preferences, health, auth, paper, performance, billing, market, exchange_accounts, execution, risk, stream, alerts, notifications, rwa, treasury
+from app.api.v1 import scanner, preferences, health, auth, paper, performance, billing, market, exchange_accounts, execution, risk, stream, alerts, notifications, rwa, treasury, backtest
 from app.services.scanner_service import ScannerService
 from app.services.preference_service import PreferenceService
 from app.services.exchange_account_service import ExchangeAccountService
@@ -90,6 +90,7 @@ app.include_router(alerts.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(rwa.router, prefix="/api/v1")
 app.include_router(treasury.router, prefix="/api/v1")
+app.include_router(backtest.router, prefix="/api/v1")
 
 
 @app.get("/")
