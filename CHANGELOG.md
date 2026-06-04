@@ -1,5 +1,25 @@
 # Changelog — DeltaGrid
 
+## [2026-06-04] — [v1.2.0] — Frontend MVP terminal shell и 6 ключевых экранов
+- Frontend package version обновлён до `1.2.0`.
+- Основной frontend shell переведён на тёмный terminal layout: left sidebar, top workspace tabs, search и компактные controls.
+- Sidebar обновлён под MVP-информационную архитектуру: Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts, Strategy Lab.
+- Perp DEX и Funding получили nested navigation с визуальной tree-line.
+- Добавлен typed mock data adapter в `frontend/src/lib/terminal`, чтобы UI работал на fixtures сейчас и мог быть заменён на CoinGecko/CoinGlass-backed providers позже.
+- Реализованы экраны: Market Overview / Command Center, Perp DEX Intelligence, Funding Overview, Asset Deep Dive SOL, Market Matrix, Strategy Lab / Backtest.
+- Добавлены routes `/arbitrage-scanner` и `/charts`; Charts пока реализован как аккуратный placeholder без новых зависимостей.
+- Market Overview, Perp DEX, Arbitrage Scanner и Market Matrix очищены от полноценного funding-дублирования; Funding Matrix, Funding Arbitrage и Long/Short legs живут только в Funding.
+- Корневой route `/` теперь ведёт на `/market`, чтобы MVP не открывал старый scanner flow с right drawer.
+- Проверка: `npm run build` во frontend проходит успешно.
+
+## [2026-06-02] — [CRITICAL FIX] — Code Review v2: security, symbol contract, regression tests
+- **Security**: Telegram/Web3 auth endpoint'ы (`/auth/telegram`, `/auth/web3/challenge`, `/auth/web3/verify`) теперь возвращают `501 Not Implemented` при `DEBUG=false`.
+- **Security**: Добавлена fail-fast startup validation: в production-like режиме (`DEBUG=false`) приложение падает при старте, если `SECRET_KEY` оставлен дефолтным или `VAULT_MASTER_KEY` пустой.
+- **Data layer symbol contract**: `BinanceAdapter.fetch_ohlcv` теперь принимает canonical symbol (например, `BTC`) и маппит в provider-native (`BTCUSDT`) внутри адаптера через `SymbolMapper`. Все записи в БД теперь используют canonical symbol.
+- **Data layer**: Исправлен gap detection bug в `BackfillOrchestrator`: `expected` теперь считается до сдвига `current_start`.
+- **Testing**: Добавлен `backend/tests/test_data_api.py` — regression tests на `TestClient` с in-memory SQLite, которые доказывают, что `/api/v1/data/ohlcv?symbol=BTC&exchange=binance` возвращает seeded данные.
+- **Docs**: Обновлён `backend/.env.example` с секциями `Security` и комментариями о production secrets.
+
 ## [2026-06-02] — [UI] — Standalone HTML preview frontend
 - Добавлен автономный preview-интерфейс в `frontend/preview/`, который открывается напрямую через `index.html` без Next.js, React, backend API и сборки.
 - Реализованы страницы `index.html`, `asset.html`, `strategy-lab.html`, `data-health.html` и общий `styles.css` в тёмной dashboard-теме.
@@ -14,6 +34,13 @@
 - Добавлены placeholder-страницы `/strategy-lab`, `/backtests`, `/data-health`.
 - Добавлен route `/watchlist` как alias на текущий scanner/watchlist-интерфейс, чтобы новый пункт меню не вёл в 404.
 - На `/market` добавлен mock-индикатор свежести данных `Updated 2 min ago`.
+
+## [2026-06-02] — [API] — Read-only endpoint'ы проверки market data
+- Добавлен роутер `backend/app/api/v1/data.py` с публичными read-only endpoint'ами `GET /api/v1/data/ohlcv`, `GET /api/v1/data/funding` и `GET /api/v1/data/health`.
+- `ohlcv` и `funding` читают данные из SQLite через существующие SQLAlchemy-модели `DataOhlcv` и `DataFundingRate`, фильтруют по `symbol`, `exchange`, `start`, `end` и возвращают максимум 1000 строк.
+- `data/health` возвращает статус `binance`/`coinglass`, последний sync по провайдерам, количество строк в data-layer таблицах и приближённый `data_quality.score` по логам качества данных за последние 24 часа.
+- Роутер подключён в `app.main`; POST/DELETE операции не добавлялись.
+- Проверка: `venv\Scripts\python.exe -m compileall app` и smoke-test через `TestClient` на in-memory SQLite для трёх новых endpoint'ов.
 
 ## [2026-05-20] — [AUDIT/FIX] — Техническое ревью Codex
 - Проведён технический аудит структуры проекта, frontend build, backend import/compile, зависимостей, Alembic-состояния и базового health endpoint.

@@ -1,5 +1,22 @@
 # Backlog — DeltaGrid
 
+## Frontend MVP Terminal — 2026-06-04
+- [x] Перевести основной frontend shell на тёмный terminal layout: left sidebar, top workspace tabs, search и compact controls.
+- [x] Обновить sidebar под MVP-разделы: Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts, Strategy Lab.
+- [x] Добавить nested navigation с tree-line для Perp DEX и Funding.
+- [x] Добавить typed mock data adapter в `frontend/src/lib/terminal`, подготовленный под будущую замену на CoinGecko/CoinGlass data providers.
+- [x] Реализовать Market Overview / Command Center без Funding Heatmap, Funding Arbitrage, Funding Matrix и Long/Short funding legs.
+- [x] Реализовать Perp DEX Intelligence без полноценного Funding dashboard; оставить только link-card в Funding.
+- [x] Реализовать Funding Overview как first-class module с funding matrix, history, arbitrage opportunities, predicted funding и long/short legs.
+- [x] Реализовать Asset Deep Dive для SOL с compact funding metric без полноценного funding screen.
+- [x] Реализовать Market Matrix без funding metric и Funding Matrix.
+- [x] Реализовать Strategy Lab / Backtest на mock data.
+- [x] Добавить Charts placeholder без новых зависимостей.
+- [x] Добавить Arbitrage Scanner route как non-funding scanner.
+- [ ] Реализовать полноценный Charts screen на `lightweight-charts`: price candles, volume, OI, basis и Funding Chart как временной ряд без превращения Charts в funding strategy module.
+- [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования API-контрактов для CoinGecko/CoinGlass-derived данных.
+- [ ] Добавить visual regression/screenshot checklist для 6 MVP-экранов после стабилизации layout.
+
 ## Standalone HTML Preview — 2026-06-02
 - [x] Создать `frontend/preview/index.html` как backend-free Market Scanner preview с mock-данными, фильтрами и кликабельными строками.
 - [x] Создать `frontend/preview/asset.html` с asset summary, табами и переходом в Strategy Lab.
@@ -240,6 +257,15 @@
 - [ ] Org provisioning workflow
 - [ ] Usage analytics and quotas
 - [ ] Priority support ticketing integration
+
+## Phase 7 — Data Layer / Backtesting 📋 IN PROGRESS
+- [x] Добавить read-only API для проверки SQLite market data: `GET /api/v1/data/ohlcv`, `GET /api/v1/data/funding`, `GET /api/v1/data/health`.
+- [x] Добавить regression tests для data-layer endpoint'ов с временной SQLite БД и seed-данными OHLCV/funding.
+- [x] Исправить canonical/provider symbol mismatch: ingest и API работают с canonical symbol (`BTC`), адаптер маппит в provider-native внутри себя.
+- [x] Закрыть небезопасные auth stub'ы (Telegram/Web3) в production — возвращать 501 при `DEBUG=false`.
+- [x] Добавить fail-fast startup validation для `SECRET_KEY` и `VAULT_MASTER_KEY` в production.
+- [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S (вместо пустых stub'ов).
+- [ ] Реализовать backtest engine и scheduler (следующий milestone после data quality gate).
 
 ## Known Tech Debt (не блокирует разработку)
 - [x] `httpx.AsyncClient` leaks — FIXED in Phase 4A

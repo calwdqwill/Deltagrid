@@ -7,13 +7,29 @@
     font-family: "Inter", system-ui, sans-serif;
   }
   body {
-    background-color: #F8F9FA;
-    color: #0F172A;
+    background-color: #070A12;
+    color: #F8FAFC;
+  }
+  ::selection {
+    background: rgba(124, 58, 237, 0.45);
+    color: #ffffff;
   }
 }
 
 @layer utilities {
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+  .scrollbar-terminal {
+    scrollbar-color: rgba(148, 163, 184, 0.28) transparent;
+    scrollbar-width: thin;
+  }
+  .scrollbar-terminal::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .scrollbar-terminal::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
   }
 }

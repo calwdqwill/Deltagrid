@@ -112,9 +112,10 @@ class BackfillOrchestrator:
                     total_fetched += len(candles)
 
                     last_ts = candles[-1].timestamp_ms
+                    # Compute expected before shifting current_start
+                    expected = (chunk_end - current_start) // interval_ms
                     current_start = last_ts + interval_ms
 
-                    expected = (chunk_end - current_start) // interval_ms
                     if len(candles) < expected * 0.9:
                         logger.warning(
                             f"[Backfill] Potential gap: got {len(candles)}, expected ~{expected}"

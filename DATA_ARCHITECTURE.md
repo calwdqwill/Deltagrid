@@ -100,6 +100,21 @@ MarketEnrichmentService
 GET /market/enrichments + GET /health/providers
 ```
 
+### Data Layer Read API Flow
+```
+SQLite data-layer tables
+    ↓
+SQLAlchemy models from app.domain.models
+    ↓
+GET /api/v1/data/ohlcv
+GET /api/v1/data/funding
+GET /api/v1/data/health
+    ↓
+ApiResponse для ручной проверки данных, health snapshot и будущих backtest/debug workflow
+```
+
+Новые endpoint'ы `/api/v1/data/*` не вызывают внешние API и не изменяют состояние БД. `start` и `end` трактуются как Unix timestamp в миллисекундах; ответы по OHLCV и funding ограничены 1000 строками. `data_quality.score` — приближённая диагностическая метрика: 0 при отсутствии market data строк, иначе 100 минус штрафы за записи `data_quality_logs` за последние 24 часа.
+
 ## Data Status Lifecycle
 
 | Status | Meaning | UI Indicator |

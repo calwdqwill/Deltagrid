@@ -12,6 +12,7 @@ import httpx
 from .base_adapter import BaseDataAdapter
 from .data_models import OHLCVCandle, ProviderHealthStatus
 from .rate_limiter import GlobalRateLimiter, RetryPolicy
+from .symbol_mapper import SymbolMapper
 
 logger = logging.getLogger(__name__)
 
@@ -47,15 +48,18 @@ class BinanceAdapter(BaseDataAdapter):
         """Fetch OHLCV from Binance futures API.
 
         Args:
-            symbol: Binance-native symbol, e.g. "BTCUSDT".
+            symbol: Canonical symbol, e.g. "BTC". Mapped to provider-native internally.
             interval: "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d".
         """
+        canonical_symbol = symbol.upper()
         if self.use_mock:
-            return self._mock_ohlcv(symbol, interval, start_ms, end_ms, limit)
+            return self._mock_ohlcv(canonical_symbol, interval, start_ms, end_ms, limit)
+
+        native_symbol = SymbolMapper().to_provider(canonical_symbol, "binance")
 
         url = f"{BINANCE_FAPI_BASE}/fapi/v1/klines"
         params = {
-            "symbol": symbol,
+            "symbol": native_symbol,
             "interval": interval,
             "startTime": start_ms,
             "endTime": end_ms,
@@ -68,7 +72,7 @@ class BinanceAdapter(BaseDataAdapter):
             return resp.json()
 
         data = await self._execute_with_protection(_do_request)
-        return [self._normalize_candle(raw, symbol, interval) for raw in data]
+        return [self._normalize_candle(raw, canonical_symbol, interval) for raw in data]
 
     async def fetch_funding(self, symbol: str, start_ms: int, end_ms: int) -> list:
         """Stub — funding rates for Binance."""

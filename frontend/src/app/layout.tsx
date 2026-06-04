@@ -6,8 +6,8 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
 export const metadata: Metadata = {
-  title: "DeltaGrid — Arbitrage Scanner",
-  description: "Production-ready crypto arbitrage scanner for spot and perp markets",
+  title: "DeltaGrid — Crypto Research Terminal",
+  description: "Web-based crypto research and trading analytics terminal",
 };
 
 export default function RootLayout({

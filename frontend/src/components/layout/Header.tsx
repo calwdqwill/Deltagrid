@@ -1,121 +1,146 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
-import { RefreshCw, Globe, Activity } from "lucide-react";
-import { useUIStore } from "@/stores/uiStore";
-import { useScannerStore } from "@/stores/scannerStore";
-import { useLocale } from "@/hooks/useLocale";
-import { availableLocales } from "@/i18n";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { Bell, CircleDot, Plus, Search, X } from "lucide-react";
+import { useUIStore, WorkspaceTab } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { LoginModal } from "@/components/auth/LoginModal";
 
-const PAGE_TITLE_MAP: Record<string, string> = {
-  "/": "scanner.title",
-  "/market": "market.title",
-  "/strategy-lab": "Strategy Lab",
-  "/backtests": "Backtest History",
-  "/data-health": "Data Health",
-  "/watchlist": "Watchlist",
-  "/paper-trading": "paper.title",
-  "/execution": "execution.title",
-  "/exchange-accounts": "exchangeAccounts.title",
-  "/risk-rules": "risk.title",
-  "/alerts": "alerts.title",
-  "/notifications": "notifications.title",
-  "/profile": "profile.title",
-  "/settings": "settings.title",
-  "/rwa": "rwa.title",
-  "/treasury": "treasury.title",
-};
+const routeTabs: Array<{ match: (path: string) => boolean; tab: WorkspaceTab }> = [
+  {
+    match: (path) => path === "/" || path === "/market",
+    tab: { id: "market-overview", label: "Market Overview", href: "/market", context: "Command Center" },
+  },
+  {
+    match: (path) => path.startsWith("/perp-dex"),
+    tab: { id: "perp-dex-overview", label: "Perp DEX", href: "/perp-dex", context: "Overview" },
+  },
+  {
+    match: (path) => path.startsWith("/assets"),
+    tab: { id: "asset-sol", label: "SOL", href: "/assets", context: "Asset Deep Dive" },
+  },
+  {
+    match: (path) => path.startsWith("/funding"),
+    tab: { id: "funding-overview", label: "Funding", href: "/funding", context: "Overview" },
+  },
+  {
+    match: (path) => path.startsWith("/arbitrage-scanner"),
+    tab: { id: "arbitrage-scanner", label: "Arbitrage Scanner", href: "/arbitrage-scanner", context: "Non-funding" },
+  },
+  {
+    match: (path) => path.startsWith("/market-matrix"),
+    tab: { id: "market-matrix", label: "Market Matrix", href: "/market-matrix", context: "Perps" },
+  },
+  {
+    match: (path) => path.startsWith("/charts"),
+    tab: { id: "charts", label: "Charts", href: "/charts", context: "Placeholder" },
+  },
+  {
+    match: (path) => path.startsWith("/strategy-lab"),
+    tab: { id: "strategy-backtest-1", label: "Backtest #1", href: "/strategy-lab", context: "Strategy Lab" },
+  },
+];
 
-function getPageTitleKey(pathname: string): string {
-  return PAGE_TITLE_MAP[pathname] || "scanner.title";
-}
-
-function getPageTitle(t: any, pathname: string): string {
-  const key = getPageTitleKey(pathname);
-  if (!key.includes(".")) {
-    return key;
-  }
-
-  const parts = key.split(".");
-  let obj = t;
-  for (const part of parts) {
-    obj = obj?.[part];
-    if (obj === undefined) return "";
-  }
-  return obj;
+function getTabForPath(pathname: string): WorkspaceTab {
+  return (
+    routeTabs.find((item) => item.match(pathname))?.tab ?? {
+      id: "market-overview",
+      label: "Market Overview",
+      href: "/market",
+      context: "Command Center",
+    }
+  );
 }
 
 export function Header() {
   const pathname = usePathname();
-  const { locale, setLocale } = useUIStore();
-  const { isLoading, data } = useScannerStore();
-  const { t } = useLocale();
+  const router = useRouter();
   const [loginOpen, setLoginOpen] = useState(false);
+  const { workspaceTabs, activeWorkspaceTabId, openWorkspaceTab, closeWorkspaceTab, setActiveWorkspaceTab } =
+    useUIStore();
 
-  const isFallback = data?.meta.isFallback;
-  const hasStale = data && Object.keys(data.meta.dataStatusCounts).some((k) => k === "stale");
-  const isScannerPage = pathname === "/";
+  const currentTab = useMemo(() => getTabForPath(pathname), [pathname]);
+
+  useEffect(() => {
+    openWorkspaceTab(currentTab);
+  }, [currentTab, openWorkspaceTab]);
+
+  const handleClose = (id: string) => {
+    const remaining = workspaceTabs.filter((tab) => tab.id !== id);
+    const fallback = remaining[0] ?? { href: "/market", id: "market-overview" };
+    closeWorkspaceTab(id);
+    if (id === activeWorkspaceTabId) {
+      router.push(fallback.href);
+    }
+  };
 
   return (
     <>
-      <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-border">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-primary-text">{getPageTitle(t, pathname)}</h1>
-          {isScannerPage && (
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-                  isFallback || hasStale
-                    ? "bg-amber-50 text-amber-700"
-                    : "bg-emerald-50 text-emerald-700"
-                )}
-              >
-                <Activity className="w-3.5 h-3.5" />
-                {isFallback
-                  ? t.status.fallback
-                  : hasStale
-                  ? t.status.stale
-                  : t.status.live}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => window.location.reload()}
-            disabled={isLoading}
-            className={cn(
-              "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border hover:bg-row-hover transition-colors",
-              isLoading && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-            {t.scanner.refresh}
-          </button>
-
-          <div className="relative">
-            <select
-              value={locale}
-              onChange={(e) => setLocale(e.target.value)}
-              className="appearance-none pl-9 pr-8 py-2 rounded-lg border border-border bg-white text-sm font-medium text-primary-text hover:bg-row-hover cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
+      <header className="flex h-16 items-center gap-3 border-b border-white/10 bg-[#090E19] px-4">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg border border-white/10 bg-black/20 p-1">
+            {workspaceTabs.map((tab) => {
+              const active = activeWorkspaceTabId === tab.id;
+              return (
+                <div
+                  key={tab.id}
+                  className={cn(
+                    "group flex min-h-9 shrink-0 items-center rounded-md border text-xs transition-colors",
+                    active
+                      ? "border-indigo-400/40 bg-indigo-500/22 text-white"
+                      : "border-transparent text-slate-400 hover:bg-white/[0.05] hover:text-slate-100"
+                  )}
+                >
+                  <Link
+                    href={tab.href}
+                    onClick={() => setActiveWorkspaceTab(tab.id)}
+                    className="flex items-center gap-2 px-3"
+                  >
+                    <CircleDot className={cn("h-3 w-3", active ? "text-cyan-300" : "text-slate-600")} />
+                    <span className="font-medium">{tab.label}</span>
+                    {tab.context && <span className="hidden text-slate-500 xl:inline">{tab.context}</span>}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleClose(tab.id)}
+                    className="mr-1 rounded p-1 text-slate-500 opacity-70 transition-colors hover:bg-white/10 hover:text-slate-100 group-hover:opacity-100"
+                    aria-label={`Close ${tab.label}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-slate-100"
+              aria-label="Open workspace tab"
             >
-              {availableLocales.map((loc) => (
-                <option key={loc.code} value={loc.code}>
-                  {loc.label}
-                </option>
-              ))}
-            </select>
-            <Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-text pointer-events-none" />
+              <Plus className="h-4 w-4" />
+            </button>
           </div>
-
-          <UserMenu onLoginClick={() => setLoginOpen(true)} />
         </div>
+
+        <div className="hidden min-w-[300px] items-center rounded-lg border border-white/10 bg-black/20 px-3 py-2 lg:flex">
+          <Search className="mr-2 h-4 w-4 text-slate-600" />
+          <input
+            className="w-full bg-transparent text-xs text-slate-200 outline-none placeholder:text-slate-600"
+            placeholder="Search assets, markets, metrics..."
+          />
+        </div>
+
+        <button
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/20 text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-slate-100"
+          aria-label="Alerts"
+        >
+          <Bell className="h-4 w-4" />
+        </button>
+
+        <UserMenu onLoginClick={() => setLoginOpen(true)} />
       </header>
 
       <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />

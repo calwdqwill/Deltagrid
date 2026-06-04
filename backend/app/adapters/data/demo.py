@@ -76,7 +76,7 @@ async def main():
 
     orchestrator = BackfillOrchestrator(writer=writer)
     job = BackfillJob(
-        symbol=btc_binance,
+        symbol="BTC",
         exchange="binance",
         data_type="ohlcv",
         interval="1m",
@@ -100,7 +100,7 @@ async def main():
     # ------------------------------------------------------------------
     logger.info("\n[5] Backfill: 1 hour of 1m ETH")
     job2 = BackfillJob(
-        symbol=eth_binance,
+        symbol="ETH",
         exchange="binance",
         data_type="ohlcv",
         interval="1m",
@@ -119,7 +119,7 @@ async def main():
     # ------------------------------------------------------------------
     logger.info("\n[6] Incremental Update BTC")
     inc_result = await orchestrator.incremental_update(
-        adapter, symbol=btc_binance, exchange="binance", interval="1m"
+        adapter, symbol="BTC", exchange="binance", interval="1m"
     )
     logger.info(f"  Fetched: {inc_result.total_fetched} (expected 0-1 — data is fresh)")
 
@@ -129,7 +129,7 @@ async def main():
     logger.info("\n[7] Fallback Chain Demo")
     fallback = FallbackChain([adapter])
     fb_candles = await fallback.fetch_ohlcv(
-        symbol=btc_binance, interval="1m",
+        symbol="BTC", interval="1m",
         start_ms=one_hour_ago, end_ms=one_hour_ago + 60_000 * 10,
     )
     logger.info(f"  Fallback returned {len(fb_candles)} candles")

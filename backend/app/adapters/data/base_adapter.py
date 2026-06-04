@@ -61,7 +61,7 @@ class BaseDataAdapter(ABC):
         """Fetch OHLCV candles for a symbol.
 
         Args:
-            symbol: Provider-native symbol (e.g. "BTCUSDT" for Binance).
+            symbol: Canonical symbol (e.g. "BTC"). Adapters map to provider-native internally.
             interval: Candle interval — "1m", "5m", "1h", "1d".
             start_ms: Start timestamp in milliseconds (inclusive).
             end_ms: End timestamp in milliseconds (inclusive).

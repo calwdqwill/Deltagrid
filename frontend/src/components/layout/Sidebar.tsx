@@ -5,77 +5,146 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BarChart3,
+  CandlestickChart,
   ChevronLeft,
   ChevronRight,
-  Database,
   FlaskConical,
-  History,
-  Settings,
-  Star,
+  Grid3X3,
+  Layers3,
+  LineChart,
+  Network,
+  Orbit,
+  RadioTower,
+  Search,
 } from "lucide-react";
 import { useUIStore } from "@/stores/uiStore";
-import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/market", label: "Market", icon: Activity },
+  { href: "/market", label: "Market Overview", icon: Activity },
+  {
+    href: "/perp-dex",
+    label: "Perp DEX",
+    icon: RadioTower,
+    children: ["Overview", "Venues", "Open Interest", "Liquidity", "Opportunities"],
+  },
+  { href: "/assets", label: "Assets", icon: Layers3 },
+  {
+    href: "/funding",
+    label: "Funding",
+    icon: Orbit,
+    children: [
+      "Overview",
+      "Funding History",
+      "Perp DEX Funding",
+      "Funding Arbitrage",
+      "Funding Matrix",
+      "Predicted Funding",
+      "Long / Short Legs",
+    ],
+  },
+  { href: "/arbitrage-scanner", label: "Arbitrage Scanner", icon: Network },
+  { href: "/market-matrix", label: "Market Matrix", icon: Grid3X3 },
+  { href: "/charts", label: "Charts", icon: CandlestickChart },
   { href: "/strategy-lab", label: "Strategy Lab", icon: FlaskConical },
-  { href: "/backtests", label: "Backtests", icon: History },
-  { href: "/data-health", label: "Data Health", icon: Database },
-  { href: "/watchlist", label: "Watchlist", icon: Star },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
+
+function isActivePath(pathname: string, href: string) {
+  if (href === "/market") return pathname === "/market" || pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const pathname = usePathname();
-  const { t } = useLocale();
 
   return (
     <aside
       className={cn(
-        "flex flex-col bg-white border-r border-border h-screen transition-all duration-200",
-        sidebarOpen ? "w-60" : "w-16"
+        "flex h-screen flex-col border-r border-white/10 bg-[#070A12] text-slate-300 transition-all duration-200",
+        sidebarOpen ? "w-64" : "w-[72px]"
       )}
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-border">
+      <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
         {sidebarOpen && (
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent-blue flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
+          <Link href="/market" className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-300/30 bg-gradient-to-br from-cyan-400/18 via-indigo-500/30 to-fuchsia-500/28">
+              <BarChart3 className="h-5 w-5 text-cyan-200" />
             </div>
-            <span className="font-semibold text-primary-text">{t.app.name}</span>
+            <div>
+              <div className="text-sm font-bold tracking-[0.08em] text-white">DELTA GRID</div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Research terminal</div>
+            </div>
           </Link>
         )}
         <button
           onClick={toggleSidebar}
-          className="p-1.5 rounded-md hover:bg-row-hover text-secondary-text"
+          className="rounded-md border border-white/10 p-1.5 text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-slate-200"
+          type="button"
+          aria-label="Toggle sidebar"
         >
-          {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
       </div>
 
-      <nav className="flex-1 py-4 px-2 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-accent-blue/10 text-accent-blue"
-                  : "text-secondary-text hover:bg-row-hover hover:text-primary-text"
-              )}
-              title={!sidebarOpen ? item.label : undefined}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {sidebarOpen && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="space-y-1">
+          {navItems.map((item) => {
+            const active = isActivePath(pathname, item.href);
+            return (
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  title={!sidebarOpen ? item.label : undefined}
+                  className={cn(
+                    "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+                    active
+                      ? "border border-indigo-400/25 bg-indigo-500/18 text-white shadow-[inset_3px_0_0_rgba(129,140,248,0.9)]"
+                      : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-100"
+                  )}
+                >
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </Link>
+
+                {sidebarOpen && active && item.children && (
+                  <div className="ml-5 mt-1 border-l border-white/10 py-1 pl-4">
+                    {item.children.map((child, index) => (
+                      <Link
+                        key={child}
+                        href={`${item.href}?view=${child.toLowerCase().replaceAll(" ", "-").replaceAll("/", "")}`}
+                        className={cn(
+                          "relative flex min-h-7 items-center rounded-md px-2 text-xs transition-colors",
+                          index === 0 ? "text-indigo-200" : "text-slate-500 hover:text-slate-200"
+                        )}
+                      >
+                        <span className="absolute -left-4 top-1/2 h-px w-3 bg-white/10" />
+                        {child}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </nav>
+
+      <div className="border-t border-white/10 p-3">
+        {sidebarOpen ? (
+          <div className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
+              <Search className="h-3.5 w-3.5 text-cyan-300" />
+              Workspace Search
+            </div>
+            <div className="mt-2 text-[11px] leading-4 text-slate-500">Assets, markets, strategies</div>
+          </div>
+        ) : (
+          <div className="flex justify-center rounded-lg border border-white/10 bg-white/[0.035] p-2">
+            <Search className="h-4 w-4 text-slate-500" />
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

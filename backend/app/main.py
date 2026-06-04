@@ -6,7 +6,25 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.persistence.database import init_db
-from app.api.v1 import scanner, preferences, health, auth, paper, performance, billing, market, exchange_accounts, execution, risk, stream, alerts, notifications, rwa, treasury
+from app.api.v1 import (
+    alerts,
+    auth,
+    billing,
+    data,
+    exchange_accounts,
+    execution,
+    health,
+    market,
+    notifications,
+    paper,
+    performance,
+    preferences,
+    risk,
+    rwa,
+    scanner,
+    stream,
+    treasury,
+)
 from app.services.scanner_service import ScannerService
 from app.services.preference_service import PreferenceService
 from app.services.exchange_account_service import ExchangeAccountService
@@ -19,8 +37,22 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
+def _validate_production_settings() -> None:
+    """Fail-fast startup validation for production-like environments."""
+    if settings.debug:
+        return
+    invalid = []
+    if settings.secret_key == "change-me-in-production":
+        invalid.append("SECRET_KEY must be changed from default in production")
+    if not settings.vault_master_key or not settings.vault_master_key.strip():
+        invalid.append("VAULT_MASTER_KEY must be set in production")
+    if invalid:
+        raise RuntimeError("Production startup blocked: " + "; ".join(invalid))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _validate_production_settings()
     init_db()
     # Seed connector capabilities
     db = SessionLocal()
@@ -90,6 +122,7 @@ app.include_router(alerts.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
 app.include_router(rwa.router, prefix="/api/v1")
 app.include_router(treasury.router, prefix="/api/v1")
+app.include_router(data.router, prefix="/api/v1")
 
 
 @app.get("/")

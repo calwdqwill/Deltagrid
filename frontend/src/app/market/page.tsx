@@ -1,69 +1,183 @@
-"use client";
-
 import { Shell } from "@/components/layout/Shell";
-import { TrendingCard } from "@/components/market/TrendingCard";
-import { GainersCard, LosersCard } from "@/components/market/GainersLosersCard";
-import { GlobalStatsCard } from "@/components/market/GlobalStatsCard";
-import { FearGreedCard } from "@/components/market/FearGreedCard";
-import { NewListingsCard } from "@/components/market/NewListingsCard";
-import { FundingRatesCard } from "@/components/market/FundingRatesCard";
-import { useMarketData } from "@/hooks/useMarket";
-import { useLocale } from "@/hooks/useLocale";
-import { useRealtime } from "@/hooks/useRealtime";
-import { RealtimeIndicator } from "@/components/market/RealtimeIndicator";
-import { Clock3, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  BarChart,
+  formatCompactCurrency,
+  formatNumber,
+  formatSigned,
+  Heatmap,
+  KpiStrip,
+  LineChart,
+  Sparkline,
+  StatusBadge,
+  TerminalPanel,
+  TerminalTable,
+  toneText,
+} from "@/components/terminal/terminal-ui";
+import { terminalDataAdapter } from "@/lib/terminal/adapters";
 
-export default function MarketPage() {
-  const { t } = useLocale();
-  const { trending, gainers, losers, global, fearGreed, newListings, fundingRates, isLoading, refetch } = useMarketData(60000);
-  useRealtime();
+export default async function MarketPage() {
+  const data = await terminalDataAdapter.getMarketOverview();
+
+  const assetRows = data.topAssets.map((asset, index) => [
+    <span key="rank" className="font-mono text-slate-500">
+      {index + 1}
+    </span>,
+    <div key="asset" className="flex items-center gap-2">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-300/80 to-indigo-500/80 text-[10px] font-bold text-white">
+        {asset.symbol[0]}
+      </span>
+      <div>
+        <div className="font-medium text-slate-100">{asset.name}</div>
+        <div className="font-mono text-[11px] text-slate-500">{asset.symbol}</div>
+      </div>
+    </div>,
+    <span key="price" className="font-mono text-slate-200">
+      {asset.price >= 100 ? `$${formatNumber(asset.price)}` : `$${asset.price.toFixed(4)}`}
+    </span>,
+    <span key="24h" className={toneText(asset.change24h >= 0 ? "positive" : "negative")}>
+      {formatSigned(asset.change24h)}
+    </span>,
+    <span key="7d" className={toneText(asset.change7d >= 0 ? "positive" : "negative")}>
+      {formatSigned(asset.change7d)}
+    </span>,
+    <span key="cap" className="font-mono">
+      {formatCompactCurrency(asset.marketCap)}
+    </span>,
+    <span key="vol" className="font-mono">
+      {formatCompactCurrency(asset.volume24h)}
+    </span>,
+    <span key="ratio" className="font-mono">
+      {asset.volumeToMarketCap.toFixed(2)}%
+    </span>,
+    <Sparkline
+      key="spark"
+      data={asset.sparkline}
+      color={asset.change24h >= 0 ? "#10B981" : "#F43F5E"}
+      className="h-8 w-24"
+    />,
+  ]);
 
   return (
     <Shell>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-primary-text">{t.market.title}</h1>
-            <RealtimeIndicator />
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-secondary-text ring-1 ring-border">
-              <Clock3 className="h-3.5 w-3.5" />
-              Updated 2 min ago
-            </span>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">
+              Market Overview
+            </div>
+            <h1 className="mt-1 text-2xl font-semibold text-white">Command Center</h1>
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isLoading}
-            className={cn(
-              "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border hover:bg-row-hover transition-colors",
-              isLoading && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <StatusBadge label="Mock data" tone="warning" />
+            <StatusBadge label="No funding modules here" tone="neutral" />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <TrendingCard items={trending as any[]} />
-          <GainersCard items={gainers as any[]} />
-          <LosersCard items={losers as any[]} />
+        <KpiStrip metrics={data.kpis} />
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_0.9fr]">
+          <TerminalPanel title="Market Heatmap" caption="Global spot market leaders by cap and 24h move">
+            <Heatmap items={data.heatmap} />
+          </TerminalPanel>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1">
+            <TerminalPanel title="Top Gainers (24h)">
+              <div className="space-y-3">
+                {data.topGainers.map((asset) => (
+                  <div key={asset.symbol} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-xs text-slate-600">{asset.rank}</span>
+                      <span className="font-medium text-slate-100">{asset.symbol}</span>
+                      <span className="text-xs text-slate-500">{asset.name}</span>
+                    </div>
+                    <span className="font-mono text-sm text-emerald-400">{formatSigned(asset.change24h)}</span>
+                  </div>
+                ))}
+              </div>
+            </TerminalPanel>
+
+            <TerminalPanel title="Top Losers (24h)">
+              <div className="space-y-3">
+                {data.topLosers.map((asset) => (
+                  <div key={asset.symbol} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-xs text-slate-600">{asset.rank}</span>
+                      <span className="font-medium text-slate-100">{asset.symbol}</span>
+                      <span className="text-xs text-slate-500">{asset.name}</span>
+                    </div>
+                    <span className="font-mono text-sm text-rose-400">{formatSigned(asset.change24h)}</span>
+                  </div>
+                ))}
+              </div>
+            </TerminalPanel>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <div>
-            <FearGreedCard data={fearGreed as any[]} />
-          </div>
-          <div>
-            <NewListingsCard items={newListings as any[]} />
-          </div>
-          <div>
-            <FundingRatesCard items={fundingRates as any[]} />
-          </div>
-          <div>
-            <GlobalStatsCard stats={global} />
-          </div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          {[data.btcOverview, data.ethOverview].map((snapshot) => (
+            <TerminalPanel key={snapshot.symbol} title={`${snapshot.symbol} Overview`}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-mono text-3xl font-semibold text-white">
+                    ${formatNumber(snapshot.price)}
+                  </div>
+                  <div className={toneText(snapshot.change24h >= 0 ? "positive" : "negative")}>
+                    {formatSigned(snapshot.change24h)}
+                  </div>
+                </div>
+                <div className="text-right text-xs text-slate-500">
+                  <div>Dominance</div>
+                  <div className="mt-1 font-mono text-base text-slate-200">{snapshot.dominance?.toFixed(2)}%</div>
+                </div>
+              </div>
+              <div className="mt-4 h-32">
+                <LineChart
+                  data={snapshot.sparkline.map((value, index) => ({ label: String(index), value }))}
+                  color={snapshot.change24h >= 0 ? "#10B981" : "#F43F5E"}
+                  height={140}
+                />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-md bg-white/[0.035] p-2">
+                  <div className="text-slate-500">Market Cap</div>
+                  <div className="mt-1 font-mono text-slate-200">{formatCompactCurrency(snapshot.marketCap)}</div>
+                </div>
+                <div className="rounded-md bg-white/[0.035] p-2">
+                  <div className="text-slate-500">24h Volume</div>
+                  <div className="mt-1 font-mono text-slate-200">{formatCompactCurrency(snapshot.volume24h)}</div>
+                </div>
+              </div>
+            </TerminalPanel>
+          ))}
+
+          <TerminalPanel title="Market Breadth" caption="Broad participation snapshot">
+            <div className="mb-3">
+              <div className="font-mono text-3xl font-semibold text-emerald-400">
+                {data.marketBreadth.advancing}%
+              </div>
+              <div className="text-sm text-slate-500">Advancing</div>
+            </div>
+            <div className="mb-4 grid grid-cols-3 gap-2 text-xs">
+              <div className="rounded-md bg-emerald-500/10 p-2 text-emerald-300">
+                Advancing {data.marketBreadth.advancing}%
+              </div>
+              <div className="rounded-md bg-slate-500/10 p-2 text-slate-300">
+                Neutral {data.marketBreadth.neutral}%
+              </div>
+              <div className="rounded-md bg-rose-500/10 p-2 text-rose-300">
+                Declining {data.marketBreadth.declining}%
+              </div>
+            </div>
+            <BarChart data={data.marketBreadth.histogram} colors={["#10B981", "#06B6D4", "#F97316"]} />
+          </TerminalPanel>
         </div>
+
+        <TerminalPanel title="Top Assets" caption="Spot market table with OI and perp volume context">
+          <TerminalTable
+            columns={["#", "Asset", "Price", "24H", "7D", "Market Cap", "24H Volume", "Vol / MCap", "7D"]}
+            rows={assetRows}
+          />
+        </TerminalPanel>
       </div>
     </Shell>
   );

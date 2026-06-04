@@ -1,6 +1,8 @@
 # DeltaGrid — Crypto Arbitrage Scanner + RWA Intelligence
 
-Production-ready crypto arbitrage scanner. Spot and perp markets across CEX and DEX venues. RWA and treasury intelligence layer.
+Production-ready crypto research terminal для анализа spot/perp рынков CEX и DEX, RWA, treasury, funding, market matrix и strategy research workflows.
+
+**Текущая версия**: `v1.2.0`
 
 ## Architecture
 
@@ -50,6 +52,8 @@ npm run dev
 Frontend runs at `http://127.0.0.1:3000`
 
 > **Windows note**: Use `http://127.0.0.1:3000` instead of `localhost` to avoid IPv6 timeout.
+
+Текущий frontend открывается как тёмный terminal MVP с разделами Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts placeholder и Strategy Lab.
 
 ### Docker Compose
 ```bash
@@ -170,6 +174,13 @@ docker-compose up --build
 | `GET /api/v1/treasury/entities/{id}/snapshots` | Treasury entity history |
 | `GET /api/v1/treasury/btc-holdings` | BTC holdings leaderboard |
 | `GET /api/v1/treasury/platforms` | Tokenization platforms |
+
+### Data Layer Endpoints
+| Endpoint | Описание |
+|----------|----------|
+| `GET /api/v1/data/ohlcv?symbol=BTC&exchange=binance&start=...&end=...` | Чтение OHLCV из SQLite, максимум 1000 строк; `start`/`end` — Unix timestamp в миллисекундах. |
+| `GET /api/v1/data/funding?symbol=BTC&exchange=binance&start=...&end=...` | Чтение истории funding rate из SQLite, максимум 1000 строк. |
+| `GET /api/v1/data/health` | Health snapshot data-layer: статусы провайдеров, последние sync, row counts и data quality score. |
 
 ## Roadmap
 

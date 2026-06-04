@@ -6,8 +6,18 @@ from app.schemas.auth import UserCreate, UserLogin, AuthResponse, UserResponse, 
 from app.services.auth_service import AuthService
 from app.core.dependencies import get_db, get_current_user_id, require_auth
 from app.core.exceptions import AuthenticationError, ConflictError
+from app.config import get_settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _require_debug_for_stubs():
+    """Raise 501 if Telegram/Web3 auth stubs are hit in production."""
+    if not get_settings().debug:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Telegram/Web3 authentication is not enabled in production",
+        )
 
 
 def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
@@ -54,6 +64,7 @@ async def refresh_token(
 async def telegram_auth(
     data: TelegramAuthRequest,
     service: AuthService = Depends(get_auth_service),
+    _=Depends(_require_debug_for_stubs),
 ):
     try:
         result = service.telegram_auth(data.model_dump())
@@ -66,6 +77,7 @@ async def telegram_auth(
 async def web3_challenge(
     data: Web3ChallengeRequest,
     service: AuthService = Depends(get_auth_service),
+    _=Depends(_require_debug_for_stubs),
 ):
     nonce = service.get_web3_nonce(data.wallet_address)
     return ApiResponse(data={"nonce": nonce, "message": f"DeltaGrid login: {nonce}"})
@@ -75,6 +87,7 @@ async def web3_challenge(
 async def web3_verify(
     data: Web3VerifyRequest,
     service: AuthService = Depends(get_auth_service),
+    _=Depends(_require_debug_for_stubs),
 ):
     try:
         result = service.verify_web3_signature(data.wallet_address, data.signature, data.nonce)

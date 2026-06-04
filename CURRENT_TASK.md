@@ -1,8 +1,29 @@
 # Current Task — DeltaGrid
 
-**Phase**: 6 (Architecture Hardening) ✅ IN PROGRESS  
-**Status**: Phase 6.0 foundation complete. Capability system, middleware, and extension points delivered.  
-**Last Updated**: 2026-05-16
+**Phase**: Frontend MVP Terminal ✅ v1.2.0 READY  
+**Status**: Dark terminal shell, MVP sidebar, top workspace tabs, mock data adapter и 6 ключевых frontend-экранов реализованы.  
+**Last Updated**: 2026-06-04
+
+## Frontend MVP Summary — 2026-06-04
+
+- [x] App shell: left sidebar + top workspace tabs.
+- [x] Sidebar MVP: Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts, Strategy Lab.
+- [x] Nested nav для Perp DEX и Funding.
+- [x] Typed mock data adapter под будущие CoinGecko/CoinGlass integrations.
+- [x] Market Overview / Command Center без funding-heavy блоков.
+- [x] Perp DEX Intelligence без полноценного Funding dashboard.
+- [x] Funding Overview как first-class module.
+- [x] Asset Deep Dive SOL.
+- [x] Market Matrix без funding metric / Funding Matrix.
+- [x] Strategy Lab / Backtest.
+- [x] Charts placeholder без новых зависимостей.
+- [x] Frontend build: `npm run build` проходит.
+
+## Следующая итерация
+
+- [ ] Подключить `lightweight-charts` и реализовать полноценный Charts screen.
+- [ ] Согласовать frontend adapter contracts с backend/data-layer endpoint'ами.
+- [ ] Добавить ручной visual QA checklist по 6 MVP-экранам.
 
 ## Phase 6 Summary (ARCHITECTURE HARDENING)
 

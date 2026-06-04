@@ -54,22 +54,22 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/30 z-50" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl shadow-2xl z-50 p-6">
+      <div className="fixed inset-0 bg-black/60 z-50" onClick={onClose} />
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-[#0D1322] p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-primary-text">
+          <h2 className="text-xl font-bold text-slate-100">
             {isRegister ? t.auth.registerTitle : t.auth.loginTitle}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-row-hover text-secondary-text transition-colors"
+            className="p-2 rounded-lg hover:bg-white/[0.06] text-slate-500 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {error && (
-          <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-700 text-sm">
+          <div className="mb-4 px-4 py-3 rounded-lg border border-rose-400/20 bg-rose-500/10 text-rose-200 text-sm">
             {error}
           </div>
         )}
@@ -77,20 +77,20 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {isRegister && (
             <div>
-              <label className="block text-sm font-medium text-secondary-text mb-1.5">
+              <label className="block text-sm font-medium text-slate-400 mb-1.5">
                 {t.auth.username}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm text-primary-text focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
+                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-black/20 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-secondary-text mb-1.5">
+            <label className="block text-sm font-medium text-slate-400 mb-1.5">
               {t.auth.email}
             </label>
             <input
@@ -98,12 +98,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm text-primary-text focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
+              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-black/20 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-secondary-text mb-1.5">
+            <label className="block text-sm font-medium text-slate-400 mb-1.5">
               {t.auth.password}
             </label>
             <input
@@ -112,7 +112,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm text-primary-text focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
+              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-black/20 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
             />
           </div>
 
@@ -120,7 +120,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             type="submit"
             disabled={loading}
             className={cn(
-              "w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-accent-blue hover:bg-blue-600 transition-colors",
+              "w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors",
               loading && "opacity-70 cursor-not-allowed"
             )}
           >
@@ -132,18 +132,18 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </button>
         </form>
 
-        <div className="mt-4 text-center text-sm text-secondary-text">
+        <div className="mt-4 text-center text-sm text-slate-500">
           {isRegister ? (
             <button
               onClick={() => setIsRegister(false)}
-              className="text-accent-blue hover:underline"
+              className="text-indigo-300 hover:underline"
             >
               {t.auth.hasAccount}
             </button>
           ) : (
             <button
               onClick={() => setIsRegister(true)}
-              className="text-accent-blue hover:underline"
+              className="text-indigo-300 hover:underline"
             >
               {t.auth.noAccount}
             </button>
@@ -151,16 +151,16 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         </div>
 
         <div className="mt-4 flex items-center gap-2">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs text-secondary-text">or</span>
-          <div className="h-px flex-1 bg-border" />
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-xs text-slate-500">or</span>
+          <div className="h-px flex-1 bg-white/10" />
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <button
             type="button"
             disabled
-            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-border text-sm text-secondary-text hover:bg-row-hover transition-colors opacity-60 cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-sm text-slate-500 hover:bg-white/[0.04] transition-colors opacity-60 cursor-not-allowed"
           >
             <MessageCircle className="w-4 h-4" />
             Telegram
@@ -168,7 +168,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           <button
             type="button"
             disabled
-            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-border text-sm text-secondary-text hover:bg-row-hover transition-colors opacity-60 cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-sm text-slate-500 hover:bg-white/[0.04] transition-colors opacity-60 cursor-not-allowed"
           >
             <Wallet className="w-4 h-4" />
             Web3
