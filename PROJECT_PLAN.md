@@ -29,6 +29,7 @@
 - [x] Добавить Docker ignore-файлы, чтобы production images не тянули локальные env/cache/SQLite/build artifacts.
 - [x] Добавить Nginx template и server smoke-check script.
 - [x] Добавить server preflight и генератор `.env.production`.
+- [x] Добавить Ubuntu bootstrap/deploy scripts и DNS checklist для `deltagrid.pro`.
 
 ## Следующие шаги
 
@@ -36,6 +37,7 @@
 - [x] Проверить основные backend routes после миграции: `/health`, `/data/health`, `/data/ohlcv`, `/market/trending`.
 - [ ] На реальном сервере создать `.env.production` с реальными secrets для `deltagrid.pro` и non-local `DATABASE_URL`.
 - [ ] Прогнать `DOMAIN=deltagrid.pro sh scripts/server-preflight.sh` на сервере.
+- [ ] Перенаправить DNS `deltagrid.pro`/`www.deltagrid.pro` на `2.25.143.143` и убрать старую AAAA-запись, если IPv6 не настроен.
 - [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
 - [ ] Прогнать `scripts/server-smoke.sh` локально на сервере и через `https://deltagrid.pro`.
 - [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования контрактов.

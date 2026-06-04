@@ -24,6 +24,8 @@
 - [x] Добавлены `scripts/server-preflight.sh` и `scripts/generate-production-env.sh`.
 - [x] Deploy-шаблоны и документация привязаны к домену `deltagrid.pro`.
 - [x] DNS preflight: `deltagrid.pro` и `www.deltagrid.pro` сейчас указывают на `31.31.196.50` / `2a00:f940:2:2:1:1:0:266`; HTTP отдаёт parking page REG.RU.
+- [x] Серверный IP получен: `2.25.143.143`; SSH `22` открыт, HTTP `80` и HTTPS `443` пока закрыты.
+- [x] Добавлены `scripts/bootstrap-ubuntu.sh`, `scripts/deploy-production.sh` и `deploy/dns/deltagrid.pro.md`.
 
 ## Следующая итерация
 
@@ -32,7 +34,8 @@
 - [x] Проверить frontend against backend после запуска PostgreSQL окружения.
 - [x] Добавить production readiness gate для env/DB/migrations.
 - [x] Подготовить server deployment checklist: migrations, readiness, reverse proxy, SSL, backups.
-- [ ] Получить SSH-доступ к серверу, на который указывает `deltagrid.pro`, либо IP нового VPS для перенастройки DNS.
+- [ ] Получить SSH-команду и учётные данные для `2.25.143.143`.
+- [ ] Перенастроить DNS `deltagrid.pro` на `2.25.143.143`.
 - [ ] На реальном сервере создать staging/prod `.env.production` с production secrets (`SECRET_KEY`, `VAULT_MASTER_KEY`) для `deltagrid.pro`.
 - [ ] Прогнать server preflight на сервере.
 - [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.

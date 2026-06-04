@@ -4,8 +4,9 @@
 
 ## Допущения
 
-- Сервер уже имеет Docker и Docker Compose plugin.
-- Домен указывает на сервер.
+- Целевой сервер: `2.25.143.143`.
+- ОС сервера: Ubuntu.
+- Домен `deltagrid.pro` должен указывать на `2.25.143.143`.
 - Reverse proxy запускается на хосте отдельно, например Nginx.
 - PostgreSQL работает внутри `docker-compose.prod.yml` и не публикуется наружу.
 - Секреты хранятся в `.env.production`, который не коммитится.
@@ -17,7 +18,34 @@
 - IPv4: `31.31.196.50`
 - IPv6: `2a00:f940:2:2:1:1:0:266`
 
-HTTP сейчас отдаёт parking page REG.RU, а не DeltaGrid. Перед финальным запуском нужно либо получить SSH-доступ к этому серверу/хостингу, либо перенаправить A/AAAA записи домена на VPS, где будет запущен `docker-compose.prod.yml`.
+HTTP сейчас отдаёт parking page REG.RU, а не DeltaGrid. Перед финальным запуском нужно перенаправить A-запись `deltagrid.pro` на `2.25.143.143`. Если на сервере нет IPv6, удалите текущие AAAA-записи, иначе часть трафика может уходить на старый REG.RU hosting.
+
+Подробный DNS-чеклист: `deploy/dns/deltagrid.pro.md`.
+
+## Bootstrap Ubuntu
+
+Если Docker/Nginx/Certbot ещё не установлены, после входа на сервер выполните:
+
+```bash
+sudo sh scripts/bootstrap-ubuntu.sh
+```
+
+Скрипт устанавливает `git`, `curl`, Docker, Docker Compose plugin, Nginx, Certbot и открывает OpenSSH/Nginx Full через `ufw`, если `ufw` доступен.
+
+Проверка сервера:
+
+```bash
+DOMAIN=deltagrid.pro sh scripts/server-preflight.sh
+```
+
+Сейчас снаружи видно, что SSH на `2.25.143.143:22` открыт, а `80/443` закрыты. После bootstrap и настройки Nginx порты `80/443` должны открыться.
+
+## Получение кода на сервере
+
+```bash
+git clone -b preview https://github.com/calwdqwill/Deltagrid.git
+cd Deltagrid
+```
 
 ## Подготовка env
 
@@ -76,6 +104,14 @@ ENV_FILE=.env.production.example docker compose --env-file .env.production.examp
 ```
 
 ## Запуск
+
+Автоматический локальный deploy stack:
+
+```bash
+sh scripts/deploy-production.sh
+```
+
+Ручной вариант:
 
 ```bash
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
