@@ -7,6 +7,8 @@ seeded rows when the DB stores the canonical symbol "BTC".
 
 from unittest.mock import patch
 
+import pytest
+
 from app.config import Settings
 
 _test_settings = Settings(
@@ -126,3 +128,30 @@ def test_health_returns_200() -> None:
     payload = response.json()
     assert "row_counts" in payload["data"]
     assert "data_quality" in payload["data"]
+
+
+def test_readiness_reports_missing_migration_state() -> None:
+    """Readiness must fail when the DB is reachable but Alembic state is absent."""
+    response = client.get("/api/v1/health/readiness")
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["data"]["status"] == "not_ready"
+    assert payload["data"]["checks"]["database"]["ok"] is True
+    assert payload["data"]["checks"]["migrations"]["ok"] is False
+
+
+def test_production_validation_blocks_sqlite(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SQLite fallback must not be accepted in production-like runtime."""
+    from app import main as main_module
+
+    production_settings = Settings(
+        database_url="sqlite:///:memory:",
+        debug=False,
+        secret_key="x" * 32,
+        vault_master_key="y" * 32,
+        cors_origins="https://example.com",
+    )
+    monkeypatch.setattr(main_module, "settings", production_settings)
+
+    with pytest.raises(RuntimeError, match="SQLite DATABASE_URL"):
+        main_module._validate_production_settings()

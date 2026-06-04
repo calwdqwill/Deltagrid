@@ -4,7 +4,7 @@ Backtesting-first research terminal data pipeline:
 - OHLCV, funding rates, open interest, liquidations, long/short ratios
 - Provider adapters with rate limiting, circuit breaker, retry
 - Symbol mapping across exchanges
-- SQLite → TimescaleDB migration path
+- PostgreSQL persistence via Alembic migrations
 """
 
 from .base_adapter import BaseDataAdapter, DataAdapterRegistry, FallbackChain

@@ -5,10 +5,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY alembic.ini ./alembic.ini
 COPY app ./app
 
 ENV PYTHONPATH=/app
-ENV DATABASE_URL=sqlite:///./deltagrid.db
+ENV DATABASE_URL=postgresql://deltagrid:deltagrid@postgres:5432/deltagrid
 
 EXPOSE 8000
 

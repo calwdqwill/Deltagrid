@@ -4,21 +4,22 @@ Production-ready crypto research terminal для анализа spot/perp рын
 
 **Текущая версия**: `v1.2.0`
 
-## Architecture
+## Архитектура
 
 - **Frontend**: Next.js 14 + React + TypeScript + Tailwind CSS + Zustand + TanStack Query
-- **Backend**: FastAPI + Python 3.11 + SQLAlchemy + SQLite (PostgreSQL-ready)
+- **Backend**: FastAPI + Python 3.11 + SQLAlchemy + PostgreSQL
 - **Data**: CoinGecko API (primary), CoinGlass, GeckoTerminal, alternative.me
 - **Cache**: In-memory LRU with TTL (Redis-ready interface)
-- **Persistence**: SQLite (PostgreSQL migration path via Alembic), 33 tables
+- **Persistence**: PostgreSQL через `DATABASE_URL` и Alembic migrations
 - **Auth**: JWT tokens, bcrypt hashing, optional auth middleware, dual-token refresh
 - **Enterprise-ready**: Plan capabilities, feature flags, request tracing, API boundary markers
 
-## Quick Start
+## Быстрый запуск
 
-### Prerequisites
+### Требования
 - Python 3.11+
 - Node.js 20+
+- Docker Desktop или локальный PostgreSQL 16+
 
 ### Standalone HTML Preview
 Для быстрого просмотра будущего scanner/backtest UX без backend и без Next.js откройте файл:
@@ -29,6 +30,39 @@ frontend/preview/index.html
 
 Preview работает как статический HTML: страницы связаны через обычные `<a href="">`, mock-данные находятся внутри HTML, фильтры и табы используют только минимальный inline JavaScript.
 
+### PostgreSQL
+
+Через Docker Compose:
+
+```bash
+docker compose up -d postgres
+```
+
+Локальная строка подключения из `backend/.env.example`:
+
+```env
+DATABASE_URL=postgresql://deltagrid:deltagrid@127.0.0.1:5432/deltagrid
+```
+
+SQLite больше не является production runtime. Его можно использовать только явно для isolated tests, например `sqlite:///:memory:`.
+
+### Production env gate
+
+При `DEBUG=false` backend теперь падает на старте, если:
+
+- `SECRET_KEY` оставлен dev/default или короче 32 символов;
+- `VAULT_MASTER_KEY` пустой или короче 32 символов;
+- `DATABASE_URL` пустой или указывает на SQLite;
+- `CORS_ORIGINS` пустой или содержит `*`.
+
+Перед staging/prod запуском проверьте:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/health/readiness
+```
+
+Endpoint проверяет локальное подключение к БД и соответствие текущей Alembic revision source head.
+
 ### Backend
 ```bash
 cd backend
@@ -36,7 +70,8 @@ python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env (optional: add COINGECKO_API_KEY)
+# Проверьте DATABASE_URL и при необходимости добавьте COINGECKO_API_KEY
+python -m alembic upgrade head
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -57,8 +92,14 @@ Frontend runs at `http://127.0.0.1:3000`
 
 ### Docker Compose
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
+
+Compose поднимает PostgreSQL, ждёт healthcheck, применяет `alembic upgrade head` и запускает backend.
+
+### Production deploy
+
+Минимальный серверный сценарий описан в [DEPLOYMENT.md](DEPLOYMENT.md): `.env.production`, `docker-compose.prod.yml`, reverse proxy, SSL, readiness checks, backup и rollback.
 
 ## Features
 
@@ -78,7 +119,7 @@ docker-compose up --build
 - **Performance**: PnL, win rate, drawdown, Sharpe-ready metrics
 - **Billing**: Plan definitions, referral code generation
 - **User Profile**: Account info, plan status
-- **PostgreSQL-ready**: Async engine + Alembic migrations configured
+- **PostgreSQL runtime**: `DATABASE_URL`, sync/async engines и Alembic migrations
 - **Redis-ready**: Cache abstraction interface
 
 ### Phase 3 — Trade Execution + Real Data ✅
@@ -121,6 +162,7 @@ docker-compose up --build
 | `GET /api/v1/preferences` | User preferences |
 | `POST /api/v1/preferences` | Update preferences |
 | `GET /api/v1/health` | Health check |
+| `GET /api/v1/health/readiness` | DB + Alembic readiness check |
 | `GET /api/v1/health/status` | Data source status |
 
 ### Phase 2 Endpoints
@@ -178,8 +220,8 @@ docker-compose up --build
 ### Data Layer Endpoints
 | Endpoint | Описание |
 |----------|----------|
-| `GET /api/v1/data/ohlcv?symbol=BTC&exchange=binance&start=...&end=...` | Чтение OHLCV из SQLite, максимум 1000 строк; `start`/`end` — Unix timestamp в миллисекундах. |
-| `GET /api/v1/data/funding?symbol=BTC&exchange=binance&start=...&end=...` | Чтение истории funding rate из SQLite, максимум 1000 строк. |
+| `GET /api/v1/data/ohlcv?symbol=BTC&exchange=binance&start=...&end=...` | Чтение OHLCV из PostgreSQL, максимум 1000 строк; `start`/`end` — Unix timestamp в миллисекундах. |
+| `GET /api/v1/data/funding?symbol=BTC&exchange=binance&start=...&end=...` | Чтение истории funding rate из PostgreSQL, максимум 1000 строк. |
 | `GET /api/v1/data/health` | Health snapshot data-layer: статусы провайдеров, последние sync, row counts и data quality score. |
 
 ## Roadmap

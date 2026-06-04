@@ -102,7 +102,7 @@ GET /market/enrichments + GET /health/providers
 
 ### Data Layer Read API Flow
 ```
-SQLite data-layer tables
+PostgreSQL data-layer tables
     ↓
 SQLAlchemy models from app.domain.models
     ↓
@@ -128,14 +128,18 @@ ApiResponse для ручной проверки данных, health snapshot �
 
 ## Persistence
 
-### Phase 1 Tables (SQLite)
+Основной production runtime — PostgreSQL. Подключение задаётся через `DATABASE_URL`; sync-слой SQLAlchemy использует `psycopg`, async-слой — `asyncpg`. Создание и изменение схемы выполняется через Alembic (`python -m alembic upgrade head`), а `Base.metadata.create_all()` оставлен только для SQLite fallback в isolated tests. Перед staging/prod трафиком `GET /api/v1/health/readiness` должен возвращать `ready`: endpoint проверяет подключение к БД и совпадение `alembic_version` с source head.
+
+Дата/время в ORM сейчас хранится как UTC-naive `DateTime`, а market time-series и backtest time windows используют Unix timestamp в миллисекундах в `BigInteger`-полях. JSON-поля пока остаются `Text` с суффиксом `_json`, чтобы не менять существующую сериализацию; переход на PostgreSQL `JSONB` вынесен в tech debt. Финансовые балансы, PnL и treasury/RWA значения используют `DECIMAL`, а market data OHLCV/funding/OI пока используют `Float`.
+
+### Phase 1 Tables (PostgreSQL через Alembic)
 ```sql
 preferences     -- key-value store for settings
 favorites       -- instrument_ids
 pinned          -- instrument_ids
 ```
 
-### Phase 2 Tables (SQLite, PostgreSQL-ready via Alembic)
+### Phase 2 Tables (PostgreSQL через Alembic)
 ```sql
 users              -- id, email, username, hashed_password, plan, is_active
 paper_accounts     -- user_id, name, initial_balance, current_balance, currency
@@ -145,7 +149,7 @@ referrals          -- referrer_id, code, referral_count
 payments           -- user_id, plan, amount, status, provider
 ```
 
-### Phase 3 Tables (SQLite, PostgreSQL-ready via Alembic)
+### Phase 3 Tables (PostgreSQL через Alembic)
 ```sql
 exchange_accounts      -- user_id, exchange_name, label, is_active, created_at
 exchange_keys          -- account_id, encrypted_api_key, encrypted_secret, key_identifier (SHA-256)
@@ -159,7 +163,7 @@ live_trade_sessions    -- user_id, name, strategy, status, started_at, stopped_a
 audit_logs             -- user_id, action, resource_type, resource_id, details, created_at
 ```
 
-### Phase 4 Tables (SQLite, PostgreSQL-ready via Alembic)
+### Phase 4 Tables (PostgreSQL через Alembic)
 ```sql
 provider_health        -- provider_name, status, last_success_at, last_failure_at, error_count, latency_ms
 market_enrichments     -- provider, symbol, metric_type, value, timestamp, raw_data

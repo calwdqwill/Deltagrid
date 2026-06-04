@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, Date, Float, Boolean, Integer, create_engine, ForeignKey, Text, DECIMAL, UniqueConstraint, PrimaryKeyConstraint, Index
+from sqlalchemy import Column, String, DateTime, Date, Float, Boolean, Integer, BigInteger, create_engine, ForeignKey, Text, DECIMAL, UniqueConstraint, PrimaryKeyConstraint, Index
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 Base = declarative_base()
@@ -644,7 +644,7 @@ class InstrumentAlias(Base):
 class DataOhlcv(Base):
     __tablename__ = "ohlcv"
 
-    timestamp = Column(Integer, nullable=False)
+    timestamp = Column(BigInteger, nullable=False)
     symbol = Column(String, nullable=False)
     exchange = Column(String, nullable=False)
     interval = Column(String, nullable=False)
@@ -666,11 +666,11 @@ class DataOhlcv(Base):
 class DataFundingRate(Base):
     __tablename__ = "funding_rates"
 
-    timestamp = Column(Integer, nullable=False)
+    timestamp = Column(BigInteger, nullable=False)
     symbol = Column(String, nullable=False)
     exchange = Column(String, nullable=False)
     funding_rate = Column(Float, nullable=True)
-    next_funding_time = Column(Integer, nullable=True)
+    next_funding_time = Column(BigInteger, nullable=True)
     interval = Column(String, default="8h")
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -683,7 +683,7 @@ class DataFundingRate(Base):
 class DataOpenInterest(Base):
     __tablename__ = "open_interest"
 
-    timestamp = Column(Integer, nullable=False)
+    timestamp = Column(BigInteger, nullable=False)
     symbol = Column(String, nullable=False)
     exchange = Column(String, nullable=False)
     interval = Column(String, nullable=False)
@@ -700,7 +700,7 @@ class DataOpenInterest(Base):
 class DataLiquidation(Base):
     __tablename__ = "liquidations"
 
-    timestamp = Column(Integer, nullable=False)
+    timestamp = Column(BigInteger, nullable=False)
     symbol = Column(String, nullable=False)
     exchange = Column(String, nullable=False)
     side = Column(String, nullable=False)
@@ -718,7 +718,7 @@ class DataLiquidation(Base):
 class DataLongShortRatio(Base):
     __tablename__ = "long_short_ratio"
 
-    timestamp = Column(Integer, nullable=False)
+    timestamp = Column(BigInteger, nullable=False)
     symbol = Column(String, nullable=False)
     exchange = Column(String, nullable=False)
     interval = Column(String, nullable=False)
@@ -744,7 +744,7 @@ class BasisPremium(Base):
     perp_price = Column(Float, nullable=True)
     basis_pct = Column(Float, nullable=True)
     premium_pct = Column(Float, nullable=True)
-    timestamp = Column(Integer, nullable=False, index=True)
+    timestamp = Column(BigInteger, nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -766,8 +766,8 @@ class ProviderSyncRun(Base):
     provider_name = Column(String, nullable=False, index=True)
     sync_type = Column(String, nullable=False)
     status = Column(String, nullable=False)
-    start_time = Column(Integer, nullable=True)
-    end_time = Column(Integer, nullable=True)
+    start_time = Column(BigInteger, nullable=True)
+    end_time = Column(BigInteger, nullable=True)
     records_fetched = Column(Integer, default=0)
     records_inserted = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
@@ -788,8 +788,32 @@ class DataQualityLog(Base):
     check_type = Column(String, nullable=False)   # gap | duplicate | outlier | stale
     severity = Column(String, default="warning")  # info | warning | critical
     description = Column(Text, nullable=True)
-    timestamp = Column(Integer, nullable=True)
+    timestamp = Column(BigInteger, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class BackfillJobRecord(Base):
+    __tablename__ = "backfill_jobs"
+
+    id = Column(String, primary_key=True)
+    symbol = Column(String, nullable=False)
+    exchange = Column(String, nullable=False)
+    data_type = Column(String, nullable=False)
+    interval = Column(String, nullable=False)
+    start_time = Column(BigInteger, nullable=False)
+    end_time = Column(BigInteger, nullable=False)
+    status = Column(String, default="pending")
+    records_fetched = Column(Integer, default=0)
+    records_inserted = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    started_at = Column(BigInteger, nullable=True)
+    completed_at = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_jobs_status", "status", "exchange"),
+        Index("idx_jobs_lookup", "symbol", "exchange", "data_type", "status"),
+    )
 
 
 class BacktestConfig(Base):
@@ -843,8 +867,8 @@ class BacktestTrade(Base):
     symbol = Column(String, nullable=False)
     exchange = Column(String, nullable=False)
     side = Column(String, nullable=False)   # long | short
-    entry_time = Column(Integer, nullable=False)
-    exit_time = Column(Integer, nullable=True)
+    entry_time = Column(BigInteger, nullable=False)
+    exit_time = Column(BigInteger, nullable=True)
     entry_price = Column(DECIMAL(18, 8), nullable=False)
     exit_price = Column(DECIMAL(18, 8), nullable=True)
     quantity = Column(DECIMAL(18, 8), nullable=False)
@@ -860,7 +884,7 @@ class BacktestEquity(Base):
 
     id = Column(String, primary_key=True, default=generate_uuid)
     result_id = Column(String, ForeignKey("backtest_results.id", ondelete="CASCADE"), nullable=False, index=True)
-    timestamp = Column(Integer, nullable=False)
+    timestamp = Column(BigInteger, nullable=False)
     equity = Column(DECIMAL(18, 8), nullable=False)
     realized_pnl = Column(DECIMAL(18, 8), default=0)
     unrealized_pnl = Column(DECIMAL(18, 8), default=0)

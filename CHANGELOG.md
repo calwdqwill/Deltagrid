@@ -1,5 +1,36 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] — [DEPLOY] — Минимальный server deployment flow
+- Добавлен `.env.production.example` с обязательными production-переменными: secrets, CORS, PostgreSQL credentials, provider keys и runtime tuning.
+- `.env.production` добавлен в `.gitignore`, чтобы реальные секреты не попадали в репозиторий.
+- Добавлен `docker-compose.prod.yml`: PostgreSQL не публикуется наружу, backend/frontend слушают `127.0.0.1`, backend стартует через `alembic upgrade head`, backend/frontend имеют healthcheck.
+- Добавлен `DEPLOYMENT.md` на русском языке: подготовка env, запуск, readiness checks, reverse proxy, SSL, backup PostgreSQL и rollback.
+- `frontend/next.config.js` больше не привязан к `http://127.0.0.1:8000`: rewrite использует `BACKEND_INTERNAL_URL` с локальным fallback, а Docker передаёт его на frontend build stage.
+- `frontend/src/hooks/useRealtime.ts` больше не зашит только на `ws://127.0.0.1:8000`: локально остаётся прямое подключение к backend, а на домене используется same-origin WebSocket path или `NEXT_PUBLIC_WS_URL`.
+- Проверка: `npm run build` проходит; Docker frontend пересобран; `http://127.0.0.1:3000/api/v1/health/readiness` через Next.js proxy возвращает `ready`.
+
+## [2026-06-05] — [HARDENING] — Production readiness gate для env, DB и миграций
+- Усилена startup validation при `DEBUG=false`: backend блокирует слабые/dev `SECRET_KEY`, короткий или пустой `VAULT_MASTER_KEY`, SQLite `DATABASE_URL` и wildcard `CORS_ORIGINS`.
+- Добавлен `GET /api/v1/health/readiness`: endpoint проверяет локальное подключение к БД, читает `alembic_version` и сравнивает текущую revision с source head.
+- В `Settings` добавлен `COINGLASS_STANDARD_API_KEY`, чтобы `.env.example` и runtime config не расходились.
+- `docker-compose.yml` теперь прокидывает `COINGLASS_API_KEY` и `COINGLASS_STANDARD_API_KEY` в backend.
+- Обновлены `README.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `CURRENT_TASK.md` и `BACKLOG.md` с readiness flow и staging/prod рисками.
+- Проверка: `venv\Scripts\python.exe -m pytest tests -q` — 6 passed; `venv\Scripts\python.exe -m compileall app` — успешно.
+- Проверка Docker: backend пересобран, PostgreSQL healthy, frontend отвечает на `http://127.0.0.1:3000`, `/api/v1/health`, `/api/v1/data/health` и `/api/v1/health/readiness` возвращают ожидаемый статус; readiness показывает head `7c1f2a8d9e34`.
+
+## [2026-06-05] — [DB] — PostgreSQL runtime для production-ready MVP
+- Backend persistence переведён на PostgreSQL как основной runtime через `DATABASE_URL`.
+- Добавлен sync PostgreSQL driver `psycopg[binary]`; async layer продолжает использовать `asyncpg`.
+- Добавлена нормализация DB URL для sync engine, async engine и Alembic: `postgres://`, `postgresql://`, `postgresql+psycopg://`, `postgresql+asyncpg://`.
+- `Base.metadata.create_all()` больше не создаёт production-схему для PostgreSQL; схема управляется через Alembic.
+- Добавлена миграция `3f0c2e5a7b91_postgresql_mvp_hardening` для таблицы `backfill_jobs`, которая раньше создавалась только ручным SQLite-DDL внутри `DataWriter`.
+- Добавлена миграция `7c1f2a8d9e34_bigint_market_timestamps`: Unix timestamp в миллисекундах для market/backtest/data-layer хранится в `BigInteger`, а не в PostgreSQL `integer`.
+- `DataWriter` и `SymbolMapper` используют PostgreSQL-safe engine settings; SQLite fallback оставлен только для isolated tests.
+- Старые migration seed'и обновлены для PostgreSQL-safe boolean values (`true/false` вместо `1/0` в boolean-колонках).
+- `docker-compose.yml` теперь поднимает PostgreSQL 16, ждёт healthcheck и запускает `alembic upgrade head` перед стартом backend.
+- Обновлены `README.md`, `DATA_ARCHITECTURE.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md` и `BACKLOG.md` с инструкциями PostgreSQL-запуска и рисками.
+- Проверено на живом Docker Compose окружении: PostgreSQL healthy, backend применяет Alembic migrations при старте, `/api/v1/health`, `/api/v1/data/health`, `/api/v1/data/ohlcv` и `/api/v1/market/trending` возвращают 200, frontend отвечает на `http://127.0.0.1:3000`.
+
 ## [2026-06-04] — [v1.2.0] — Frontend MVP terminal shell и 6 ключевых экранов
 - Frontend package version обновлён до `1.2.0`.
 - Основной frontend shell переведён на тёмный terminal layout: left sidebar, top workspace tabs, search и компактные controls.

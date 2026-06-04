@@ -7,8 +7,10 @@ from typing import Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.domain.models import Base, Instrument, InstrumentAlias
+from app.persistence.database_url import is_sqlite_database_url, to_sync_database_url
 
 
 # ------------------------------------------------------------------
@@ -23,9 +25,19 @@ class SymbolMapper:
 
         if db_url is None:
             db_url = get_settings().database_url
-        self.engine = create_engine(db_url, echo=False)
-        Base.metadata.create_all(self.engine, checkfirst=True)
+        self.db_url = to_sync_database_url(db_url)
+        self.engine = create_engine(self.db_url, echo=False, **self._engine_kwargs())
+        if is_sqlite_database_url(self.db_url):
+            Base.metadata.create_all(self.engine, checkfirst=True)
         self.Session = sessionmaker(bind=self.engine)
+
+    def _engine_kwargs(self) -> dict:
+        if is_sqlite_database_url(self.db_url):
+            return {
+                "connect_args": {"check_same_thread": False},
+                "poolclass": StaticPool,
+            }
+        return {"pool_pre_ping": True}
 
     # -- Public API --------------------------------------------------
 

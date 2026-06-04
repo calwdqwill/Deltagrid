@@ -1,26 +1,15 @@
-"""Async PostgreSQL database engine for Phase 2.
-
-Coexists with the existing sync SQLite engine (database.py).
-Switchover is controlled via DATABASE_URL env var.
-"""
+"""Async database engine for services that need async SQLAlchemy sessions."""
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 from app.config import get_settings
+from app.persistence.database_url import is_sqlite_database_url, to_async_database_url
 
 settings = get_settings()
 
-def _to_async_database_url(database_url: str) -> str:
-    if database_url.startswith("sqlite:///"):
-        return database_url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
-    if database_url.startswith("postgresql://"):
-        return database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return database_url
 
-
-# Async engine for PostgreSQL (or aiosqlite for async SQLite)
 async_engine = create_async_engine(
-    _to_async_database_url(settings.database_url),
+    to_async_database_url(settings.database_url),
     echo=settings.debug,
     pool_pre_ping=True,
 )
@@ -44,7 +33,9 @@ async def get_async_db():
 
 
 async def init_async_db() -> None:
-    """Create tables using async engine (for dev convenience)."""
+    """Create SQLite fallback tables using the async engine."""
+    if not is_sqlite_database_url(str(async_engine.url)):
+        return
     from app.domain.models import Base
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

@@ -248,7 +248,7 @@ async def get_ohlcv(
     interval: Optional[str] = Query(None, min_length=1),
     db: Session = Depends(get_db),
 ):
-    """Read OHLCV candles from SQLite. Limit is fixed at 1000 rows."""
+    """Read OHLCV candles from the configured database. Limit is fixed at 1000 rows."""
     _validate_time_range(start, end)
     normalized_symbol = _normalize_symbol(symbol)
     normalized_exchange = _normalize_exchange(exchange)
@@ -295,7 +295,7 @@ async def get_funding(
     end: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
     db: Session = Depends(get_db),
 ):
-    """Read funding-rate history from SQLite. Limit is fixed at 1000 rows."""
+    """Read funding-rate history from the configured database. Limit is fixed at 1000 rows."""
     _validate_time_range(start, end)
     normalized_symbol = _normalize_symbol(symbol)
     normalized_exchange = _normalize_exchange(exchange)

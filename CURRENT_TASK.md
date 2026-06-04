@@ -1,8 +1,34 @@
 # Current Task — DeltaGrid
 
-**Phase**: Frontend MVP Terminal ✅ v1.2.0 READY  
-**Status**: Dark terminal shell, MVP sidebar, top workspace tabs, mock data adapter и 6 ключевых frontend-экранов реализованы.  
-**Last Updated**: 2026-06-04
+**Phase**: Production-ready MVP hardening ✅ PostgreSQL runtime READY
+**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Добавлен production startup gate, readiness endpoint и минимальный server deployment flow. Frontend MVP terminal `v1.2.0` сохранён без UI-изменений.
+**Last Updated**: 2026-06-05
+
+## PostgreSQL MVP Summary — 2026-06-05
+
+- [x] PostgreSQL стал основным runtime persistence для backend.
+- [x] Добавлен sync driver `psycopg[binary]`; async слой использует `asyncpg`.
+- [x] Нормализованы DB URL для sync engine, async engine и Alembic.
+- [x] `Base.metadata.create_all()` ограничен SQLite fallback для isolated tests.
+- [x] Добавлена Alembic migration `3f0c2e5a7b91` для `backfill_jobs`.
+- [x] Добавлена Alembic migration `7c1f2a8d9e34` для `BigInteger` timestamp-полей в data-layer/backtest.
+- [x] `DataWriter` и `SymbolMapper` больше не создают production-схему вручную.
+- [x] Docker Compose поднимает PostgreSQL 16 и запускает `alembic upgrade head` перед backend.
+- [x] Обновлены инструкции запуска и архитектурная документация.
+- [x] `DEBUG=false` блокирует слабые/dev secrets, пустой `VAULT_MASTER_KEY`, SQLite `DATABASE_URL` и wildcard `CORS_ORIGINS`.
+- [x] `GET /api/v1/health/readiness` проверяет DB connectivity и соответствие Alembic revision source head.
+- [x] Добавлены `.env.production.example`, `docker-compose.prod.yml` и `DEPLOYMENT.md`.
+- [x] Frontend runtime proxy подготовлен к Docker deployment через `BACKEND_INTERNAL_URL`; WebSocket URL больше не привязан только к `127.0.0.1:8000`.
+
+## Следующая итерация
+
+- [x] Прогнать `alembic upgrade head` на PostgreSQL БД в Docker.
+- [x] Сделать smoke-check backend routes: `/health`, `/data/health`, `/data/ohlcv`, `/market/trending`.
+- [x] Проверить frontend against backend после запуска PostgreSQL окружения.
+- [x] Добавить production readiness gate для env/DB/migrations.
+- [x] Подготовить server deployment checklist: migrations, readiness, reverse proxy, SSL, backups.
+- [ ] На реальном сервере создать staging/prod `.env.production` с production secrets (`SECRET_KEY`, `VAULT_MASTER_KEY`), доменом и non-local `DATABASE_URL`.
+- [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
 
 ## Frontend MVP Summary — 2026-06-04
 
@@ -19,7 +45,7 @@
 - [x] Charts placeholder без новых зависимостей.
 - [x] Frontend build: `npm run build` проходит.
 
-## Следующая итерация
+## Следующая frontend-итерация
 
 - [ ] Подключить `lightweight-charts` и реализовать полноценный Charts screen.
 - [ ] Согласовать frontend adapter contracts с backend/data-layer endpoint'ами.
@@ -86,6 +112,7 @@ Phase 6 is split into incremental sub-phases:
 ## URL разработки
 - Frontend: http://127.0.0.1:3000
 - Backend API: http://127.0.0.1:8000
+- Readiness: http://127.0.0.1:8000/api/v1/health/readiness
 - Scanner: http://127.0.0.1:3000/
 - Market Dashboard: http://127.0.0.1:3000/market
 - Exchange Accounts: http://127.0.0.1:3000/exchange-accounts

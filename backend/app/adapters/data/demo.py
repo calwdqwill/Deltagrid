@@ -1,6 +1,6 @@
 """Demo script for the DeltaGrid data layer (real DB integration).
 
-Runs a mock backfill of 1m OHLCV for BTC and ETH into the real deltagrid.db,
+Runs a mock backfill of 1m OHLCV for BTC and ETH into the configured database,
 demonstrating SymbolMapper, BinanceAdapter, DataWriter, and BackfillOrchestrator.
 """
 
@@ -28,9 +28,9 @@ async def main():
     logger.info("=" * 60)
 
     # ------------------------------------------------------------------
-    # 1. Symbol Mapping (reads from real deltagrid.db)
+    # 1. Symbol Mapping (reads from configured database)
     # ------------------------------------------------------------------
-    logger.info("\n[1] Symbol Mapping from deltagrid.db")
+    logger.info("\n[1] Symbol Mapping from configured database")
     mapper = SymbolMapper()
 
     btc_binance = mapper.to_provider("BTC", "binance")
@@ -61,9 +61,9 @@ async def main():
         logger.info(f"  {name}: healthy={status.is_healthy}, cb={status.circuit_breaker_state}")
 
     # ------------------------------------------------------------------
-    # 3. DataWriter (writes to real deltagrid.db)
+    # 3. DataWriter (writes to configured database)
     # ------------------------------------------------------------------
-    logger.info("\n[3] DataWriter connected to deltagrid.db")
+    logger.info("\n[3] DataWriter connected to configured database")
     writer = DataWriter()
     logger.info("  Tables initialized (IF NOT EXISTS)")
 

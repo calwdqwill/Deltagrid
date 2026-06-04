@@ -31,8 +31,8 @@ def upgrade() -> None:
         sa.Column('blockchain', sa.String(), nullable=True),
         sa.Column('contract_address', sa.String(), nullable=True),
         sa.Column('decimals', sa.Integer(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), server_default='1'),
-        sa.Column('is_executable', sa.Boolean(), server_default='0'),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.true()),
+        sa.Column('is_executable', sa.Boolean(), server_default=sa.false()),
         sa.Column('metadata_json', sa.Text(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
@@ -61,7 +61,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.ForeignKeyConstraint(['asset_id'], ['rwa_assets.id'], ondelete='CASCADE')
     )
-    op.create_index('ix_rwa_snap_asset_fetched', 'rwa_asset_snapshots', ['asset_id', 'fetched_at DESC'])
+    op.create_index('ix_rwa_snap_asset_fetched', 'rwa_asset_snapshots', ['asset_id', sa.text('fetched_at DESC')])
 
     # Treasury entities (companies, platforms, issuers)
     op.create_table(
@@ -73,7 +73,7 @@ def upgrade() -> None:
         sa.Column('sector', sa.String(), nullable=True),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('website_url', sa.String(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), server_default='1'),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.true()),
         sa.Column('metadata_json', sa.Text(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
@@ -101,7 +101,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.ForeignKeyConstraint(['entity_id'], ['treasury_entities.id'], ondelete='CASCADE')
     )
-    op.create_index('ix_treasury_snap_entity_date', 'treasury_snapshots', ['entity_id', 'report_date DESC'])
+    op.create_index('ix_treasury_snap_entity_date', 'treasury_snapshots', ['entity_id', sa.text('report_date DESC')])
 
     # Tokenization platforms
     op.create_table(
@@ -115,7 +115,7 @@ def upgrade() -> None:
         sa.Column('active_pools', sa.Integer(), nullable=True),
         sa.Column('blockchain', sa.String(), nullable=True),
         sa.Column('governance_token', sa.String(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), server_default='1'),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.true()),
         sa.Column('metadata_json', sa.Text(), nullable=True),
         sa.Column('last_updated_at', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),

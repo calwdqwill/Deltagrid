@@ -29,7 +29,7 @@ def upgrade() -> None:
         sa.Column('quote_asset', sa.String(), nullable=False),
         sa.Column('instrument_type', sa.String(), nullable=False),
         sa.Column('exchange', sa.String(), nullable=False),
-        sa.Column('is_active', sa.Boolean(), server_default='1', nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.true(), nullable=True),
         sa.Column('metadata_json', sa.Text(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
@@ -46,7 +46,7 @@ def upgrade() -> None:
         sa.Column('provider', sa.String(), nullable=False),
         sa.Column('alias', sa.String(), nullable=False),
         sa.Column('alias_type', sa.String(), nullable=False),
-        sa.Column('is_primary', sa.Boolean(), server_default='0', nullable=True),
+        sa.Column('is_primary', sa.Boolean(), server_default=sa.false(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('provider', 'alias', name='uix_provider_alias')
@@ -57,7 +57,7 @@ def upgrade() -> None:
     # -- Time-Series Market Data -------------------------------------------
     op.create_table(
         'ohlcv',
-        sa.Column('timestamp', sa.Integer(), nullable=False),
+        sa.Column('timestamp', sa.BigInteger(), nullable=False),
         sa.Column('symbol', sa.String(), nullable=False),
         sa.Column('exchange', sa.String(), nullable=False),
         sa.Column('interval', sa.String(), nullable=False),
@@ -75,11 +75,11 @@ def upgrade() -> None:
 
     op.create_table(
         'funding_rates',
-        sa.Column('timestamp', sa.Integer(), nullable=False),
+        sa.Column('timestamp', sa.BigInteger(), nullable=False),
         sa.Column('symbol', sa.String(), nullable=False),
         sa.Column('exchange', sa.String(), nullable=False),
         sa.Column('funding_rate', sa.Float(), nullable=True),
-        sa.Column('next_funding_time', sa.Integer(), nullable=True),
+        sa.Column('next_funding_time', sa.BigInteger(), nullable=True),
         sa.Column('interval', sa.String(), server_default='8h', nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('timestamp', 'symbol', 'exchange', name='pk_funding_rates')
@@ -88,7 +88,7 @@ def upgrade() -> None:
 
     op.create_table(
         'open_interest',
-        sa.Column('timestamp', sa.Integer(), nullable=False),
+        sa.Column('timestamp', sa.BigInteger(), nullable=False),
         sa.Column('symbol', sa.String(), nullable=False),
         sa.Column('exchange', sa.String(), nullable=False),
         sa.Column('interval', sa.String(), nullable=False),
@@ -101,7 +101,7 @@ def upgrade() -> None:
 
     op.create_table(
         'liquidations',
-        sa.Column('timestamp', sa.Integer(), nullable=False),
+        sa.Column('timestamp', sa.BigInteger(), nullable=False),
         sa.Column('symbol', sa.String(), nullable=False),
         sa.Column('exchange', sa.String(), nullable=False),
         sa.Column('side', sa.String(), nullable=False),
@@ -115,7 +115,7 @@ def upgrade() -> None:
 
     op.create_table(
         'long_short_ratio',
-        sa.Column('timestamp', sa.Integer(), nullable=False),
+        sa.Column('timestamp', sa.BigInteger(), nullable=False),
         sa.Column('symbol', sa.String(), nullable=False),
         sa.Column('exchange', sa.String(), nullable=False),
         sa.Column('interval', sa.String(), nullable=False),
@@ -138,7 +138,7 @@ def upgrade() -> None:
         sa.Column('perp_price', sa.Float(), nullable=True),
         sa.Column('basis_pct', sa.Float(), nullable=True),
         sa.Column('premium_pct', sa.Float(), nullable=True),
-        sa.Column('timestamp', sa.Integer(), nullable=False),
+        sa.Column('timestamp', sa.BigInteger(), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('id')
     )
@@ -163,8 +163,8 @@ def upgrade() -> None:
         sa.Column('provider_name', sa.String(), nullable=False),
         sa.Column('sync_type', sa.String(), nullable=False),
         sa.Column('status', sa.String(), nullable=False),
-        sa.Column('start_time', sa.Integer(), nullable=True),
-        sa.Column('end_time', sa.Integer(), nullable=True),
+        sa.Column('start_time', sa.BigInteger(), nullable=True),
+        sa.Column('end_time', sa.BigInteger(), nullable=True),
         sa.Column('records_fetched', sa.Integer(), server_default='0', nullable=True),
         sa.Column('records_inserted', sa.Integer(), server_default='0', nullable=True),
         sa.Column('error_message', sa.Text(), nullable=True),
@@ -182,7 +182,7 @@ def upgrade() -> None:
         sa.Column('check_type', sa.String(), nullable=False),
         sa.Column('severity', sa.String(), server_default='warning', nullable=True),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('timestamp', sa.Integer(), nullable=True),
+        sa.Column('timestamp', sa.BigInteger(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('id')
     )
@@ -196,13 +196,13 @@ def upgrade() -> None:
         sa.Column('strategy', sa.String(), nullable=False),
         sa.Column('symbols_json', sa.Text(), nullable=False),
         sa.Column('exchanges_json', sa.Text(), nullable=False),
-        sa.Column('start_time', sa.Integer(), nullable=False),
-        sa.Column('end_time', sa.Integer(), nullable=False),
+        sa.Column('start_time', sa.BigInteger(), nullable=False),
+        sa.Column('end_time', sa.BigInteger(), nullable=False),
         sa.Column('interval', sa.String(), server_default='1m', nullable=True),
         sa.Column('initial_balance', sa.DECIMAL(18, 8), server_default='10000', nullable=True),
         sa.Column('fee_pct', sa.Float(), server_default='0.1', nullable=True),
         sa.Column('config_json', sa.Text(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), server_default='1', nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.true(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('id')
@@ -240,8 +240,8 @@ def upgrade() -> None:
         sa.Column('symbol', sa.String(), nullable=False),
         sa.Column('exchange', sa.String(), nullable=False),
         sa.Column('side', sa.String(), nullable=False),
-        sa.Column('entry_time', sa.Integer(), nullable=False),
-        sa.Column('exit_time', sa.Integer(), nullable=True),
+        sa.Column('entry_time', sa.BigInteger(), nullable=False),
+        sa.Column('exit_time', sa.BigInteger(), nullable=True),
         sa.Column('entry_price', sa.DECIMAL(18, 8), nullable=False),
         sa.Column('exit_price', sa.DECIMAL(18, 8), nullable=True),
         sa.Column('quantity', sa.DECIMAL(18, 8), nullable=False),
@@ -258,7 +258,7 @@ def upgrade() -> None:
         'backtest_equity',
         sa.Column('id', sa.String(), nullable=False),
         sa.Column('result_id', sa.String(), sa.ForeignKey('backtest_results.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('timestamp', sa.Integer(), nullable=False),
+        sa.Column('timestamp', sa.BigInteger(), nullable=False),
         sa.Column('equity', sa.DECIMAL(18, 8), nullable=False),
         sa.Column('realized_pnl', sa.DECIMAL(18, 8), server_default='0', nullable=True),
         sa.Column('unrealized_pnl', sa.DECIMAL(18, 8), server_default='0', nullable=True),
@@ -291,9 +291,17 @@ def seed_instruments_and_aliases() -> None:
         bind.execute(
             sa.text("""
                 INSERT INTO instruments (id, canonical_symbol, base_asset, quote_asset, instrument_type, exchange, is_active)
-                VALUES (:id, :cs, :ba, :qa, :it, :ex, 1)
+                VALUES (:id, :cs, :ba, :qa, :it, :ex, :active)
             """),
-            {"id": instr_id, "cs": canonical, "ba": base, "qa": quote, "it": inst_type, "ex": exchange}
+            {
+                "id": instr_id,
+                "cs": canonical,
+                "ba": base,
+                "qa": quote,
+                "it": inst_type,
+                "ex": exchange,
+                "active": True,
+            }
         )
 
     aliases = [
@@ -343,7 +351,7 @@ def seed_instruments_and_aliases() -> None:
                 "pr": provider,
                 "al": alias,
                 "at": alias_type,
-                "ip": 1 if is_primary else 0,
+                "ip": is_primary,
             }
         )
 

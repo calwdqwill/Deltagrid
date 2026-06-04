@@ -1,25 +1,37 @@
 from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
 from app.config import get_settings
 from app.domain.models import Base
+from app.persistence.database_url import is_sqlite_database_url, to_sync_database_url
 
 settings = get_settings()
 
-# SQLite setup with async compatibility and single-threaded pool for in-memory or file-based
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
-    poolclass=StaticPool if settings.database_url.startswith("sqlite") else None,
-    echo=False,
-)
+
+def create_database_engine(database_url: str) -> Engine:
+    """Create the sync SQLAlchemy engine used by FastAPI dependencies."""
+    sync_url = to_sync_database_url(database_url)
+    engine_kwargs = {"echo": settings.debug}
+
+    if is_sqlite_database_url(sync_url):
+        engine_kwargs["connect_args"] = {"check_same_thread": False}
+        engine_kwargs["poolclass"] = StaticPool
+    else:
+        engine_kwargs["pool_pre_ping"] = True
+
+    return create_engine(sync_url, **engine_kwargs)
+
+
+engine = create_database_engine(settings.database_url)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def init_db() -> None:
-    Base.metadata.create_all(bind=engine)
+    if is_sqlite_database_url(str(engine.url)):
+        Base.metadata.create_all(bind=engine)
 
 
 def get_db() -> Session:

@@ -259,11 +259,16 @@
 - [ ] Priority support ticketing integration
 
 ## Phase 7 — Data Layer / Backtesting 📋 IN PROGRESS
-- [x] Добавить read-only API для проверки SQLite market data: `GET /api/v1/data/ohlcv`, `GET /api/v1/data/funding`, `GET /api/v1/data/health`.
+- [x] Добавить read-only API для проверки market data из persistence layer: `GET /api/v1/data/ohlcv`, `GET /api/v1/data/funding`, `GET /api/v1/data/health`.
 - [x] Добавить regression tests для data-layer endpoint'ов с временной SQLite БД и seed-данными OHLCV/funding.
 - [x] Исправить canonical/provider symbol mismatch: ingest и API работают с canonical symbol (`BTC`), адаптер маппит в provider-native внутри себя.
 - [x] Закрыть небезопасные auth stub'ы (Telegram/Web3) в production — возвращать 501 при `DEBUG=false`.
 - [x] Добавить fail-fast startup validation для `SECRET_KEY` и `VAULT_MASTER_KEY` в production.
+- [x] Перевести production runtime persistence с SQLite на PostgreSQL через `DATABASE_URL`, `psycopg` и Alembic.
+- [x] Усилить production startup validation: блокировать слабые/dev secrets, SQLite `DATABASE_URL` и wildcard `CORS_ORIGINS` при `DEBUG=false`.
+- [x] Добавить `GET /api/v1/health/readiness` для проверки DB connectivity и актуального Alembic head.
+- [x] Подготовить минимальный server deployment flow: `.env.production.example`, `docker-compose.prod.yml`, `DEPLOYMENT.md`.
+- [x] Убрать frontend deploy-риск из hardcoded `127.0.0.1:8000` для Next.js API rewrite и WebSocket stream.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S (вместо пустых stub'ов).
 - [ ] Реализовать backtest engine и scheduler (следующий milestone после data quality gate).
 
@@ -274,4 +279,12 @@
 - [x] FIFO eviction в кэше вместо LRU — FIXED in Phase 4A
 - [x] Кэш не инвалидируется при изменении preferences — FIXED in Phase 4A
 - [ ] Binance WebSocket heartbeat timeouts — reconnect works, non-critical
-- [ ] `deltagrid.db` SQLite — migrate to PostgreSQL for production
+- [x] `deltagrid.db` SQLite — migrate to PostgreSQL for production
+- [ ] Перевести `_json` Text-поля на PostgreSQL `JSONB` после стабилизации API-сериализации.
+- [ ] Пересмотреть `Float` в market data там, где значения начнут использоваться для финансово-критичных расчётов.
+- [ ] Подготовить отдельный one-off export/import, если потребуется перенос исторических данных из старого SQLite `.db`.
+- [ ] Обновить Next.js до patched версии: Docker build сообщает о security vulnerability в `next@14.1.0`.
+- [ ] Перевести оставшиеся `datetime.utcnow()` на timezone-aware UTC timestamps.
+- [ ] Перевести Pydantic class-based `Config` на `ConfigDict`, чтобы убрать deprecation warnings перед Pydantic v3.
+- [ ] Разобраться с локальными permission warning для `.pytest_cache` в OneDrive workspace.
+- [ ] После первого staging-деплоя проверить, поддерживает ли выбранный reverse proxy WebSocket upgrade для `/api/v1/stream/ws`.

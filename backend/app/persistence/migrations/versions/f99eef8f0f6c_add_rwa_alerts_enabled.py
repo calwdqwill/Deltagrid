@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     with op.batch_alter_table('notification_preferences') as batch_op:
-        batch_op.add_column(sa.Column('rwa_alerts_enabled', sa.Boolean(), server_default='1'))
+        batch_op.add_column(sa.Column('rwa_alerts_enabled', sa.Boolean(), server_default=sa.true()))
 
 
 def downgrade() -> None:

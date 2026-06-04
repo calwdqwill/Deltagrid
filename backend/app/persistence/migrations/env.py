@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from app.domain.models import Base
 from app.config import get_settings
+from app.persistence.database_url import to_sync_database_url
 
 settings = get_settings()
 
@@ -19,8 +20,8 @@ settings = get_settings()
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override sqlalchemy.url with app config
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Override sqlalchemy.url with app config and use the sync driver for Alembic.
+config.set_main_option("sqlalchemy.url", to_sync_database_url(settings.database_url))
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:

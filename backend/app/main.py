@@ -31,10 +31,16 @@ from app.services.exchange_account_service import ExchangeAccountService
 from app.services.rwa.rwa_asset_service import RwaAssetService
 from app.services.rwa.treasury_service import TreasuryService
 from app.persistence.database import SessionLocal
+from app.persistence.database_url import is_sqlite_database_url
 from app.core.middleware import RequestIDMiddleware, add_exception_handlers
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
+DEVELOPMENT_SECRET_KEYS = {
+    "change-me-in-production",
+    "local-dev-secret-change-me",
+}
 
 
 def _validate_production_settings() -> None:
@@ -42,10 +48,29 @@ def _validate_production_settings() -> None:
     if settings.debug:
         return
     invalid = []
-    if settings.secret_key == "change-me-in-production":
-        invalid.append("SECRET_KEY must be changed from default in production")
-    if not settings.vault_master_key or not settings.vault_master_key.strip():
-        invalid.append("VAULT_MASTER_KEY must be set in production")
+
+    secret_key = settings.secret_key.strip()
+    vault_master_key = settings.vault_master_key.strip()
+    database_url = settings.database_url.strip()
+    cors_origins = [
+        origin.strip()
+        for origin in settings.cors_origins.split(",")
+        if origin.strip()
+    ]
+
+    if secret_key in DEVELOPMENT_SECRET_KEYS or len(secret_key) < 32:
+        invalid.append("SECRET_KEY must be a non-default value with at least 32 characters")
+    if len(vault_master_key) < 32:
+        invalid.append("VAULT_MASTER_KEY must be set with at least 32 characters")
+    if not database_url:
+        invalid.append("DATABASE_URL must be set")
+    elif is_sqlite_database_url(database_url):
+        invalid.append("SQLite DATABASE_URL is not allowed when DEBUG=false")
+    if not cors_origins:
+        invalid.append("CORS_ORIGINS must include at least one explicit origin")
+    elif "*" in cors_origins:
+        invalid.append("CORS_ORIGINS cannot contain '*' when DEBUG=false")
+
     if invalid:
         raise RuntimeError("Production startup blocked: " + "; ".join(invalid))
 

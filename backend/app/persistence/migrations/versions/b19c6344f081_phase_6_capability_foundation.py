@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column('id', sa.String(), nullable=False),
         sa.Column('plan_id', sa.String(), nullable=False),
         sa.Column('feature_key', sa.String(), nullable=False),
-        sa.Column('is_enabled', sa.Boolean(), server_default='1', nullable=False),
+        sa.Column('is_enabled', sa.Boolean(), server_default=sa.true(), nullable=False),
         sa.Column('limit_value', sa.Integer(), nullable=True),
         sa.Column('metadata_json', sa.Text(), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP')),
@@ -121,7 +121,7 @@ def seed_plan_capabilities() -> None:
                 "id": str(uuid4()),
                 "plan_id": plan_id,
                 "feature_key": feature_key,
-                "is_enabled": 1 if is_enabled else 0,
+                "is_enabled": is_enabled,
                 "limit_value": limit_value,
             }
         )

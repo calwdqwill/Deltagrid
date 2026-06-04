@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     default_slippage_pct: float = 0.0
 
     # Database
-    database_url: str = "sqlite:///./deltagrid.db"
+    database_url: str = "postgresql://deltagrid:deltagrid@127.0.0.1:5432/deltagrid"
 
     # Cache
     cache_backend: str = "in_memory"  # or "redis"
@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     # Phase 4: Provider API keys
     coinglass_api_key: str | None = None
+    coinglass_standard_api_key: str | None = None
     coinglass_base_url: str = "https://open-api.coinglass.com"
     geckoterminal_base_url: str = "https://api.geckoterminal.com/api/v2"
 

@@ -3,9 +3,20 @@
 import { useEffect, useRef } from "react";
 import { useStreamStore } from "@/stores/streamStore";
 
-const WS_URL = "ws://127.0.0.1:8000/api/v1/stream/ws";
 const RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
+const STREAM_PATH = "/api/v1/stream/ws";
+
+function getWebSocketUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL;
+  }
+
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = window.location.hostname;
+  const localBackendHost = host === "localhost" || host === "127.0.0.1" ? `${host}:8000` : window.location.host;
+  return `${protocol}//${localBackendHost}${STREAM_PATH}`;
+}
 
 export function useRealtime(enabled: boolean = true) {
   const { setConnected, addTick, setLastPing } = useStreamStore();
@@ -18,7 +29,7 @@ export function useRealtime(enabled: boolean = true) {
 
     function connect() {
       try {
-        const ws = new WebSocket(WS_URL);
+        const ws = new WebSocket(getWebSocketUrl());
         wsRef.current = ws;
 
         ws.onopen = () => {

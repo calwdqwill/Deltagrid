@@ -1,7 +1,7 @@
-"""DataWriter — SQLite persistence layer for normalized market data.
+"""DataWriter — persistence layer for normalized market data.
 
 Implements UPSERT via INSERT ... ON CONFLICT DO UPDATE.
-Works with the real deltagrid.db via SQLAlchemy.
+Works with the project's configured database via SQLAlchemy.
 """
 
 import logging
@@ -9,8 +9,11 @@ from typing import Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.config import get_settings
+from app.domain.models import Base
+from app.persistence.database_url import is_sqlite_database_url, to_sync_database_url
 
 from .data_models import (
     FundingRate,
@@ -24,98 +27,31 @@ logger = logging.getLogger(__name__)
 
 
 class DataWriter:
-    """SQLite/PostgreSQL writer with UPSERT support for time-series data.
+    """PostgreSQL/SQLite writer with UPSERT support for time-series data.
 
-    Uses the project's main database (deltagrid.db) via app.config.
+    Uses the project's configured database via app.config.
     """
 
     def __init__(self, db_url: Optional[str] = None):
         if db_url is None:
             db_url = get_settings().database_url
-        self.engine = create_engine(db_url, echo=False)
+        self.db_url = to_sync_database_url(db_url)
+        self.engine = create_engine(self.db_url, echo=False, **self._engine_kwargs())
         self.Session = sessionmaker(bind=self.engine)
         self._init_tables()
 
+    def _engine_kwargs(self) -> dict:
+        if is_sqlite_database_url(self.db_url):
+            return {
+                "connect_args": {"check_same_thread": False},
+                "poolclass": StaticPool,
+            }
+        return {"pool_pre_ping": True}
+
     def _init_tables(self) -> None:
-        """Create tables if not exist (idempotent)."""
-        statements = [
-            """CREATE TABLE IF NOT EXISTS ohlcv (
-                timestamp INTEGER NOT NULL,
-                symbol TEXT NOT NULL,
-                exchange TEXT NOT NULL,
-                interval TEXT NOT NULL,
-                open REAL,
-                high REAL,
-                low REAL,
-                close REAL,
-                volume REAL,
-                quote_volume REAL,
-                trades_count INTEGER,
-                created_at INTEGER DEFAULT (unixepoch()),
-                PRIMARY KEY (timestamp, symbol, exchange, interval)
-            )""",
-            "CREATE INDEX IF NOT EXISTS idx_ohlcv_lookup ON ohlcv(symbol, exchange, interval, timestamp)",
-            """CREATE TABLE IF NOT EXISTS funding_rates (
-                timestamp INTEGER NOT NULL,
-                symbol TEXT NOT NULL,
-                exchange TEXT NOT NULL,
-                funding_rate REAL,
-                next_funding_time INTEGER,
-                interval TEXT DEFAULT '8h',
-                PRIMARY KEY (timestamp, symbol, exchange)
-            )""",
-            """CREATE TABLE IF NOT EXISTS open_interest (
-                timestamp INTEGER NOT NULL,
-                symbol TEXT NOT NULL,
-                exchange TEXT NOT NULL,
-                interval TEXT NOT NULL,
-                oi_usd REAL,
-                oi_coins REAL,
-                PRIMARY KEY (timestamp, symbol, exchange, interval)
-            )""",
-            """CREATE TABLE IF NOT EXISTS liquidations (
-                timestamp INTEGER NOT NULL,
-                symbol TEXT NOT NULL,
-                exchange TEXT NOT NULL,
-                side TEXT NOT NULL CHECK(side IN ('long', 'short')),
-                quantity REAL,
-                price REAL,
-                value_usd REAL,
-                PRIMARY KEY (timestamp, symbol, exchange, side)
-            )""",
-            """CREATE TABLE IF NOT EXISTS long_short_ratio (
-                timestamp INTEGER NOT NULL,
-                symbol TEXT NOT NULL,
-                exchange TEXT NOT NULL,
-                interval TEXT NOT NULL,
-                long_ratio REAL,
-                short_ratio REAL,
-                long_account_ratio REAL,
-                short_account_ratio REAL,
-                PRIMARY KEY (timestamp, symbol, exchange, interval)
-            )""",
-            """CREATE TABLE IF NOT EXISTS backfill_jobs (
-                id TEXT PRIMARY KEY,
-                symbol TEXT NOT NULL,
-                exchange TEXT NOT NULL,
-                data_type TEXT NOT NULL,
-                interval TEXT NOT NULL,
-                start_time INTEGER NOT NULL,
-                end_time INTEGER NOT NULL,
-                status TEXT DEFAULT 'pending' CHECK(status IN ('pending','running','completed','failed','partial')),
-                records_fetched INTEGER DEFAULT 0,
-                records_inserted INTEGER DEFAULT 0,
-                error_message TEXT,
-                started_at INTEGER,
-                completed_at INTEGER,
-                created_at INTEGER DEFAULT (unixepoch())
-            )""",
-            "CREATE INDEX IF NOT EXISTS idx_jobs_status ON backfill_jobs(status, exchange)",
-        ]
-        with self.engine.connect() as conn:
-            for stmt in statements:
-                conn.execute(text(stmt))
-            conn.commit()
+        """Create SQLite fallback tables; PostgreSQL is managed by Alembic."""
+        if is_sqlite_database_url(self.db_url):
+            Base.metadata.create_all(self.engine, checkfirst=True)
 
     # -- UPSERT methods ----------------------------------------------
 
