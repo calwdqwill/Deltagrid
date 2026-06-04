@@ -19,6 +19,9 @@
 - [x] `GET /api/v1/health/readiness` проверяет DB connectivity и соответствие Alembic revision source head.
 - [x] Добавлены `.env.production.example`, `docker-compose.prod.yml` и `DEPLOYMENT.md`.
 - [x] Frontend runtime proxy подготовлен к Docker deployment через `BACKEND_INTERNAL_URL`; WebSocket URL больше не привязан только к `127.0.0.1:8000`.
+- [x] Docker build contexts очищены через `backend/.dockerignore` и `frontend/.dockerignore`.
+- [x] Добавлены `deploy/nginx/deltagrid.conf.example` и `scripts/server-smoke.sh`.
+- [x] Добавлены `scripts/server-preflight.sh` и `scripts/generate-production-env.sh`.
 
 ## Следующая итерация
 
@@ -28,7 +31,9 @@
 - [x] Добавить production readiness gate для env/DB/migrations.
 - [x] Подготовить server deployment checklist: migrations, readiness, reverse proxy, SSL, backups.
 - [ ] На реальном сервере создать staging/prod `.env.production` с production secrets (`SECRET_KEY`, `VAULT_MASTER_KEY`), доменом и non-local `DATABASE_URL`.
+- [ ] Прогнать server preflight на сервере.
 - [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
+- [ ] Прогнать smoke-check на сервере локально и через домен.
 
 ## Frontend MVP Summary — 2026-06-04
 

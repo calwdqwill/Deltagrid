@@ -26,13 +26,18 @@
 - [x] Проверить Docker Compose smoke: backend, frontend, PostgreSQL, `/health`, `/health/readiness`, `/data/health`.
 - [x] Подготовить минимальный server deployment flow: `.env.production.example`, `docker-compose.prod.yml`, `DEPLOYMENT.md`.
 - [x] Убрать frontend deploy-зависимость от hardcoded `127.0.0.1:8000` в Next.js rewrite и WebSocket URL.
+- [x] Добавить Docker ignore-файлы, чтобы production images не тянули локальные env/cache/SQLite/build artifacts.
+- [x] Добавить Nginx template и server smoke-check script.
+- [x] Добавить server preflight и генератор `.env.production`.
 
 ## Следующие шаги
 
 - [x] Прогнать миграции на чистой PostgreSQL БД в локальном Docker.
 - [x] Проверить основные backend routes после миграции: `/health`, `/data/health`, `/data/ohlcv`, `/market/trending`.
 - [ ] На реальном сервере создать `.env.production` с реальными secrets, доменом и non-local `DATABASE_URL`.
+- [ ] Прогнать `DOMAIN=... sh scripts/server-preflight.sh` на сервере.
 - [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
+- [ ] Прогнать `scripts/server-smoke.sh` локально на сервере и через HTTPS-домен.
 - [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования контрактов.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.

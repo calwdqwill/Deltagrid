@@ -3,8 +3,14 @@
 ## [2026-06-05] — [DEPLOY] — Минимальный server deployment flow
 - Добавлен `.env.production.example` с обязательными production-переменными: secrets, CORS, PostgreSQL credentials, provider keys и runtime tuning.
 - `.env.production` добавлен в `.gitignore`, чтобы реальные секреты не попадали в репозиторий.
+- Добавлены `backend/.dockerignore` и `frontend/.dockerignore`, чтобы production images не получали локальные env, SQLite DB, venv, `node_modules`, `.next` и cache artifacts.
 - Добавлен `docker-compose.prod.yml`: PostgreSQL не публикуется наружу, backend/frontend слушают `127.0.0.1`, backend стартует через `alembic upgrade head`, backend/frontend имеют healthcheck.
 - Добавлен `DEPLOYMENT.md` на русском языке: подготовка env, запуск, readiness checks, reverse proxy, SSL, backup PostgreSQL и rollback.
+- Добавлен `deploy/nginx/deltagrid.conf.example` как переносимый Nginx-шаблон для домена и WebSocket upgrade.
+- Добавлен `scripts/server-smoke.sh` для проверки backend health, readiness, data health и frontend локально или через домен.
+- Добавлен `scripts/server-smoke.ps1` для локальной Windows-проверки.
+- Добавлен `scripts/server-preflight.sh` для проверки server prerequisites, Docker daemon, compose config, DNS lookup и занятых портов.
+- Добавлен `scripts/generate-production-env.sh` для безопасной генерации `.env.production` по домену без ручной сборки секретов.
 - `frontend/next.config.js` больше не привязан к `http://127.0.0.1:8000`: rewrite использует `BACKEND_INTERNAL_URL` с локальным fallback, а Docker передаёт его на frontend build stage.
 - `frontend/src/hooks/useRealtime.ts` больше не зашит только на `ws://127.0.0.1:8000`: локально остаётся прямое подключение к backend, а на домене используется same-origin WebSocket path или `NEXT_PUBLIC_WS_URL`.
 - Проверка: `npm run build` проходит; Docker frontend пересобран; `http://127.0.0.1:3000/api/v1/health/readiness` через Next.js proxy возвращает `ready`.
