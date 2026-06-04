@@ -2,7 +2,7 @@
 
 ## Текущая фаза
 
-**Production-ready MVP hardening** — подготовка backend/data-layer к локальному и серверному запуску с PostgreSQL, Alembic migrations и стабильным `DATABASE_URL`.
+**Production-ready MVP hardening** — подготовка backend/data-layer к локальному и серверному запуску на `deltagrid.pro` с PostgreSQL, Alembic migrations и стабильным `DATABASE_URL`.
 
 ## Что уже готово
 
@@ -34,10 +34,10 @@
 
 - [x] Прогнать миграции на чистой PostgreSQL БД в локальном Docker.
 - [x] Проверить основные backend routes после миграции: `/health`, `/data/health`, `/data/ohlcv`, `/market/trending`.
-- [ ] На реальном сервере создать `.env.production` с реальными secrets, доменом и non-local `DATABASE_URL`.
-- [ ] Прогнать `DOMAIN=... sh scripts/server-preflight.sh` на сервере.
+- [ ] На реальном сервере создать `.env.production` с реальными secrets для `deltagrid.pro` и non-local `DATABASE_URL`.
+- [ ] Прогнать `DOMAIN=deltagrid.pro sh scripts/server-preflight.sh` на сервере.
 - [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
-- [ ] Прогнать `scripts/server-smoke.sh` локально на сервере и через HTTPS-домен.
+- [ ] Прогнать `scripts/server-smoke.sh` локально на сервере и через `https://deltagrid.pro`.
 - [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования контрактов.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.

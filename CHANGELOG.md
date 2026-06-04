@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] — [DEPLOY] — Привязка deployment flow к `deltagrid.pro`
+- `.env.production.example` обновлён под `https://deltagrid.pro` и `https://www.deltagrid.pro`.
+- `deploy/nginx/deltagrid.conf.example` теперь содержит `server_name deltagrid.pro www.deltagrid.pro`.
+- `scripts/generate-production-env.sh` по умолчанию генерирует `.env.production` для `deltagrid.pro`.
+- `DEPLOYMENT.md`, `README.md`, `PROJECT_PLAN.md` и `CURRENT_TASK.md` обновлены под реальный домен.
+- DNS preflight: `deltagrid.pro` и `www.deltagrid.pro` сейчас резолвятся в `31.31.196.50` и `2a00:f940:2:2:1:1:0:266`; HTTP отдаёт parking page REG.RU, HTTPS требует настройки.
+
 ## [2026-06-05] — [DEPLOY] — Минимальный server deployment flow
 - Добавлен `.env.production.example` с обязательными production-переменными: secrets, CORS, PostgreSQL credentials, provider keys и runtime tuning.
 - `.env.production` добавлен в `.gitignore`, чтобы реальные секреты не попадали в репозиторий.

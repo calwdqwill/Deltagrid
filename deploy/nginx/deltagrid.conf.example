@@ -1,9 +1,9 @@
-# Replace example.com with the production domain.
+# Nginx reverse proxy template for deltagrid.pro.
 # Install path example: /etc/nginx/sites-available/deltagrid
 
 server {
     listen 80;
-    server_name example.com www.example.com;
+    server_name deltagrid.pro www.deltagrid.pro;
 
     client_max_body_size 10m;
 

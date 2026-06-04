@@ -10,15 +10,24 @@
 - PostgreSQL работает внутри `docker-compose.prod.yml` и не публикуется наружу.
 - Секреты хранятся в `.env.production`, который не коммитится.
 
+## Текущее состояние домена
+
+На момент подготовки деплоя `deltagrid.pro` и `www.deltagrid.pro` резолвятся в:
+
+- IPv4: `31.31.196.50`
+- IPv6: `2a00:f940:2:2:1:1:0:266`
+
+HTTP сейчас отдаёт parking page REG.RU, а не DeltaGrid. Перед финальным запуском нужно либо получить SSH-доступ к этому серверу/хостингу, либо перенаправить A/AAAA записи домена на VPS, где будет запущен `docker-compose.prod.yml`.
+
 ## Подготовка env
 
 Автоматический вариант для сервера:
 
 ```bash
-sh scripts/generate-production-env.sh your-domain.com
+sh scripts/generate-production-env.sh
 ```
 
-Скрипт создаёт `.env.production`, генерирует `SECRET_KEY`, `VAULT_MASTER_KEY`, `POSTGRES_PASSWORD`, выставляет `chmod 600` и подставляет домен в `PUBLIC_APP_URL`/`CORS_ORIGINS`.
+Скрипт создаёт `.env.production` для `deltagrid.pro`, генерирует `SECRET_KEY`, `VAULT_MASTER_KEY`, `POSTGRES_PASSWORD`, выставляет `chmod 600` и подставляет домен в `PUBLIC_APP_URL`/`CORS_ORIGINS`.
 
 Ручной вариант:
 
@@ -31,8 +40,8 @@ cp .env.production.example .env.production
 Обязательные переменные:
 
 - `DEBUG=false`
-- `PUBLIC_APP_URL=https://your-domain.com`
-- `CORS_ORIGINS=https://your-domain.com`
+- `PUBLIC_APP_URL=https://deltagrid.pro`
+- `CORS_ORIGINS=https://deltagrid.pro,https://www.deltagrid.pro`
 - `SECRET_KEY` — сильная строка минимум 32 символа
 - `VAULT_MASTER_KEY` — ключ для шифрования exchange API credentials
 - `POSTGRES_PASSWORD` — сильный пароль PostgreSQL
@@ -51,7 +60,7 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 Сначала можно прогнать общий preflight:
 
 ```bash
-DOMAIN=your-domain.com sh scripts/server-preflight.sh
+DOMAIN=deltagrid.pro sh scripts/server-preflight.sh
 ```
 
 Перед запуском проверьте, что Compose видит все переменные:
@@ -95,15 +104,14 @@ curl http://127.0.0.1:3000
 
 Минимальная схема:
 
-- `https://your-domain.com/` → `127.0.0.1:3000`
-- `https://your-domain.com/api/` → `127.0.0.1:8000/api/`
-- `wss://your-domain.com/api/v1/stream/ws` → `127.0.0.1:8000/api/v1/stream/ws`
+- `https://deltagrid.pro/` → `127.0.0.1:3000`
+- `https://deltagrid.pro/api/` → `127.0.0.1:8000/api/`
+- `wss://deltagrid.pro/api/v1/stream/ws` → `127.0.0.1:8000/api/v1/stream/ws`
 
-Готовый шаблон лежит в `deploy/nginx/deltagrid.conf.example`. Скопируйте его в Nginx и замените домен:
+Готовый шаблон лежит в `deploy/nginx/deltagrid.conf.example` и уже настроен на `deltagrid.pro`:
 
 ```bash
 sudo cp deploy/nginx/deltagrid.conf.example /etc/nginx/sites-available/deltagrid
-sudo sed -i 's/example.com/your-domain.com/g' /etc/nginx/sites-available/deltagrid
 sudo ln -s /etc/nginx/sites-available/deltagrid /etc/nginx/sites-enabled/deltagrid
 sudo nginx -t
 sudo systemctl reload nginx
@@ -114,7 +122,7 @@ sudo systemctl reload nginx
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com;
+    server_name deltagrid.pro www.deltagrid.pro;
 
     location /api/v1/stream/ws {
         proxy_pass http://127.0.0.1:8000/api/v1/stream/ws;
@@ -142,7 +150,7 @@ server {
 }
 ```
 
-После настройки Nginx выпустите SSL-сертификат, например через Certbot, и обновите `PUBLIC_APP_URL`/`CORS_ORIGINS` на HTTPS-домен.
+После настройки Nginx выпустите SSL-сертификат, например через Certbot. `PUBLIC_APP_URL`/`CORS_ORIGINS` уже должны указывать на `https://deltagrid.pro`.
 
 ## Smoke-check
 
@@ -161,14 +169,14 @@ sh scripts/server-smoke.sh
 Для проверки через домен:
 
 ```bash
-BASE_URL=https://your-domain.com FRONTEND_URL=https://your-domain.com sh scripts/server-smoke.sh
+BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh
 ```
 
 Для Windows/PowerShell:
 
 ```powershell
-$env:BASE_URL="https://your-domain.com"
-$env:FRONTEND_URL="https://your-domain.com"
+$env:BASE_URL="https://deltagrid.pro"
+$env:FRONTEND_URL="https://deltagrid.pro"
 .\scripts\server-smoke.ps1
 ```
 
@@ -209,7 +217,7 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
 ## Минимальный чеклист перед открытием трафика
 
 - [ ] `.env.production` создан и не содержит dev/default secrets.
-- [ ] `DOMAIN=your-domain.com sh scripts/server-preflight.sh` проходит.
+- [ ] `DOMAIN=deltagrid.pro sh scripts/server-preflight.sh` проходит.
 - [ ] `docker compose --env-file .env.production -f docker-compose.prod.yml config` проходит.
 - [ ] PostgreSQL volume создан и не публикует порт наружу.
 - [ ] `alembic upgrade head` прошёл внутри backend startup.
@@ -218,7 +226,7 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
 - [ ] `sh scripts/server-smoke.sh` проходит локально на сервере.
 - [ ] Frontend открывается через домен.
 - [ ] `/api/*` routes проходят через reverse proxy.
-- [ ] `BASE_URL=https://your-domain.com FRONTEND_URL=https://your-domain.com sh scripts/server-smoke.sh` проходит через домен.
+- [ ] `BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh` проходит через домен.
 - [ ] WebSocket `/api/v1/stream/ws` проходит через reverse proxy.
 - [ ] Создан свежий backup PostgreSQL.
 - [ ] Проверены логи backend/frontend/postgres после старта.

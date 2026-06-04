@@ -99,7 +99,7 @@ Compose поднимает PostgreSQL, ждёт healthcheck, применяет 
 
 ### Production deploy
 
-Минимальный серверный сценарий описан в [DEPLOYMENT.md](DEPLOYMENT.md): `.env.production`, `docker-compose.prod.yml`, reverse proxy, SSL, readiness checks, backup и rollback.
+Минимальный серверный сценарий для `deltagrid.pro` описан в [DEPLOYMENT.md](DEPLOYMENT.md): `.env.production`, `docker-compose.prod.yml`, reverse proxy, SSL, readiness checks, backup и rollback.
 
 ## Features
 

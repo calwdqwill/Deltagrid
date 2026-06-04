@@ -1,7 +1,7 @@
 # Current Task — DeltaGrid
 
 **Phase**: Production-ready MVP hardening ✅ PostgreSQL runtime READY
-**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Добавлен production startup gate, readiness endpoint и минимальный server deployment flow. Frontend MVP terminal `v1.2.0` сохранён без UI-изменений.
+**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Добавлен production startup gate, readiness endpoint и минимальный server deployment flow для `deltagrid.pro`. Frontend MVP terminal `v1.2.0` сохранён без UI-изменений.
 **Last Updated**: 2026-06-05
 
 ## PostgreSQL MVP Summary — 2026-06-05
@@ -22,6 +22,8 @@
 - [x] Docker build contexts очищены через `backend/.dockerignore` и `frontend/.dockerignore`.
 - [x] Добавлены `deploy/nginx/deltagrid.conf.example` и `scripts/server-smoke.sh`.
 - [x] Добавлены `scripts/server-preflight.sh` и `scripts/generate-production-env.sh`.
+- [x] Deploy-шаблоны и документация привязаны к домену `deltagrid.pro`.
+- [x] DNS preflight: `deltagrid.pro` и `www.deltagrid.pro` сейчас указывают на `31.31.196.50` / `2a00:f940:2:2:1:1:0:266`; HTTP отдаёт parking page REG.RU.
 
 ## Следующая итерация
 
@@ -30,7 +32,8 @@
 - [x] Проверить frontend against backend после запуска PostgreSQL окружения.
 - [x] Добавить production readiness gate для env/DB/migrations.
 - [x] Подготовить server deployment checklist: migrations, readiness, reverse proxy, SSL, backups.
-- [ ] На реальном сервере создать staging/prod `.env.production` с production secrets (`SECRET_KEY`, `VAULT_MASTER_KEY`), доменом и non-local `DATABASE_URL`.
+- [ ] Получить SSH-доступ к серверу, на который указывает `deltagrid.pro`, либо IP нового VPS для перенастройки DNS.
+- [ ] На реальном сервере создать staging/prod `.env.production` с production secrets (`SECRET_KEY`, `VAULT_MASTER_KEY`) для `deltagrid.pro`.
 - [ ] Прогнать server preflight на сервере.
 - [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
 - [ ] Прогнать smoke-check на сервере локально и через домен.

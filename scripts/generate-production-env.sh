@@ -1,13 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-DOMAIN="${1:-${DOMAIN:-}}"
+DOMAIN="${1:-${DOMAIN:-deltagrid.pro}}"
 OUT_FILE="${ENV_FILE:-.env.production}"
-
-if [ -z "$DOMAIN" ]; then
-  printf 'Usage: sh scripts/generate-production-env.sh your-domain.com\n'
-  exit 1
-fi
 
 if [ -f "$OUT_FILE" ]; then
   printf '%s already exists. Remove it or set ENV_FILE to another path.\n' "$OUT_FILE"
