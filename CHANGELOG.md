@@ -5,6 +5,7 @@
 - `sync_market_data` теперь поддерживает `--include-liquidations` и пишет CoinGlass long/short liquidation history в таблицу `liquidations` с `exchange=binance`, чтобы существующие data endpoints и frontend-фильтры продолжали работать без изменения контракта.
 - `scripts/sync-market-data.sh` по умолчанию включает загрузку ликвидаций вместе с OHLCV/funding/OI/L/S, CoinGlass snapshots и CoinGecko basis.
 - Добавлены regression tests для нормализации CoinGlass liquidation payload: nested `Binance`/`all` поля, seconds/ms timestamps и пустые строки.
+- Production deploy проверен: ручной sync на `deltagrid.pro` записал `144` строки в `liquidations`, публичный `/api/v1/data/health` показывает `row_counts.liquidations=144`, а `/api/v1/data/liquidations` отдаёт BTC long/short `value_usd`.
 - Ограничение: поток хранит агрегированный `value_usd`; `quantity` и `price` остаются `0.0`, пока не подключён отдельный per-order liquidation tape.
 
 ## [2026-06-05] - [FIX/DATA] - Устойчивость live data SSR

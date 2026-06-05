@@ -47,6 +47,7 @@
 - [x] `Assets` читает live SOL spot/funding/OHLCV и показывает pending-состояния вместо fake order book/liquidations.
 - [x] Backend открыл read-only endpoints для `open_interest`, `long_short_ratio`, `basis_premium` и `liquidations`.
 - [x] `/data/liquidations` теперь получает реальные агрегированные CoinGlass rows после production sync.
+- [x] Production smoke после деплоя: `/api/v1/data/health` показывает `row_counts.liquidations=144`, `/api/v1/data/liquidations` отдаёт BTC long/short `value_usd`.
 - [x] `Charts`, `Market Matrix` и `Arbitrage Scanner` читают live persisted data streams вместо mock fixture.
 - [x] `Strategy Lab` больше не показывает fake PnL/trades; экран показывает readiness live inputs до реального backtest engine.
 
