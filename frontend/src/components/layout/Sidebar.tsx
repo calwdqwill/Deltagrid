@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Activity,
   BarChart3,
@@ -20,13 +20,31 @@ import {
 import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+type NavChild = {
+  label: string;
+  view: string;
+};
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof Activity;
+  children?: NavChild[];
+};
+
+const navItems: NavItem[] = [
   { href: "/market", label: "Market Overview", icon: Activity },
   {
     href: "/perp-dex",
     label: "Perp DEX",
     icon: RadioTower,
-    children: ["Overview", "Venues", "Open Interest", "Liquidity", "Opportunities"],
+    children: [
+      { label: "Overview", view: "overview" },
+      { label: "Venues", view: "venues" },
+      { label: "Open Interest", view: "open-interest" },
+      { label: "Liquidity", view: "liquidity" },
+      { label: "Opportunities", view: "opportunities" },
+    ],
   },
   { href: "/assets", label: "Assets", icon: Layers3 },
   {
@@ -34,13 +52,13 @@ const navItems = [
     label: "Funding",
     icon: Orbit,
     children: [
-      "Overview",
-      "Funding History",
-      "Perp DEX Funding",
-      "Funding Arbitrage",
-      "Funding Matrix",
-      "Predicted Funding",
-      "Long / Short Legs",
+      { label: "Overview", view: "overview" },
+      { label: "Funding History", view: "history" },
+      { label: "Perp DEX Funding", view: "perp-dex" },
+      { label: "Funding Arbitrage", view: "arbitrage" },
+      { label: "Funding Matrix", view: "matrix" },
+      { label: "Predicted Funding", view: "predicted" },
+      { label: "Long / Short Legs", view: "legs" },
     ],
   },
   { href: "/arbitrage-scanner", label: "Arbitrage Scanner", icon: Network },
@@ -54,9 +72,15 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function viewHref(href: string, view: string) {
+  return view === "overview" ? href : `${href}?view=${view}`;
+}
+
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeView = searchParams.get("view") ?? "overview";
 
   return (
     <aside
@@ -109,17 +133,18 @@ export function Sidebar() {
 
                 {sidebarOpen && active && item.children && (
                   <div className="ml-5 mt-1 border-l border-white/10 py-1 pl-4">
-                    {item.children.map((child, index) => (
+                    {item.children.map((child) => (
                       <Link
-                        key={child}
-                        href={`${item.href}?view=${child.toLowerCase().replaceAll(" ", "-").replaceAll("/", "")}`}
+                        key={child.view}
+                        href={viewHref(item.href, child.view)}
+                        aria-current={activeView === child.view ? "page" : undefined}
                         className={cn(
                           "relative flex min-h-7 items-center rounded-md px-2 text-xs transition-colors",
-                          index === 0 ? "text-indigo-200" : "text-slate-500 hover:text-slate-200"
+                          activeView === child.view ? "text-indigo-200" : "text-slate-500 hover:text-slate-200"
                         )}
                       >
                         <span className="absolute -left-4 top-1/2 h-px w-3 bg-white/10" />
-                        {child}
+                        {child.label}
                       </Link>
                     ))}
                   </div>

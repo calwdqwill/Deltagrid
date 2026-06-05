@@ -369,21 +369,32 @@ export function StatusBadge({
   );
 }
 
-export function SegmentedControl({ items, active }: { items: string[]; active: string }) {
+type SegmentedControlItem = string | { label: string; href?: string };
+
+export function SegmentedControl({ items, active }: { items: SegmentedControlItem[]; active: string }) {
   return (
     <div className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-black/18 p-1">
-      {items.map((item) => (
-        <button
-          key={item}
-          className={cn(
-            "min-h-8 rounded-md px-3 text-xs font-medium text-slate-400 transition-colors",
-            item === active && "bg-indigo-500/30 text-white shadow-[inset_0_-1px_0_rgba(129,140,248,0.8)]"
-          )}
-          type="button"
-        >
-          {item}
-        </button>
-      ))}
+      {items.map((item) => {
+        const label = typeof item === "string" ? item : item.label;
+        const className = cn(
+          "inline-flex min-h-8 items-center rounded-md px-3 text-xs font-medium text-slate-400 transition-colors hover:text-slate-100",
+          label === active && "bg-indigo-500/30 text-white shadow-[inset_0_-1px_0_rgba(129,140,248,0.8)]"
+        );
+
+        if (typeof item !== "string" && item.href) {
+          return (
+            <Link key={label} href={item.href} className={className} aria-current={label === active ? "page" : undefined}>
+              {label}
+            </Link>
+          );
+        }
+
+        return (
+          <button key={label} className={className} type="button">
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }

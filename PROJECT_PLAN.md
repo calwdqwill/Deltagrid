@@ -38,6 +38,8 @@
 - [x] Расширить sync до CoinGlass v4 snapshots и CoinGecko-derived basis snapshots.
 - [x] Подготовить host-level cron для регулярного market data sync.
 - [x] Установить host-level cron на сервере `2.25.143.143` и проверить `cron` service.
+- [x] Подключить `Funding` и `/data-health` frontend screens к persisted backend/data-layer endpoint'ам.
+- [x] Исправить кликабельность nested tabs в `Funding` и `Perp DEX`.
 
 ## Следующие шаги
 
@@ -53,7 +55,9 @@
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
 - [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
-- [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования контрактов.
+- [x] Подключить Funding/Data Health frontend screens к backend/data-layer endpoint'ам.
+- [ ] Подключить остальные terminal screens к backend/data-layer endpoint'ам после согласования контрактов.
+- [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.
 

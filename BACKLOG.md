@@ -30,8 +30,11 @@
 - [x] Добавить Charts placeholder без новых зависимостей.
 - [x] Добавить Arbitrage Scanner route как non-funding scanner.
 - [ ] Реализовать полноценный Charts screen на `lightweight-charts`: price candles, volume, OI, basis и Funding Chart как временной ряд без превращения Charts в funding strategy module.
-- [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования API-контрактов для CoinGecko/CoinGlass-derived данных.
-- [ ] Подключить `/data-health` frontend screen к `GET /api/v1/data/health` вместо placeholder/mock-состояния.
+- [x] Подключить Funding frontend screen к persisted backend/data-layer endpoint'ам для `funding_rates` и data health.
+- [x] Подключить `/data-health` frontend screen к `GET /api/v1/data/health` вместо placeholder/mock-состояния.
+- [x] Сделать nested tabs в `Funding` и `Perp DEX` кликабельными через стабильный `view` query-param.
+- [ ] Подключить остальные terminal screens к backend/data-layer endpoint'ам после согласования контрактов.
+- [ ] Реализовать live Perp DEX venue adapter для Hyperliquid/dYdX/GMX, прежде чем показывать DEX volume/OI/liquidity как реальные данные.
 - [ ] Добавить visual regression/screenshot checklist для 6 MVP-экранов после стабилизации layout.
 
 ## Standalone HTML Preview — 2026-06-02

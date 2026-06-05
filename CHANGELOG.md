@@ -1,5 +1,13 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] - [FRONTEND] - Live Funding tabs и Data Health
+- Исправлена вложенная навигация в `Funding` и `Perp DEX`: sidebar и верхние segmented tabs теперь используют стабильный `view` query-param, активное состояние больше не привязано к первому пункту.
+- `SegmentedControl` получил поддержку ссылок без поломки старого режима с кнопками.
+- `Funding` больше не читает mock fixture: KPI, matrix, history, arbitrage baseline, legs и predicted baseline строятся из persisted PostgreSQL rows через `GET /api/v1/data/funding` и `GET /api/v1/data/health`.
+- `/data-health` заменён с placeholder на live-экран provider/storage health по `GET /api/v1/data/health`.
+- `Perp DEX` больше не показывает mock DEX volumes/OI как реальные данные: экран помечает DEX venue data как pending и показывает реальные row counts/provider health из PostgreSQL.
+- Проверка: `npm run build` во frontend проходит успешно.
+
 ## [2026-06-05] — [DATA] — Multi-provider ingestion и регулярный sync
 - `sync_market_data` расширен до multi-provider flow: Binance USD-M продолжает писать OHLCV/funding/OI/L/S, CoinGlass v4 пишет funding/OI snapshots, CoinGecko даёт spot price для approximate `basis_premium`.
 - `DataWriter` получил безопасную вставку `basis_premium` и чтение последнего Binance 1m close без изменения схемы БД.

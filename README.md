@@ -90,6 +90,8 @@ Frontend runs at `http://127.0.0.1:3000`
 
 Текущий frontend открывается как тёмный terminal MVP с разделами Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts placeholder и Strategy Lab.
 
+`Funding` и `/data-health` уже читают live PostgreSQL data-layer через backend API. `Perp DEX` пока показывает статус `DEX data pending`, потому что live DEX venue adapter ещё не подключён; mock DEX volume/OI/liquidity не выдаются за production-данные.
+
 ### Docker Compose
 ```bash
 docker compose up --build

@@ -9,12 +9,39 @@ import {
   TerminalTable,
   toneText,
 } from "@/components/terminal/terminal-ui";
-import { terminalDataAdapter } from "@/lib/terminal/adapters";
+import { getLiveFundingOverview } from "@/lib/terminal/live-data";
 
-export default async function FundingPage() {
-  const data = await terminalDataAdapter.getFundingOverview();
+export const dynamic = "force-dynamic";
+
+const fundingViews = [
+  { view: "overview", label: "Overview", title: "Overview", href: "/funding" },
+  { view: "history", label: "History", title: "Funding History", href: "/funding?view=history" },
+  { view: "perp-dex", label: "Perp DEX", title: "Perp DEX Funding", href: "/funding?view=perp-dex" },
+  { view: "arbitrage", label: "Arbitrage", title: "Funding Arbitrage", href: "/funding?view=arbitrage" },
+  { view: "matrix", label: "Matrix", title: "Funding Matrix", href: "/funding?view=matrix" },
+  { view: "predicted", label: "Predicted", title: "Predicted Funding", href: "/funding?view=predicted" },
+  { view: "legs", label: "Legs", title: "Long / Short Legs", href: "/funding?view=legs" },
+] as const;
+
+type FundingView = (typeof fundingViews)[number]["view"];
+
+function normalizeView(value?: string): FundingView {
+  return fundingViews.some((item) => item.view === value) ? (value as FundingView) : "overview";
+}
+
+export default async function FundingPage({ searchParams }: { searchParams?: { view?: string } }) {
+  const activeView = normalizeView(searchParams?.view);
+  const activeTab = fundingViews.find((item) => item.view === activeView) ?? fundingViews[0];
+  const live = await getLiveFundingOverview();
+  const data = live.data;
 
   const fundingSeries = data.history.map((point, index) => ({ label: String(index), value: point.rate }));
+  const showMatrix = activeView === "overview" || activeView === "matrix" || activeView === "perp-dex";
+  const showHistory = activeView === "overview" || activeView === "history";
+  const showArbitrage = activeView === "overview" || activeView === "arbitrage";
+  const showLegs = activeView === "overview" || activeView === "legs";
+  const showPredicted = activeView === "overview" || activeView === "predicted";
+
   const arbitrageRows = data.arbitrage.map((item) => [
     <span key="asset" className="font-semibold text-cyan-200">
       {item.asset}
@@ -55,97 +82,156 @@ export default async function FundingPage() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">Funding</div>
-            <h1 className="mt-1 text-2xl font-semibold text-white">Overview</h1>
+            <h1 className="mt-1 text-2xl font-semibold text-white">{activeTab.title}</h1>
           </div>
           <div className="flex items-center gap-2">
             <SegmentedControl
-              items={["Overview", "History", "Perp DEX", "Arbitrage", "Matrix", "Predicted", "Legs"]}
-              active="Overview"
+              items={fundingViews.map((item) => ({ label: item.label, href: item.href }))}
+              active={activeTab.label}
             />
-            <StatusBadge label="Funding first-class module" tone="positive" />
+            <StatusBadge label={live.statusLabel} tone={live.statusTone} />
           </div>
         </div>
 
         <KpiStrip metrics={data.kpis} />
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-          <TerminalPanel title="Funding Matrix (8h)" caption="Rows are assets, columns are venues">
-            <div className="overflow-x-auto">
-              <table className="w-full border-separate border-spacing-0 text-xs">
-                <thead>
-                  <tr>
-                    <th className="border-b border-white/[0.08] bg-white/[0.03] px-3 py-2 text-left text-slate-500">
-                      Asset
-                    </th>
-                    {data.venues.map((venue) => (
-                      <th key={venue} className="border-b border-white/[0.08] bg-white/[0.03] px-3 py-2 text-left text-amber-200">
-                        {venue}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.matrix.map((row) => (
-                    <tr key={row[0].asset}>
-                      <td className="border-b border-white/[0.06] px-3 py-2.5 font-semibold text-slate-100">
-                        {row[0].asset}
-                      </td>
-                      {row.map((cell) => {
-                        const positive = cell.rate >= 0;
-                        return (
-                          <td
-                            key={`${cell.asset}-${cell.venue}`}
-                            className={`border-b border-white/[0.06] px-3 py-2.5 font-mono ${
-                              positive ? "bg-emerald-500/16 text-emerald-200" : "bg-rose-500/18 text-rose-200"
-                            }`}
-                          >
-                            {formatSigned(cell.rate)}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </TerminalPanel>
+        {(showMatrix || showHistory) && (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+            {showMatrix && (
+              <TerminalPanel title="Funding Matrix (8h)" caption={live.sourceCaption}>
+                {data.matrix.length > 0 && data.venues.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-separate border-spacing-0 text-xs">
+                      <thead>
+                        <tr>
+                          <th className="border-b border-white/[0.08] bg-white/[0.03] px-3 py-2 text-left text-slate-500">
+                            Asset
+                          </th>
+                          {data.venues.map((venue) => (
+                            <th
+                              key={venue}
+                              className="border-b border-white/[0.08] bg-white/[0.03] px-3 py-2 text-left text-amber-200"
+                            >
+                              {venue}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.matrix.map((row) => (
+                          <tr key={row[0]?.asset}>
+                            <td className="border-b border-white/[0.06] px-3 py-2.5 font-semibold text-slate-100">
+                              {row[0]?.asset}
+                            </td>
+                            {row.map((cell) => {
+                              const hasRate = Number.isFinite(cell.rate);
+                              const positive = hasRate && cell.rate >= 0;
+                              return (
+                                <td
+                                  key={`${cell.asset}-${cell.venue}`}
+                                  className={`border-b border-white/[0.06] px-3 py-2.5 font-mono ${
+                                    positive ? "bg-emerald-500/16 text-emerald-200" : "bg-rose-500/18 text-rose-200"
+                                  }`}
+                                >
+                                  {hasRate ? formatSigned(cell.rate) : "No data"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                    No funding rows in PostgreSQL yet.
+                  </div>
+                )}
+              </TerminalPanel>
+            )}
 
-          <TerminalPanel title="Funding History" caption="BTC · Hyperliquid">
-            <div className="h-[310px]">
-              <LineChart data={fundingSeries} color="#10B981" height={280} />
-            </div>
-          </TerminalPanel>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_0.72fr]">
-          <TerminalPanel
-            title="Funding Arbitrage Opportunities"
-            caption="Funding edge minus fees, slippage, borrow/hedge cost and venue risk"
-          >
-            <TerminalTable
-              columns={["Asset", "Long Leg", "Short Leg", "Funding Edge", "Net APR", "Liquidity", "Risk"]}
-              rows={arbitrageRows}
-            />
-          </TerminalPanel>
-
-          <TerminalPanel title="Long / Short Legs" caption="Where funding is received and hedged">
-            <TerminalTable columns={["Asset", "Venue", "Receive", "Rate", "Est APR"]} rows={legsRows} />
-          </TerminalPanel>
-        </div>
-
-        <TerminalPanel title="Predicted Funding (Next 8h)">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-            {data.predicted.map((point) => (
-              <div key={point.asset} className="rounded-lg border border-white/10 bg-white/[0.035] p-3">
-                <div className="text-xs text-slate-500">{point.asset}</div>
-                <div className="mt-2 font-mono text-lg text-slate-100">{formatSigned(point.predicted ?? point.rate)}</div>
-                <div className={toneText((point.predicted ?? point.rate) >= point.rate ? "positive" : "negative")}>
-                  {point.predicted && point.predicted >= point.rate ? "Up" : "Down"}
+            {showHistory && (
+              <TerminalPanel title="Funding History" caption={live.historyLabel}>
+                <div className="h-[310px]">
+                  {fundingSeries.length > 1 ? (
+                    <LineChart data={fundingSeries} color="#10B981" height={280} />
+                  ) : (
+                    <div className="flex h-full items-center justify-center rounded-md border border-white/10 bg-white/[0.035] text-sm text-slate-400">
+                      No funding history in PostgreSQL yet.
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              </TerminalPanel>
+            )}
           </div>
-        </TerminalPanel>
+        )}
+
+        {(showArbitrage || showLegs) && (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_0.72fr]">
+            {showArbitrage && (
+              <TerminalPanel
+                title="Funding Arbitrage Opportunities"
+                caption="Derived from current persisted funding spread, before fees and execution constraints"
+              >
+                {arbitrageRows.length > 0 ? (
+                  <TerminalTable
+                    columns={["Asset", "Long Leg", "Short Leg", "Funding Edge", "Net APR", "Liquidity", "Risk"]}
+                    rows={arbitrageRows}
+                  />
+                ) : (
+                  <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                    No funding opportunities can be derived yet.
+                  </div>
+                )}
+              </TerminalPanel>
+            )}
+
+            {showLegs && (
+              <TerminalPanel title="Long / Short Legs" caption="Where funding is received and hedged">
+                {legsRows.length > 0 ? (
+                  <TerminalTable columns={["Asset", "Venue", "Receive", "Rate", "Est APR"]} rows={legsRows} />
+                ) : (
+                  <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                    No funding legs can be derived yet.
+                  </div>
+                )}
+              </TerminalPanel>
+            )}
+          </div>
+        )}
+
+        {showPredicted && (
+          <TerminalPanel
+            title="Predicted Funding (Next 8h)"
+            caption="Prediction model is not enabled yet; current rate is shown as baseline"
+          >
+            {data.predicted.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+                {data.predicted.map((point) => {
+                  const displayedRate = point.predicted ?? point.rate;
+                  const hasPrediction = point.predicted !== undefined;
+
+                  return (
+                    <div
+                      key={`${point.asset}-${point.venue}`}
+                      className="rounded-lg border border-white/10 bg-white/[0.035] p-3"
+                    >
+                      <div className="text-xs text-slate-500">{point.asset}</div>
+                      <div className="mt-2 font-mono text-lg text-slate-100">{formatSigned(displayedRate)}</div>
+                      <div className={toneText(hasPrediction && displayedRate >= point.rate ? "positive" : "neutral")}>
+                        {hasPrediction ? (displayedRate >= point.rate ? "Up" : "Down") : "Current"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                No current funding rows for prediction baseline.
+              </div>
+            )}
+          </TerminalPanel>
+        )}
       </div>
     </Shell>
   );
