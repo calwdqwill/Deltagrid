@@ -26,6 +26,8 @@
 - [x] DNS preflight: `deltagrid.pro` и `www.deltagrid.pro` сейчас указывают на `31.31.196.50` / `2a00:f940:2:2:1:1:0:266`; HTTP отдаёт parking page REG.RU.
 - [x] Серверный IP получен: `2.25.143.143`; SSH `22` открыт, HTTP `80` и HTTPS `443` пока закрыты.
 - [x] Добавлены `scripts/bootstrap-ubuntu.sh`, `scripts/deploy-production.sh` и `deploy/dns/deltagrid.pro.md`.
+- [x] Добавлен `scripts/configure-nginx-ssl.sh` для включения Nginx site и выпуска Let's Encrypt SSL.
+- [x] SSH-доступ `root@2.25.143.143` по ключу подтверждён; production frontend port перенесён на `3001`, чтобы не трогать служебный процесс на `3000`.
 
 ## Следующая итерация
 
@@ -38,6 +40,7 @@
 - [ ] Перенастроить DNS `deltagrid.pro` на `2.25.143.143`.
 - [ ] На реальном сервере создать staging/prod `.env.production` с production secrets (`SECRET_KEY`, `VAULT_MASTER_KEY`) для `deltagrid.pro`.
 - [ ] Прогнать server preflight на сервере.
+- [ ] Настроить Nginx/SSL на сервере после DNS cutover.
 - [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
 - [ ] Прогнать smoke-check на сервере локально и через домен.
 

@@ -8,6 +8,8 @@
 - DNS preflight: `deltagrid.pro` и `www.deltagrid.pro` сейчас резолвятся в `31.31.196.50` и `2a00:f940:2:2:1:1:0:266`; HTTP отдаёт parking page REG.RU, HTTPS требует настройки.
 - Целевой сервер пользователя: `2.25.143.143`; SSH `22` открыт, HTTP `80` и HTTPS `443` пока закрыты.
 - Добавлены `scripts/bootstrap-ubuntu.sh`, `scripts/deploy-production.sh` и `deploy/dns/deltagrid.pro.md` для Ubuntu/VPS rollout.
+- Добавлен `scripts/configure-nginx-ssl.sh` для включения Nginx site и выпуска Let's Encrypt SSL после DNS cutover.
+- Production frontend host port переключён на `127.0.0.1:3001`, чтобы не конфликтовать со служебным процессом хостинга на `3000`.
 
 ## [2026-06-05] — [DEPLOY] — Минимальный server deployment flow
 - Добавлен `.env.production.example` с обязательными production-переменными: secrets, CORS, PostgreSQL credentials, provider keys и runtime tuning.

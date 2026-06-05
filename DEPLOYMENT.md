@@ -131,7 +131,7 @@ Frontend build получает `BACKEND_INTERNAL_URL=http://backend:8000` че�
 curl http://127.0.0.1:8000/api/v1/health
 curl http://127.0.0.1:8000/api/v1/health/readiness
 curl http://127.0.0.1:8000/api/v1/data/health
-curl http://127.0.0.1:3000
+curl http://127.0.0.1:3001
 ```
 
 `/api/v1/health/readiness` должен вернуть `status: ready`, а `current_revision` должен совпадать с `expected_heads`.
@@ -140,9 +140,17 @@ curl http://127.0.0.1:3000
 
 Минимальная схема:
 
-- `https://deltagrid.pro/` → `127.0.0.1:3000`
+- `https://deltagrid.pro/` → `127.0.0.1:3001`
 - `https://deltagrid.pro/api/` → `127.0.0.1:8000/api/`
 - `wss://deltagrid.pro/api/v1/stream/ws` → `127.0.0.1:8000/api/v1/stream/ws`
+
+Автоматическая настройка Nginx и SSL после того, как DNS указывает на `2.25.143.143`:
+
+```bash
+sudo LETSENCRYPT_EMAIL=you@example.com sh scripts/configure-nginx-ssl.sh
+```
+
+Скрипт копирует `deploy/nginx/deltagrid.conf.example`, включает site, проверяет `nginx -t`, перезагружает Nginx и выпускает сертификат Let's Encrypt для `deltagrid.pro` и `www.deltagrid.pro`.
 
 Готовый шаблон лежит в `deploy/nginx/deltagrid.conf.example` и уже настроен на `deltagrid.pro`:
 
@@ -178,7 +186,7 @@ server {
     }
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3001;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -186,7 +194,7 @@ server {
 }
 ```
 
-После настройки Nginx выпустите SSL-сертификат, например через Certbot. `PUBLIC_APP_URL`/`CORS_ORIGINS` уже должны указывать на `https://deltagrid.pro`.
+Если используете ручную настройку Nginx, после неё выпустите SSL-сертификат через Certbot. `PUBLIC_APP_URL`/`CORS_ORIGINS` уже должны указывать на `https://deltagrid.pro`.
 
 ## Smoke-check
 
@@ -263,6 +271,7 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
 - [ ] Frontend открывается через домен.
 - [ ] `/api/*` routes проходят через reverse proxy.
 - [ ] `BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh` проходит через домен.
+- [ ] `sudo LETSENCRYPT_EMAIL=... sh scripts/configure-nginx-ssl.sh` прошёл после DNS cutover.
 - [ ] WebSocket `/api/v1/stream/ws` проходит через reverse proxy.
 - [ ] Создан свежий backup PostgreSQL.
 - [ ] Проверены логи backend/frontend/postgres после старта.

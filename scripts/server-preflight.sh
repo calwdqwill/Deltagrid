@@ -55,7 +55,7 @@ fi
 
 printf 'ports currently listening:\n'
 if command -v ss >/dev/null 2>&1; then
-  ss -ltn | grep -E ':(80|443|3000|8000)\b' || true
+  ss -ltn | grep -E ':(80|443|3000|3001|8000)\b' || true
 else
   printf 'ss command unavailable; skipping port list\n'
 fi

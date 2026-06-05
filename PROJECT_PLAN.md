@@ -30,6 +30,8 @@
 - [x] Добавить Nginx template и server smoke-check script.
 - [x] Добавить server preflight и генератор `.env.production`.
 - [x] Добавить Ubuntu bootstrap/deploy scripts и DNS checklist для `deltagrid.pro`.
+- [x] Добавить скрипт настройки Nginx и Let's Encrypt SSL для `deltagrid.pro`.
+- [x] Учесть занятый порт `3000` на сервере и перевести production frontend binding на `127.0.0.1:3001`.
 
 ## Следующие шаги
 
@@ -39,6 +41,7 @@
 - [ ] Прогнать `DOMAIN=deltagrid.pro sh scripts/server-preflight.sh` на сервере.
 - [ ] Перенаправить DNS `deltagrid.pro`/`www.deltagrid.pro` на `2.25.143.143` и убрать старую AAAA-запись, если IPv6 не настроен.
 - [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
+- [ ] Выполнить `sudo LETSENCRYPT_EMAIL=... sh scripts/configure-nginx-ssl.sh` после DNS cutover.
 - [ ] Прогнать `scripts/server-smoke.sh` локально на сервере и через `https://deltagrid.pro`.
 - [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования контрактов.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.

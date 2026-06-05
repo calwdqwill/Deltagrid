@@ -27,7 +27,7 @@ services:
       VAULT_MASTER_KEY: ${VAULT_MASTER_KEY:?set VAULT_MASTER_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,7 +54,7 @@ services:
     environment:
       BACKEND_INTERNAL_URL: http://backend:8000
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3001}:3000"
     depends_on:
       backend:
         condition: service_healthy
