@@ -241,7 +241,12 @@ class CoinGeckoAdapter(BaseAdapter):
                     "current_price": c.get("current_price"),
                     "market_cap": c.get("market_cap"),
                     "market_cap_rank": c.get("market_cap_rank"),
-                    "price_change_percentage_24h": c.get("price_change_percentage_24h"),
+                    "price_change_percentage_24h": (
+                        c.get("price_change_percentage_24h")
+                        if c.get("price_change_percentage_24h") is not None
+                        else c.get("price_change_percentage_24h_in_currency")
+                    ),
+                    "price_change_percentage_7d": c.get("price_change_percentage_7d_in_currency"),
                     "total_volume": c.get("total_volume"),
                 }
                 for c in data

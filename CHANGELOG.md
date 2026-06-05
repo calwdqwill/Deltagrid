@@ -1,5 +1,13 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] - [FRONTEND] - Live Market Overview и Assets
+- Добавлен backend endpoint `GET /api/v1/market/markets` для топовых spot markets из CoinGecko с `24h` и `7d` изменениями.
+- `Market Overview` больше не читает `terminalDataAdapter`: global cap/volume, BTC/ETH dominance, heatmap, top assets, gainers/losers и `Fear & Greed Index` строятся из live backend API.
+- `Assets` больше не использует mock SOL fixture: цена, market cap, volume, open interest, funding и OHLCV читаются через backend/data-layer.
+- Fake order book, fake liquidations и fake venue breakdown убраны из production UI; вместо них показаны явные pending-состояния до подключения live endpoints.
+- Общие terminal chart/table компоненты получили безопасные empty-state'ы для пустых ответов provider'ов.
+- Проверка: `python -m compileall backend/app` и `npm run build` проходят успешно.
+
 ## [2026-06-05] - [FRONTEND] - Live Funding tabs и Data Health
 - Исправлена вложенная навигация в `Funding` и `Perp DEX`: sidebar и верхние segmented tabs теперь используют стабильный `view` query-param, активное состояние больше не привязано к первому пункту.
 - `SegmentedControl` получил поддержку ссылок без поломки старого режима с кнопками.

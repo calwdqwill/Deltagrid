@@ -1,7 +1,7 @@
 # Current Task — DeltaGrid
 
 **Phase**: Production-ready MVP hardening ✅ PostgreSQL runtime READY
-**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Production deploy на `deltagrid.pro` выполнен, Cloudflare proxy работает в `Full (strict)`. Market data sync расширен до Binance, CoinGlass v4 и CoinGecko-derived basis snapshots. Frontend Funding/Data Health подключены к persisted data-layer.
+**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Production deploy на `deltagrid.pro` выполнен, Cloudflare proxy работает в `Full (strict)`. Market data sync расширен до Binance, CoinGlass v4 и CoinGecko-derived basis snapshots. Frontend Market Overview, Assets, Funding и Data Health подключены к live backend/data-layer.
 **Last Updated**: 2026-06-05
 
 ## PostgreSQL MVP Summary — 2026-06-05
@@ -42,6 +42,8 @@
 - [x] `Funding` читает persisted PostgreSQL funding rows и data health вместо mock fixture.
 - [x] `/data-health` заменён с placeholder на live frontend screen.
 - [x] Nested tabs в `Funding` и `Perp DEX` кликабельны через `view` query-param.
+- [x] `Market Overview` читает live CoinGecko/CoinGlass/alternative.me backend endpoints вместо mock fixture.
+- [x] `Assets` читает live SOL spot/funding/OHLCV и показывает pending-состояния вместо fake order book/liquidations.
 
 ## Следующая итерация
 
@@ -62,7 +64,7 @@
 - [x] Проверить, что `/api/v1/data/health` показывает `row_counts.ohlcv > 0` и последний Binance sync.
 - [x] Установить `scripts/install-market-sync-cron.sh` на сервере.
 - [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
-- [ ] Задеплоить frontend fix для live Funding/Data Health на сервер и проверить `https://deltagrid.pro/funding?view=history`, `?view=matrix`, `/data-health`.
+- [ ] Задеплоить frontend fix для live Market Overview/Assets на сервер и проверить `https://deltagrid.pro/market`, `/assets`, `/funding?view=history`, `/data-health`.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования времени выполнить reboot сервера из-за pending kernel upgrade.
 
@@ -75,7 +77,7 @@
 - [x] Market Overview / Command Center без funding-heavy блоков.
 - [x] Perp DEX Intelligence без полноценного Funding dashboard.
 - [x] Funding Overview как first-class module.
-- [x] Funding/Data Health подключены к backend data-layer.
+- [x] Market Overview/Assets/Funding/Data Health подключены к backend data-layer.
 - [x] Perp DEX не показывает mock DEX volume/OI/liquidity как production-данные до live DEX adapter.
 - [x] Asset Deep Dive SOL.
 - [x] Market Matrix без funding metric / Funding Matrix.
@@ -87,7 +89,7 @@
 
 - [ ] Подключить `lightweight-charts` и реализовать полноценный Charts screen.
 - [x] Подключить Funding/Data Health к backend/data-layer endpoint'ам.
-- [ ] Согласовать и подключить остальные terminal screens к backend/data-layer endpoint'ам.
+- [ ] Согласовать и подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам.
 - [ ] Реализовать live Perp DEX venue adapter.
 - [ ] Добавить ручной visual QA checklist по 6 MVP-экранам.
 

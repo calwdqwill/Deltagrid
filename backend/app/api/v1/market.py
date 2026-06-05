@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.schemas.common import ApiResponse
 from app.services.market_service import MarketService
@@ -33,6 +33,12 @@ async def get_losers():
 @router.get("/global", response_model=ApiResponse)
 async def get_global():
     data = await _market_service.get_global()
+    return ApiResponse(data=data)
+
+
+@router.get("/markets", response_model=ApiResponse)
+async def get_markets(limit: int = Query(20, ge=1, le=100)):
+    data = await _market_service.get_markets(limit=limit)
     return ApiResponse(data=data)
 
 

@@ -33,8 +33,12 @@
 - [x] Подключить Funding frontend screen к persisted backend/data-layer endpoint'ам для `funding_rates` и data health.
 - [x] Подключить `/data-health` frontend screen к `GET /api/v1/data/health` вместо placeholder/mock-состояния.
 - [x] Сделать nested tabs в `Funding` и `Perp DEX` кликабельными через стабильный `view` query-param.
-- [ ] Подключить остальные terminal screens к backend/data-layer endpoint'ам после согласования контрактов.
+- [x] Подключить `Market Overview` к live backend endpoints вместо `terminalDataAdapter`.
+- [x] Подключить `Assets` к live SOL spot/funding/OHLCV и убрать fake order book/liquidations из production UI.
+- [ ] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам после согласования контрактов.
 - [ ] Реализовать live Perp DEX venue adapter для Hyperliquid/dYdX/GMX, прежде чем показывать DEX volume/OI/liquidity как реальные данные.
+- [ ] Добавить live order book endpoint для ключевых CEX pairs, начиная с Binance `BTCUSDT`, `ETHUSDT`, `SOLUSDT`.
+- [ ] Добавить live liquidations ingestion/API, прежде чем возвращать блок `Liquidations (24h)` в режим с реальными значениями.
 - [ ] Добавить visual regression/screenshot checklist для 6 MVP-экранов после стабилизации layout.
 
 ## Standalone HTML Preview — 2026-06-02

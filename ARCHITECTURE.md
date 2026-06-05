@@ -35,7 +35,9 @@ SQLite больше не является production runtime. Он может и
 
 Frontend HTTP API использует относительный `/api/v1` и проксируется Next.js rewrite'ом на `BACKEND_INTERNAL_URL`. Так как Next.js запекает rewrites во время build, Docker Compose передаёт `BACKEND_INTERNAL_URL=http://backend:8000` через frontend build args. WebSocket stream выбирает `NEXT_PUBLIC_WS_URL`, если он задан, иначе использует `127.0.0.1:8000` локально и same-origin `/api/v1/stream/ws` на production-домене.
 
-Для server-rendered frontend screens добавлен лёгкий helper `frontend/src/lib/server-api.ts`: он читает `BACKEND_INTERNAL_URL` или `NEXT_PUBLIC_API_URL` и обращается к backend без клиентского auth/Zustand слоя. Сейчас `Funding` и `/data-health` читают persisted PostgreSQL data-layer через `GET /api/v1/data/funding` и `GET /api/v1/data/health`. `Perp DEX` не показывает mock DEX volume/OI/liquidity как реальные данные, пока не подключён отдельный live DEX venue adapter.
+Для server-rendered frontend screens добавлен лёгкий helper `frontend/src/lib/server-api.ts`: он читает `BACKEND_INTERNAL_URL` или `NEXT_PUBLIC_API_URL` и обращается к backend без клиентского auth/Zustand слоя. Сейчас `Market Overview`, `Assets`, `Funding` и `/data-health` читают live backend/data-layer вместо `terminalDataAdapter`: `Market Overview` использует `GET /api/v1/market/markets`, `/market/global`, `/market/fear-greed`, `/market/funding-rates` и `/data/health`, `Assets` использует `/market/markets`, `/market/funding-rates`, `/data/ohlcv` и `/data/health`.
+
+`Perp DEX` не показывает mock DEX volume/OI/liquidity как реальные данные, пока не подключён отдельный live DEX venue adapter. Order book, liquidations, Market Matrix, Arbitrage Scanner и Strategy Lab остаются отдельным frontend/data-contract debt.
 
 Фактический production rollout на `deltagrid.pro` выполнен на Ubuntu 22.04 сервере `2.25.143.143`: код расположен в `/opt/deltagrid`, Docker Compose поднимает PostgreSQL/backend/frontend, frontend опубликован на `127.0.0.1:3001`, backend на `127.0.0.1:8000`, а Nginx обслуживает `https://deltagrid.pro` и `https://www.deltagrid.pro` с сертификатом Let's Encrypt.
 
@@ -93,5 +95,5 @@ Frontend hooks / pages
 - Старые SQLite `.db` файлы не мигрируются автоматически; если нужны исторические данные, потребуется отдельный экспорт/импорт.
 - Нужно регулярно проверять `GET /api/v1/health/readiness` в staging/prod, чтобы ловить рассинхрон Alembic до открытия пользовательского трафика.
 - Market data ingestion для production MVP запускается через `scripts/sync-market-data.sh`; на сервере используется host-level cron `/etc/cron.d/deltagrid-market-sync`.
-- Основной frontend terminal всё ещё использует подготовленный mock adapter для части экранов; `Funding` и `/data-health` уже подключены к backend data-layer, остальные виджеты требуют отдельной frontend-итерации.
+- Основной frontend terminal всё ещё использует подготовленный mock adapter для части экранов; `Market Overview`, `Assets`, `Funding` и `/data-health` уже подключены к live backend/data-layer, остальные виджеты требуют отдельной frontend-итерации.
 - Для `Perp DEX` нужен отдельный live venue adapter, иначе нельзя корректно показывать DEX volume/OI/liquidity как production-данные.

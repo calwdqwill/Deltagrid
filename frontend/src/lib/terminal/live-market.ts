@@ -1,0 +1,432 @@
+import { fetchServerApi } from "@/lib/server-api";
+import {
+  Asset,
+  AssetDeepDiveData,
+  AssetSnapshot,
+  Candle,
+  KpiMetric,
+  MarketHeatmapItem,
+  MarketOverviewData,
+  RankedAssetMove,
+  SeriesPoint,
+} from "@/types/terminal";
+import { DataHealthPayload } from "./live-data";
+
+interface MarketCoin {
+  id: string;
+  name: string;
+  symbol: string;
+  image?: string | null;
+  current_price?: number | null;
+  market_cap?: number | null;
+  market_cap_rank?: number | null;
+  price_change_percentage_24h?: number | null;
+  price_change_percentage_7d?: number | null;
+  total_volume?: number | null;
+}
+
+interface GlobalMarketPayload {
+  total_market_cap_usd?: number;
+  total_volume_24h_usd?: number;
+  btc_dominance?: number;
+  eth_dominance?: number;
+  active_cryptocurrencies?: number;
+  updated_at?: string;
+}
+
+interface FearGreedPoint {
+  value: number;
+  classification: string;
+  timestamp: number;
+  time_until_update?: number;
+}
+
+interface MarketFundingRate {
+  symbol: string;
+  rate: number;
+  interval: string;
+  exchange: string;
+  annualized?: number;
+  open_interest_usd?: number | null;
+  price?: number | null;
+  data_status?: string;
+}
+
+interface OhlcvRow {
+  timestamp: number;
+  symbol: string;
+  exchange: string;
+  interval: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number | null;
+  quote_volume?: number | null;
+}
+
+export interface LiveMarketOverview {
+  data: MarketOverviewData;
+  fearGreed: FearGreedPoint[];
+  statusLabel: string;
+  statusTone: "positive" | "warning";
+}
+
+export interface LiveAssetDeepDive {
+  data: AssetDeepDiveData;
+  statusLabel: string;
+  statusTone: "positive" | "warning";
+  sourceRows: Array<[string, string]>;
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function formatCompactCurrency(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000_000) return `$${(value / 1_000_000_000_000).toFixed(2)}T`;
+  if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
+  return `$${value.toFixed(2)}`;
+}
+
+function formatSignedPercent(value: number): string {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(Math.abs(value) < 1 ? 3 : 2)}%`;
+}
+
+function simpleSparkline(currentValue: number, changePercent: number, points = 12): number[] {
+  if (!currentValue) return Array.from({ length: points }, () => 0);
+
+  const startValue = currentValue / (1 + changePercent / 100 || 1);
+  return Array.from({ length: points }, (_, index) => {
+    const progress = index / Math.max(points - 1, 1);
+    return startValue + (currentValue - startValue) * progress;
+  });
+}
+
+type KpiTone = NonNullable<KpiMetric["tone"]>;
+type AssetMetricTone = NonNullable<AssetDeepDiveData["keyMetrics"][number]["tone"]>;
+type DerivativeTone = NonNullable<AssetDeepDiveData["derivatives"][number]["tone"]>;
+
+function marketTone(value: number): KpiTone {
+  if (value > 0) return "positive";
+  if (value < 0) return "negative";
+  return "neutral";
+}
+
+function assetMetricTone(value: number): AssetMetricTone {
+  if (value > 0) return "positive";
+  if (value < 0) return "negative";
+  return "neutral";
+}
+
+function derivativeTone(value: number): DerivativeTone | undefined {
+  if (value > 0) return "positive";
+  if (value < 0) return "negative";
+  return undefined;
+}
+
+function coinSymbol(coin: MarketCoin): string {
+  return (coin.symbol || coin.id || "").toUpperCase();
+}
+
+function mapCoinToAsset(coin: MarketCoin, fundingBySymbol: Map<string, MarketFundingRate>): Asset {
+  const symbol = coinSymbol(coin);
+  const price = toNumber(coin.current_price);
+  const marketCap = toNumber(coin.market_cap);
+  const volume24h = toNumber(coin.total_volume);
+  const change24h = toNumber(coin.price_change_percentage_24h);
+  const change7d = toNumber(coin.price_change_percentage_7d);
+  const funding = fundingBySymbol.get(symbol);
+
+  return {
+    id: coin.id,
+    symbol,
+    name: coin.name,
+    price,
+    change24h,
+    change7d,
+    marketCap,
+    volume24h,
+    volumeToMarketCap: marketCap > 0 ? (volume24h / marketCap) * 100 : 0,
+    openInterest: toNumber(funding?.open_interest_usd),
+    perpVolume: 0,
+    sparkline: simpleSparkline(price, change24h),
+  };
+}
+
+function mapCoinToSnapshot(coin: MarketCoin | undefined, dominance?: number): AssetSnapshot {
+  if (!coin) {
+    return {
+      symbol: "-",
+      name: "No data",
+      price: 0,
+      change24h: 0,
+      marketCap: 0,
+      volume24h: 0,
+      dominance,
+      sparkline: [0, 0],
+    };
+  }
+
+  const price = toNumber(coin.current_price);
+  const change24h = toNumber(coin.price_change_percentage_24h);
+
+  return {
+    symbol: coinSymbol(coin),
+    name: coin.name,
+    price,
+    change24h,
+    marketCap: toNumber(coin.market_cap),
+    volume24h: toNumber(coin.total_volume),
+    dominance,
+    sparkline: simpleSparkline(price, change24h),
+  };
+}
+
+function mapRankedMoves(coins: MarketCoin[], positive: boolean): RankedAssetMove[] {
+  return coins
+    .filter((coin) => (toNumber(coin.price_change_percentage_24h) > 0) === positive)
+    .sort((a, b) => {
+      const left = toNumber(a.price_change_percentage_24h);
+      const right = toNumber(b.price_change_percentage_24h);
+      return positive ? right - left : left - right;
+    })
+    .slice(0, 5)
+    .map((coin, index) => ({
+      rank: index + 1,
+      symbol: coinSymbol(coin),
+      name: coin.name,
+      change24h: toNumber(coin.price_change_percentage_24h),
+    }));
+}
+
+function marketBreadth(coins: MarketCoin[]): MarketOverviewData["marketBreadth"] {
+  const total = coins.length || 1;
+  const advancingCount = coins.filter((coin) => toNumber(coin.price_change_percentage_24h) > 0.1).length;
+  const decliningCount = coins.filter((coin) => toNumber(coin.price_change_percentage_24h) < -0.1).length;
+  const neutralCount = Math.max(0, coins.length - advancingCount - decliningCount);
+  const buckets = [-20, -10, -5, 0, 5, 10, 20];
+  const histogram: SeriesPoint[] = buckets.map((bucket, index) => {
+    const next = buckets[index + 1] ?? Number.POSITIVE_INFINITY;
+    return {
+      label: `${bucket}`,
+      value: coins.filter((coin) => {
+        const change = toNumber(coin.price_change_percentage_24h);
+        return change >= bucket && change < next;
+      }).length,
+    };
+  });
+
+  return {
+    advancing: Math.round((advancingCount / total) * 100),
+    neutral: Math.round((neutralCount / total) * 100),
+    declining: Math.round((decliningCount / total) * 100),
+    histogram,
+  };
+}
+
+function heatmapItems(coins: MarketCoin[]): MarketHeatmapItem[] {
+  return coins.slice(0, 12).map((coin) => ({
+    symbol: coinSymbol(coin),
+    name: coin.name,
+    value: toNumber(coin.market_cap),
+    change24h: toNumber(coin.price_change_percentage_24h),
+    marketCap: toNumber(coin.market_cap),
+  }));
+}
+
+function buildKpis(
+  global: GlobalMarketPayload | null,
+  markets: MarketCoin[],
+  fearGreed: FearGreedPoint[],
+  fundingRates: MarketFundingRate[],
+  health: DataHealthPayload | null
+): KpiMetric[] {
+  const latestFearGreed = fearGreed[0];
+  const liveFunding = fundingRates.filter((item) => item.data_status === "live");
+  const avgFunding = liveFunding.length
+    ? liveFunding.reduce((sum, item) => sum + toNumber(item.rate), 0) / liveFunding.length
+    : 0;
+
+  return [
+    {
+      label: "Total Market Cap",
+      value: formatCompactCurrency(toNumber(global?.total_market_cap_usd)),
+      caption: "CoinGecko global",
+      tone: "neutral",
+    },
+    {
+      label: "24h Volume",
+      value: formatCompactCurrency(toNumber(global?.total_volume_24h_usd)),
+      caption: `${markets.length} top assets loaded`,
+      tone: "neutral",
+    },
+    {
+      label: "BTC Dominance",
+      value: `${toNumber(global?.btc_dominance).toFixed(2)}%`,
+      caption: "Global market share",
+      tone: "neutral",
+    },
+    {
+      label: "ETH Dominance",
+      value: `${toNumber(global?.eth_dominance).toFixed(2)}%`,
+      caption: "Global market share",
+      tone: "neutral",
+    },
+    {
+      label: "Fear & Greed",
+      value: latestFearGreed ? String(latestFearGreed.value) : "No data",
+      caption: latestFearGreed?.classification,
+      tone: latestFearGreed && latestFearGreed.value <= 40 ? "negative" : "warning",
+    },
+    {
+      label: "Avg Funding",
+      value: liveFunding.length ? formatSignedPercent(avgFunding) : "No data",
+      caption: health ? `${health.row_counts.funding_rates ?? 0} DB rows` : "Data health unavailable",
+      tone: marketTone(avgFunding),
+    },
+  ];
+}
+
+function emptyMarketData(): MarketOverviewData {
+  return {
+    kpis: [
+      {
+        label: "Market Data",
+        value: "No data",
+        caption: "Backend returned empty market payload",
+        tone: "warning",
+      },
+    ],
+    heatmap: [],
+    btcOverview: mapCoinToSnapshot(undefined),
+    ethOverview: mapCoinToSnapshot(undefined),
+    marketBreadth: { advancing: 0, neutral: 0, declining: 0, histogram: [] },
+    topGainers: [],
+    topLosers: [],
+    topAssets: [],
+  };
+}
+
+export async function getLiveMarketOverview(): Promise<LiveMarketOverview> {
+  const [marketsResponse, globalResponse, fearGreedResponse, fundingResponse, healthResponse] = await Promise.all([
+    fetchServerApi<MarketCoin[]>("/market/markets?limit=30"),
+    fetchServerApi<GlobalMarketPayload>("/market/global"),
+    fetchServerApi<FearGreedPoint[]>("/market/fear-greed"),
+    fetchServerApi<MarketFundingRate[]>("/market/funding-rates"),
+    fetchServerApi<DataHealthPayload>("/data/health"),
+  ]);
+
+  const markets = marketsResponse?.success ? marketsResponse.data : [];
+  const global = globalResponse?.success ? globalResponse.data : null;
+  const fearGreed = fearGreedResponse?.success ? fearGreedResponse.data : [];
+  const fundingRates = fundingResponse?.success ? fundingResponse.data : [];
+  const health = healthResponse?.success ? healthResponse.data : null;
+  const fundingBySymbol = new Map(fundingRates.map((item) => [item.symbol.toUpperCase(), item]));
+
+  if (!markets.length) {
+    return {
+      data: emptyMarketData(),
+      fearGreed,
+      statusLabel: "Market API empty",
+      statusTone: "warning",
+    };
+  }
+
+  const btc = markets.find((coin) => coin.id === "bitcoin" || coinSymbol(coin) === "BTC");
+  const eth = markets.find((coin) => coin.id === "ethereum" || coinSymbol(coin) === "ETH");
+
+  return {
+    data: {
+      kpis: buildKpis(global, markets, fearGreed, fundingRates, health),
+      heatmap: heatmapItems(markets),
+      btcOverview: mapCoinToSnapshot(btc, global?.btc_dominance),
+      ethOverview: mapCoinToSnapshot(eth, global?.eth_dominance),
+      marketBreadth: marketBreadth(markets),
+      topGainers: mapRankedMoves(markets, true),
+      topLosers: mapRankedMoves(markets, false),
+      topAssets: markets.map((coin) => mapCoinToAsset(coin, fundingBySymbol)),
+    },
+    fearGreed,
+    statusLabel: "Live market API",
+    statusTone: "positive",
+  };
+}
+
+function mapOhlcv(rows: OhlcvRow[]): Candle[] {
+  return rows.slice(-120).map((row) => ({
+    time: row.timestamp,
+    open: row.open,
+    high: row.high,
+    low: row.low,
+    close: row.close,
+    volume: row.volume ?? row.quote_volume ?? undefined,
+  }));
+}
+
+export async function getLiveAssetDeepDive(symbol: string): Promise<LiveAssetDeepDive> {
+  const normalizedSymbol = symbol.toUpperCase();
+  const [marketsResponse, fundingResponse, ohlcvResponse, healthResponse] = await Promise.all([
+    fetchServerApi<MarketCoin[]>("/market/markets?limit=50"),
+    fetchServerApi<MarketFundingRate[]>("/market/funding-rates"),
+    fetchServerApi<OhlcvRow[]>(`/data/ohlcv?symbol=${normalizedSymbol}&exchange=binance&interval=1m`),
+    fetchServerApi<DataHealthPayload>("/data/health"),
+  ]);
+
+  const markets = marketsResponse?.success ? marketsResponse.data : [];
+  const fundingRates = fundingResponse?.success ? fundingResponse.data : [];
+  const health = healthResponse?.success ? healthResponse.data : null;
+  const fundingBySymbol = new Map(fundingRates.map((item) => [item.symbol.toUpperCase(), item]));
+  const market = markets.find((coin) => coinSymbol(coin) === normalizedSymbol);
+  const fallbackFunding = fundingBySymbol.get(normalizedSymbol);
+  const coin = market ?? {
+    id: normalizedSymbol.toLowerCase(),
+    name: normalizedSymbol,
+    symbol: normalizedSymbol,
+    current_price: fallbackFunding?.price ?? 0,
+    market_cap: 0,
+    total_volume: 0,
+    price_change_percentage_24h: 0,
+    price_change_percentage_7d: 0,
+  };
+  const asset = mapCoinToAsset(coin, fundingBySymbol);
+  const funding = fundingBySymbol.get(normalizedSymbol);
+  const candles = ohlcvResponse?.success ? mapOhlcv(ohlcvResponse.data) : [];
+
+  const data: AssetDeepDiveData = {
+    asset,
+    candles,
+    keyMetrics: [
+      { label: "24H Change", value: formatSignedPercent(asset.change24h), tone: assetMetricTone(asset.change24h) },
+      { label: "7D Change", value: formatSignedPercent(asset.change7d), tone: assetMetricTone(asset.change7d) },
+      { label: "Market Cap", value: formatCompactCurrency(asset.marketCap) },
+      { label: "24H Volume", value: formatCompactCurrency(asset.volume24h) },
+      { label: "Open Interest", value: formatCompactCurrency(asset.openInterest) },
+      { label: "Data Rows", value: String(health?.row_counts.ohlcv ?? 0) },
+    ],
+    derivatives: [
+      { label: "Funding", value: funding ? formatSignedPercent(toNumber(funding.rate)) : "No data", tone: derivativeTone(toNumber(funding?.rate)) },
+      { label: "Annualized Funding", value: funding?.annualized !== undefined ? `${funding.annualized.toFixed(2)}%` : "No data" },
+      { label: "Open Interest", value: formatCompactCurrency(toNumber(funding?.open_interest_usd)) },
+      { label: "Funding Source", value: funding?.exchange ?? "No data" },
+    ],
+    venueBreakdown: [],
+    orderBook: { bids: [], asks: [] },
+    liquidations: { longUsd: 0, shortUsd: 0, byVenue: [] },
+  };
+
+  return {
+    data,
+    statusLabel: market || fallbackFunding ? "Live market API" : "Asset data empty",
+    statusTone: market || fallbackFunding ? "positive" : "warning",
+    sourceRows: [
+      ["Spot market", market ? "CoinGecko /markets" : "No data"],
+      ["Funding/OI", funding ? `${funding.exchange} live` : "No data"],
+      ["OHLCV", candles.length ? `${candles.length} Binance candles` : "No data"],
+    ],
+  };
+}

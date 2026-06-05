@@ -132,6 +132,14 @@ export function Sparkline({
 }) {
   const width = 120;
   const height = 42;
+  if (!data.length) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} className={className} aria-hidden="true">
+        <line x1="0" x2={width} y1={height / 2} y2={height / 2} stroke="rgba(148,163,184,0.28)" strokeWidth="2" />
+      </svg>
+    );
+  }
+
   const min = Math.min(...data);
   const max = Math.max(...data);
   const span = max - min || 1;
@@ -170,6 +178,14 @@ export function LineChart({
   fill?: boolean;
 }) {
   const width = 640;
+  if (!data.length) {
+    return (
+      <div className="flex h-full min-h-[180px] items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.02] text-xs text-slate-500">
+        No chart data
+      </div>
+    );
+  }
+
   const values = data.map((point) => point.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -209,6 +225,14 @@ export function LineChart({
 }
 
 export function BarChart({ data, colors = chartColors }: { data: SeriesPoint[]; colors?: string[] }) {
+  if (!data.length) {
+    return (
+      <div className="flex h-56 items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.02] text-xs text-slate-500">
+        No chart data
+      </div>
+    );
+  }
+
   const max = Math.max(...data.map((point) => point.value), 1);
   return (
     <div className="flex h-56 items-end gap-1.5">
@@ -229,6 +253,14 @@ export function BarChart({ data, colors = chartColors }: { data: SeriesPoint[]; 
 }
 
 export function DonutChart({ data, center }: { data: SeriesPoint[]; center: ReactNode }) {
+  if (!data.length) {
+    return (
+      <div className="flex min-h-36 items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.02] text-xs text-slate-500">
+        No segment data
+      </div>
+    );
+  }
+
   const total = data.reduce((sum, point) => sum + point.value, 0) || 1;
   let offset = 25;
   const circles = data.map((point, index) => {
@@ -275,6 +307,14 @@ export function DonutChart({ data, center }: { data: SeriesPoint[]; center: Reac
 }
 
 export function Heatmap({ items }: { items: MarketHeatmapItem[] }) {
+  if (!items.length) {
+    return (
+      <div className="flex h-[270px] items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.02] text-xs text-slate-500">
+        No market data
+      </div>
+    );
+  }
+
   return (
     <div className="grid h-[270px] grid-cols-6 grid-rows-4 gap-1">
       {items.map((item, index) => {
@@ -328,18 +368,26 @@ export function TerminalTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="group">
-              {row.map((cell, cellIndex) => (
-                <td
-                  key={cellIndex}
-                  className="border-b border-white/[0.06] px-3 py-2.5 text-slate-300 transition-colors group-hover:bg-white/[0.035]"
-                >
-                  {cell}
-                </td>
-              ))}
+          {rows.length ? (
+            rows.map((row, rowIndex) => (
+              <tr key={rowIndex} className="group">
+                {row.map((cell, cellIndex) => (
+                  <td
+                    key={cellIndex}
+                    className="border-b border-white/[0.06] px-3 py-2.5 text-slate-300 transition-colors group-hover:bg-white/[0.035]"
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={columns.length} className="border-b border-white/[0.06] px-3 py-6 text-center text-slate-500">
+                No rows
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>

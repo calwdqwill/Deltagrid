@@ -13,10 +13,22 @@ import {
   TerminalTable,
   toneText,
 } from "@/components/terminal/terminal-ui";
-import { terminalDataAdapter } from "@/lib/terminal/adapters";
+import { getLiveMarketOverview } from "@/lib/terminal/live-market";
+
+export const dynamic = "force-dynamic";
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="rounded-md border border-white/[0.06] bg-white/[0.02] px-3 py-4 text-xs text-slate-500">
+      {label}
+    </div>
+  );
+}
 
 export default async function MarketPage() {
-  const data = await terminalDataAdapter.getMarketOverview();
+  const live = await getLiveMarketOverview();
+  const data = live.data;
+  const latestFearGreed = live.fearGreed[0];
 
   const assetRows = data.topAssets.map((asset, index) => [
     <span key="rank" className="font-mono text-slate-500">
@@ -68,8 +80,8 @@ export default async function MarketPage() {
             <h1 className="mt-1 text-2xl font-semibold text-white">Command Center</h1>
           </div>
           <div className="flex items-center gap-2">
-            <StatusBadge label="Mock data" tone="warning" />
-            <StatusBadge label="No funding modules here" tone="neutral" />
+            <StatusBadge label={live.statusLabel} tone={live.statusTone} />
+            <StatusBadge label="No mock fallback" tone="neutral" />
           </div>
         </div>
 
@@ -83,31 +95,39 @@ export default async function MarketPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1">
             <TerminalPanel title="Top Gainers (24h)">
               <div className="space-y-3">
-                {data.topGainers.map((asset) => (
-                  <div key={asset.symbol} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs text-slate-600">{asset.rank}</span>
-                      <span className="font-medium text-slate-100">{asset.symbol}</span>
-                      <span className="text-xs text-slate-500">{asset.name}</span>
+                {data.topGainers.length ? (
+                  data.topGainers.map((asset) => (
+                    <div key={asset.symbol} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs text-slate-600">{asset.rank}</span>
+                        <span className="font-medium text-slate-100">{asset.symbol}</span>
+                        <span className="text-xs text-slate-500">{asset.name}</span>
+                      </div>
+                      <span className="font-mono text-sm text-emerald-400">{formatSigned(asset.change24h)}</span>
                     </div>
-                    <span className="font-mono text-sm text-emerald-400">{formatSigned(asset.change24h)}</span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <EmptyState label="No gainers returned by market API" />
+                )}
               </div>
             </TerminalPanel>
 
             <TerminalPanel title="Top Losers (24h)">
               <div className="space-y-3">
-                {data.topLosers.map((asset) => (
-                  <div key={asset.symbol} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs text-slate-600">{asset.rank}</span>
-                      <span className="font-medium text-slate-100">{asset.symbol}</span>
-                      <span className="text-xs text-slate-500">{asset.name}</span>
+                {data.topLosers.length ? (
+                  data.topLosers.map((asset) => (
+                    <div key={asset.symbol} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs text-slate-600">{asset.rank}</span>
+                        <span className="font-medium text-slate-100">{asset.symbol}</span>
+                        <span className="text-xs text-slate-500">{asset.name}</span>
+                      </div>
+                      <span className="font-mono text-sm text-rose-400">{formatSigned(asset.change24h)}</span>
                     </div>
-                    <span className="font-mono text-sm text-rose-400">{formatSigned(asset.change24h)}</span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <EmptyState label="No losers returned by market API" />
+                )}
               </div>
             </TerminalPanel>
           </div>
@@ -171,6 +191,44 @@ export default async function MarketPage() {
             <BarChart data={data.marketBreadth.histogram} colors={["#10B981", "#06B6D4", "#F97316"]} />
           </TerminalPanel>
         </div>
+
+        <TerminalPanel title="Fear & Greed Index" caption="Alternative.me latest 7 days">
+          <div className="grid gap-4 lg:grid-cols-[0.35fr_1fr]">
+            <div className="rounded-md border border-white/[0.06] bg-white/[0.03] p-4">
+              <div
+                className={`font-mono text-5xl font-semibold ${toneText(
+                  latestFearGreed && latestFearGreed.value <= 40 ? "negative" : "warning"
+                )}`}
+              >
+                {latestFearGreed ? latestFearGreed.value : "No data"}
+              </div>
+              <div className="mt-2 text-sm text-slate-400">
+                {latestFearGreed?.classification ?? "Provider returned empty data"}
+              </div>
+            </div>
+            <div className="space-y-2">
+              {live.fearGreed.length ? (
+                live.fearGreed.map((point) => {
+                  const date = new Date(point.timestamp * 1000).toISOString().slice(0, 10);
+                  return (
+                    <div key={point.timestamp} className="grid grid-cols-[88px_1fr_48px] items-center gap-3 text-xs">
+                      <span className="font-mono text-slate-500">{date}</span>
+                      <div className="h-2 rounded-full bg-white/[0.06]">
+                        <div
+                          className="h-full rounded-full bg-amber-300"
+                          style={{ width: `${Math.max(2, Math.min(point.value, 100))}%` }}
+                        />
+                      </div>
+                      <span className="text-right font-mono text-slate-300">{point.value}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <EmptyState label="Fear & Greed provider returned no rows" />
+              )}
+            </div>
+          </div>
+        </TerminalPanel>
 
         <TerminalPanel title="Top Assets" caption="Spot market table with OI and perp volume context">
           <TerminalTable

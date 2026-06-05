@@ -66,13 +66,24 @@ class MarketService:
         await self.cache.set(self.CACHE_KEYS["global"], data, 60)
         return data
 
-    async def _get_markets(self) -> list[dict]:
-        """Fetch top markets with 24h change — shared cache for gainers/losers."""
-        cached = await self.cache.get(self.CACHE_KEYS["markets"])
+    async def get_markets(self, limit: int = 20) -> list[dict]:
+        """Fetch top spot markets with 24h/7d change."""
+        normalized_limit = max(1, min(limit, 100))
+        cache_key = f"{self.CACHE_KEYS['markets']}:{normalized_limit}"
+        cached = await self.cache.get(cache_key)
         if cached:
             return cached
-        data = await self.adapter.fetch_markets(order="market_cap_desc", per_page=20)
-        await self.cache.set(self.CACHE_KEYS["markets"], data, 60)
+        data = await self.adapter.fetch_markets(
+            order="market_cap_desc",
+            per_page=normalized_limit,
+            price_change="24h,7d",
+        )
+        await self.cache.set(cache_key, data, 60)
+        return data
+
+    async def _get_markets(self) -> list[dict]:
+        """Fetch top markets with 24h change — shared cache for gainers/losers."""
+        data = await self.get_markets(limit=20)
         return data
 
     async def get_gainers(self, limit: int = 5) -> list[dict]:
