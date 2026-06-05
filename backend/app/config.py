@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     # Phase 4: Provider API keys
     coinglass_api_key: str | None = None
     coinglass_standard_api_key: str | None = None
-    coinglass_base_url: str = "https://open-api.coinglass.com"
+    coinglass_base_url: str = "https://open-api-v4.coinglass.com"
     geckoterminal_base_url: str = "https://api.geckoterminal.com/api/v2"
 
     class Config:

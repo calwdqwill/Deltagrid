@@ -13,7 +13,7 @@ from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BASE_URL = "https://open-api.coinglass.com"
+DEFAULT_BASE_URL = "https://open-api-v4.coinglass.com"
 
 
 class CoinGlassClient:
@@ -26,9 +26,12 @@ class CoinGlassClient:
         self.client = httpx.AsyncClient(timeout=15.0, headers=self._headers())
 
     def _headers(self) -> dict:
-        headers = {"Content-Type": "application/json"}
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
         if self.api_key:
-            headers["coinglassSecret"] = self.api_key
+            if "open-api-v4.coinglass.com" in self.base_url:
+                headers["CG-API-KEY"] = self.api_key
+            else:
+                headers["coinglassSecret"] = self.api_key
         return headers
 
     async def close(self) -> None:
@@ -51,29 +54,53 @@ class CoinGlassClient:
             logger.warning(f"CoinGlass request failed: {e}")
             return None
 
+    @staticmethod
+    def _extract_data(payload: Optional[dict]) -> Optional[Any]:
+        if not payload:
+            return None
+        if payload.get("success") is True:
+            return payload.get("data")
+        if payload.get("code") in ("0", 0):
+            return payload.get("data")
+        return None
+
     async def get_funding_rates(self, symbol: Optional[str] = None) -> Optional[list[dict]]:
         """Fetch funding rates. Returns list of funding rate entries."""
-        params = {}
+        params = {
+            "exchange_list": "Binance",
+            "per_page": 100,
+            "page": 1,
+        }
         if symbol:
             params["symbol"] = symbol
-        data = await self._request("GET", "/api/futures/fundingRate", params=params)
-        if data and data.get("success"):
-            return data.get("data", [])
+        data = await self._request("GET", "/api/futures/coins-markets", params=params)
+        rows = self._extract_data(data)
+        if isinstance(rows, list):
+            return rows
         return None
 
     async def get_open_interest(self, symbol: Optional[str] = None) -> Optional[list[dict]]:
         """Fetch open interest."""
-        params = {}
+        params = {
+            "exchange_list": "Binance",
+            "per_page": 100,
+            "page": 1,
+        }
         if symbol:
             params["symbol"] = symbol
-        data = await self._request("GET", "/api/futures/openInterest", params=params)
-        if data and data.get("success"):
-            return data.get("data", [])
+        data = await self._request("GET", "/api/futures/coins-markets", params=params)
+        rows = self._extract_data(data)
+        if isinstance(rows, list):
+            return rows
         return None
 
     async def health_check(self) -> bool:
         """Quick health check."""
         if not self.api_key:
             return False
-        data = await self._request("GET", "/api/futures/fundingRate")
-        return data is not None
+        data = await self._request(
+            "GET",
+            "/api/futures/coins-markets",
+            params={"exchange_list": "Binance", "per_page": 1, "page": 1},
+        )
+        return self._extract_data(data) is not None

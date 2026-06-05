@@ -6,6 +6,8 @@
 - [x] В Cloudflare включить proxy + SSL mode `Full (strict)` и проверить frontend/API/WebSocket.
 - [x] Добавить ручной production sync market data из Binance USD-M в PostgreSQL.
 - [x] Выполнить первый production sync market data и проверить `/api/v1/data/health` через домен.
+- [x] Добавить CoinGecko/CoinGlass provider API keys в server `.env.production`.
+- [x] Перевести CoinGlass client на v4 endpoint/header для production health и funding enrichments.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования окна обслуживания выполнить reboot сервера из-за pending kernel upgrade.
 - [ ] Настроить минимальный внешний uptime/health monitoring для `https://deltagrid.pro/api/v1/health/readiness`.

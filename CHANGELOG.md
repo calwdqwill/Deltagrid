@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] — [DATA] — Provider API keys и CoinGlass v4
+- Provider API keys добавлены в `/opt/deltagrid/.env.production` без вывода секретов; backend container перечитал env после recreate.
+- `CoinGecko` ключ активен: `market/trending` и `market/global` отвечают через production-домен.
+- `CoinGlassClient` переведён на v4 base URL `https://open-api-v4.coinglass.com`, header `CG-API-KEY` и endpoint `/api/futures/coins-markets`.
+- `GET /api/v1/market/enrichments` теперь может проверять CoinGlass v4 health, а `GET /api/v1/market/funding-rates` нормализует live-поля `avg_funding_rate_by_oi`, `open_interest_usd` и `current_price`.
+
 ## [2026-06-05] — [DATA] — Ручной production sync market data
 - Добавлена backend-команда `python -m app.adapters.data.sync_market_data` для загрузки свежих Binance USD-M данных в PostgreSQL без нового scheduler/cron.
 - `BinanceAdapter` теперь реально загружает funding history, open interest history и global long/short account ratio; liquidations остаются отдельной задачей.

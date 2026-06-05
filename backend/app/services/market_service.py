@@ -121,12 +121,25 @@ class MarketService:
                 # Normalize CoinGlass data to our schema
                 normalized = []
                 for item in rates[:10]:
+                    rate = (
+                        item.get("fundingRate")
+                        or item.get("funding_rate")
+                        or item.get("avg_funding_rate_by_oi")
+                        or item.get("avg_funding_rate_by_vol")
+                        or 0
+                    )
+                    annualized = item.get("fundingRateAnnualized")
+                    if annualized is None:
+                        annualized = float(rate or 0) * 3 * 365
                     normalized.append({
                         "symbol": item.get("symbol", "UNKNOWN"),
-                        "rate": item.get("fundingRate", 0),
+                        "rate": rate,
                         "interval": item.get("interval", "8h"),
-                        "exchange": item.get("exchange", "Unknown"),
-                        "annualized": item.get("fundingRateAnnualized", 0),
+                        "exchange": item.get("exchange", "CoinGlass"),
+                        "annualized": annualized,
+                        "open_interest_usd": item.get("open_interest_usd"),
+                        "price": item.get("current_price"),
+                        "data_status": "live",
                     })
                 return normalized
         except Exception:
