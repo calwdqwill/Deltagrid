@@ -8,6 +8,7 @@
 - Приложение работает через Nginx: `https://deltagrid.pro` и `https://www.deltagrid.pro`.
 - Let's Encrypt сертификат выпущен для `deltagrid.pro` и `www.deltagrid.pro`, срок действия до `2026-09-03`; `certbot renew --dry-run` прошёл успешно.
 - Проверки: server smoke-check через HTTPS прошёл; страницы `/`, `/market`, `/data-health`, `/watchlist`, `/settings`, `/funding`, `/perp-dex`, `/assets`, `/charts`, `/strategy-lab` возвращают `200`; API `/api/v1/health`, `/api/v1/health/readiness`, `/api/v1/data/health`, `/api/v1/market/trending` возвращают `200`.
+- Cloudflare proxy включён обратно, SSL mode `Full (strict)` проверен: edge отдаёт `Server: cloudflare`, frontend/API возвращают `200`, WebSocket `/api/v1/stream/ws` отдаёт `101 Switching Protocols`.
 - `scripts/deploy-production.sh` теперь ждёт healthcheck сервисов перед smoke-check, чтобы убрать race condition первого запуска frontend.
 
 ## [2026-06-05] — [DEPLOY] — Привязка deployment flow к `deltagrid.pro`

@@ -32,6 +32,7 @@
 - [x] Реальный серверный rollout выполнен: `/opt/deltagrid`, `.env.production`, PostgreSQL, backend, frontend и Nginx.
 - [x] HTTPS включён через Let's Encrypt; `https://deltagrid.pro` и `https://www.deltagrid.pro` отвечают.
 - [x] Server smoke-check через HTTPS прошёл; основные frontend pages и API routes возвращают `200`.
+- [x] Cloudflare proxy + SSL mode `Full (strict)` включены и проверены; WebSocket route проходит через Cloudflare.
 
 ## Следующая итерация
 
@@ -47,6 +48,7 @@
 - [x] Настроить Nginx/SSL на сервере после DNS cutover.
 - [x] Проверить reverse proxy/SSL на `deltagrid.pro` по `DEPLOYMENT.md`.
 - [x] Прогнать smoke-check на сервере локально и через домен.
+- [x] Проверить Cloudflare proxy, `Full (strict)` и WebSocket после включения оранжевого облака.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования времени выполнить reboot сервера из-за pending kernel upgrade.
 

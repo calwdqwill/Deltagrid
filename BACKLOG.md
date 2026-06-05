@@ -3,9 +3,9 @@
 ## Production Ops — 2026-06-05
 - [x] Развернуть `deltagrid.pro` на сервере `2.25.143.143` с PostgreSQL, backend, frontend, Nginx и Let's Encrypt SSL.
 - [x] Проверить HTTPS smoke-check, основные frontend pages и API routes.
+- [x] В Cloudflare включить proxy + SSL mode `Full (strict)` и проверить frontend/API/WebSocket.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования окна обслуживания выполнить reboot сервера из-за pending kernel upgrade.
-- [ ] В Cloudflare после стабилизации включить SSL mode `Full (strict)` и проверить, что proxy не ломает WebSocket.
 - [ ] Настроить минимальный внешний uptime/health monitoring для `https://deltagrid.pro/api/v1/health/readiness`.
 - [ ] Ввести регулярный backup PostgreSQL volume перед миграциями и деплоем.
 

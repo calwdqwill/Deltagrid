@@ -227,6 +227,7 @@ BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/ser
 - Nginx reverse proxy обслуживает `https://deltagrid.pro` и `https://www.deltagrid.pro`.
 - Let's Encrypt сертификат выпущен для `deltagrid.pro` и `www.deltagrid.pro`; автообновление `certbot renew --dry-run` прошло успешно.
 - `BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh` прошёл успешно.
+- Cloudflare proxy включён, SSL mode установлен в `Full (strict)`, API и WebSocket `/api/v1/stream/ws` проверены через Cloudflare edge.
 
 Для Windows/PowerShell:
 
