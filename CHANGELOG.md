@@ -1,5 +1,13 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] — [DATA] — Multi-provider ingestion и регулярный sync
+- `sync_market_data` расширен до multi-provider flow: Binance USD-M продолжает писать OHLCV/funding/OI/L/S, CoinGlass v4 пишет funding/OI snapshots, CoinGecko даёт spot price для approximate `basis_premium`.
+- `DataWriter` получил безопасную вставку `basis_premium` и чтение последнего Binance 1m close без изменения схемы БД.
+- `GET /api/v1/data/health` теперь отслеживает provider `coingecko` вместе с `binance` и `coinglass`.
+- `scripts/sync-market-data.sh` по умолчанию включает `--include-coinglass` и `--include-coingecko-basis`.
+- Добавлен `scripts/install-market-sync-cron.sh`, который создаёт `/etc/cron.d/deltagrid-market-sync` для запуска sync каждые 15 минут.
+- `DEPLOYMENT.md`, `ARCHITECTURE.md`, `BACKLOG.md`, `PROJECT_PLAN.md` и `CURRENT_TASK.md` обновлены под регулярный multi-provider sync.
+
 ## [2026-06-05] — [DATA] — Provider API keys и CoinGlass v4
 - Provider API keys добавлены в `/opt/deltagrid/.env.production` без вывода секретов; backend container перечитал env после recreate.
 - `CoinGecko` ключ активен: `market/trending` и `market/global` отвечают через production-домен.

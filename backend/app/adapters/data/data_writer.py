@@ -5,6 +5,7 @@ Works with the project's configured database via SQLAlchemy.
 """
 
 import logging
+import uuid
 from typing import Optional
 
 from sqlalchemy import create_engine, text
@@ -204,6 +205,35 @@ class DataWriter:
             conn.commit()
             return result.rowcount
 
+    def insert_basis_premium(self, rows: list[dict]) -> int:
+        if not rows:
+            return 0
+        stmt = text("""
+            INSERT INTO basis_premium (
+                id, symbol, exchange, spot_price, perp_price, basis_pct, premium_pct, timestamp
+            )
+            VALUES (
+                :id, :symbol, :exchange, :spot_price, :perp_price, :basis_pct, :premium_pct, :timestamp
+            )
+        """)
+        with self.engine.connect() as conn:
+            params = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "symbol": row["symbol"],
+                    "exchange": row["exchange"],
+                    "spot_price": row.get("spot_price"),
+                    "perp_price": row.get("perp_price"),
+                    "basis_pct": row.get("basis_pct"),
+                    "premium_pct": row.get("premium_pct"),
+                    "timestamp": row["timestamp"],
+                }
+                for row in rows
+            ]
+            result = conn.execute(stmt, params)
+            conn.commit()
+            return result.rowcount
+
     # -- Job tracking ------------------------------------------------
 
     def create_job(self, job_id: str, symbol: str, exchange: str, data_type: str,
@@ -248,6 +278,18 @@ class DataWriter:
             result = conn.execute(stmt, {"sym": symbol, "ex": exchange, "iv": interval})
             row = result.fetchone()
             return row[0] if row and row[0] else None
+
+    def get_latest_ohlcv_close(self, symbol: str, exchange: str, interval: str) -> Optional[float]:
+        stmt = text("""
+            SELECT close FROM ohlcv
+            WHERE symbol=:sym AND exchange=:ex AND interval=:iv
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """)
+        with self.engine.connect() as conn:
+            result = conn.execute(stmt, {"sym": symbol, "ex": exchange, "iv": interval})
+            row = result.fetchone()
+            return float(row[0]) if row and row[0] is not None else None
 
     def count_rows(self, table: str = "ohlcv") -> int:
         stmt = text(f"SELECT COUNT(*) FROM {table}")

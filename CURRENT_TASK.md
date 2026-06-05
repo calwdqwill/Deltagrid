@@ -1,7 +1,7 @@
 # Current Task — DeltaGrid
 
 **Phase**: Production-ready MVP hardening ✅ PostgreSQL runtime READY
-**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Production deploy на `deltagrid.pro` выполнен, Cloudflare proxy работает в `Full (strict)`. Добавлена ручная команда sync market data для заполнения PostgreSQL из Binance USD-M.
+**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Production deploy на `deltagrid.pro` выполнен, Cloudflare proxy работает в `Full (strict)`. Market data sync расширен до Binance, CoinGlass v4 и CoinGecko-derived basis snapshots.
 **Last Updated**: 2026-06-05
 
 ## PostgreSQL MVP Summary — 2026-06-05
@@ -35,6 +35,8 @@
 - [x] Cloudflare proxy + SSL mode `Full (strict)` включены и проверены; WebSocket route проходит через Cloudflare.
 - [x] Добавлена команда `python -m app.adapters.data.sync_market_data` и wrapper `scripts/sync-market-data.sh` для первичного заполнения data-layer.
 - [x] Первый production sync Binance market data выполнен: `6837` rows inserted, `/api/v1/data/health` через домен показывает `binance healthy`.
+- [x] Provider API keys добавлены в server `.env.production`; CoinGlass v4 health/funding endpoints работают через production-домен.
+- [x] Sync-команда расширена до CoinGlass funding/OI snapshots и CoinGecko-derived `basis_premium`.
 
 ## Следующая итерация
 
@@ -53,9 +55,9 @@
 - [x] Проверить Cloudflare proxy, `Full (strict)` и WebSocket после включения оранжевого облака.
 - [x] Выполнить `sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv-intervals 1m,5m,1h` на сервере.
 - [x] Проверить, что `/api/v1/data/health` показывает `row_counts.ohlcv > 0` и последний Binance sync.
+- [ ] Установить `scripts/install-market-sync-cron.sh` на сервере и проверить первый cron-run по логам.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования времени выполнить reboot сервера из-за pending kernel upgrade.
-- [ ] Настроить регулярный market data sync, чтобы данные не устаревали после ручной загрузки.
 
 ## Frontend MVP Summary — 2026-06-04
 

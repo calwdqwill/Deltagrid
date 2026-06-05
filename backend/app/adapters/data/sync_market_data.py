@@ -13,10 +13,14 @@ from typing import Iterable
 
 from sqlalchemy import text
 
+from app.adapters.coingecko_adapter import CoinGeckoAdapter
 from app.adapters.data.backfill_orchestrator import BackfillJob, BackfillOrchestrator
 from app.adapters.data.binance_adapter import BinanceAdapter
 from app.adapters.data.data_writer import DataWriter
+from app.adapters.data.data_models import FundingRate, OpenInterest
 from app.adapters.data.rate_limiter import GlobalRateLimiter
+from app.adapters.data.symbol_mapper import SymbolMapper
+from app.services.providers.coinglass_client import CoinGlassClient
 
 logger = logging.getLogger("sync_market_data")
 
@@ -31,6 +35,7 @@ def _csv_lower(value: str) -> list[str]:
 
 def _record_sync_run(
     writer: DataWriter,
+    provider_name: str,
     sync_type: str,
     status: str,
     start_ms: int,
@@ -45,7 +50,7 @@ def _record_sync_run(
             records_fetched, records_inserted, error_message
         )
         VALUES (
-            :id, 'binance', :sync_type, :status, :start_time, :end_time,
+            :id, :provider_name, :sync_type, :status, :start_time, :end_time,
             :records_fetched, :records_inserted, :error_message
         )
     """)
@@ -54,6 +59,7 @@ def _record_sync_run(
             stmt,
             {
                 "id": str(uuid.uuid4()),
+                "provider_name": provider_name,
                 "sync_type": sync_type,
                 "status": status,
                 "start_time": start_ms,
@@ -109,6 +115,131 @@ async def _sync_ohlcv(
                 logger.exception(message)
 
     return fetched, inserted, errors
+
+
+def _coinglass_rate_to_decimal(raw_value) -> float:
+    """CoinGlass v4 market endpoint returns funding as percent-like values."""
+    if raw_value is None:
+        return 0.0
+    return float(raw_value) / 100
+
+
+async def _sync_coinglass_snapshots(
+    writer: DataWriter,
+    symbols: Iterable[str],
+    timestamp_ms: int,
+) -> tuple[int, int, list[str]]:
+    symbol_set = {symbol.upper() for symbol in symbols}
+    client = CoinGlassClient()
+    try:
+        rows = await client.get_funding_rates()
+    finally:
+        await client.close()
+
+    if not rows:
+        return 0, 0, ["coinglass snapshots: no data returned"]
+
+    filtered = [
+        row
+        for row in rows
+        if str(row.get("symbol", "")).upper() in symbol_set
+    ]
+    funding_rows: list[FundingRate] = []
+    oi_rows: list[OpenInterest] = []
+
+    for row in filtered:
+        symbol = str(row.get("symbol", "")).upper()
+        funding_raw = (
+            row.get("avg_funding_rate_by_oi")
+            or row.get("avg_funding_rate_by_vol")
+            or row.get("fundingRate")
+            or row.get("funding_rate")
+        )
+        funding_rows.append(
+            FundingRate(
+                timestamp_ms=timestamp_ms,
+                symbol=symbol,
+                exchange="coinglass",
+                funding_rate=_coinglass_rate_to_decimal(funding_raw),
+                next_funding_time_ms=None,
+                interval="8h",
+            )
+        )
+        oi_rows.append(
+            OpenInterest(
+                timestamp_ms=timestamp_ms,
+                symbol=symbol,
+                exchange="coinglass",
+                interval="snapshot",
+                oi_usd=float(row.get("open_interest_usd") or 0),
+                oi_coins=float(row.get("open_interest_quantity") or 0),
+            )
+        )
+
+    inserted = writer.upsert_funding(funding_rows)
+    inserted += writer.upsert_oi(oi_rows)
+    fetched = len(filtered) * 2
+    logger.info("coinglass snapshots fetched=%s inserted=%s", fetched, inserted)
+    return fetched, inserted, []
+
+
+async def _sync_coingecko_basis(
+    writer: DataWriter,
+    symbols: Iterable[str],
+    timestamp_ms: int,
+) -> tuple[int, int, list[str]]:
+    mapper = SymbolMapper()
+    cg_ids_by_symbol: dict[str, str] = {}
+    errors: list[str] = []
+
+    for symbol in symbols:
+        try:
+            cg_ids_by_symbol[symbol] = mapper.to_provider(
+                symbol,
+                "coingecko",
+                alias_type="cg_id",
+            )
+        except Exception as exc:
+            errors.append(f"coingecko basis {symbol}: {exc}")
+
+    if not cg_ids_by_symbol:
+        return 0, 0, errors or ["coingecko basis: no mapped symbols"]
+
+    adapter = CoinGeckoAdapter()
+    try:
+        tickers = await adapter.fetch_tickers(list(cg_ids_by_symbol.values()))
+    finally:
+        await adapter.client.aclose()
+
+    spot_by_cg_id = {
+        ticker.instrument_id: ticker.price
+        for ticker in tickers
+        if ticker.venue_id == "coingecko_aggregated" and ticker.price
+    }
+    basis_rows = []
+
+    for symbol, cg_id in cg_ids_by_symbol.items():
+        spot_price = spot_by_cg_id.get(cg_id)
+        perp_price = writer.get_latest_ohlcv_close(symbol, "binance", "1m")
+        if not spot_price or not perp_price:
+            errors.append(f"coingecko basis {symbol}: missing spot or perp price")
+            continue
+        basis_pct = ((perp_price - spot_price) / spot_price) * 100
+        basis_rows.append(
+            {
+                "symbol": symbol,
+                "exchange": "binance",
+                "spot_price": float(spot_price),
+                "perp_price": float(perp_price),
+                "basis_pct": basis_pct,
+                "premium_pct": basis_pct,
+                "timestamp": timestamp_ms,
+            }
+        )
+
+    inserted = writer.insert_basis_premium(basis_rows)
+    logger.info("coingecko basis fetched=%s inserted=%s errors=%s", len(basis_rows), inserted, len(errors))
+    return len(basis_rows), inserted, errors
 
 
 async def _sync_funding(
@@ -214,6 +345,7 @@ async def run(args: argparse.Namespace) -> int:
         all_errors.extend(errors)
         _record_sync_run(
             writer,
+            "binance",
             "ohlcv",
             "completed" if not errors else "partial",
             start_ms,
@@ -230,6 +362,7 @@ async def run(args: argparse.Namespace) -> int:
             all_errors.extend(errors)
             _record_sync_run(
                 writer,
+                "binance",
                 "funding_rates",
                 "completed" if not errors else "partial",
                 start_ms,
@@ -246,6 +379,7 @@ async def run(args: argparse.Namespace) -> int:
             all_errors.extend(errors)
             _record_sync_run(
                 writer,
+                "binance",
                 "open_interest",
                 "completed" if not errors else "partial",
                 start_ms,
@@ -269,7 +403,42 @@ async def run(args: argparse.Namespace) -> int:
             all_errors.extend(errors)
             _record_sync_run(
                 writer,
+                "binance",
                 "long_short_ratio",
+                "completed" if not errors else "partial",
+                start_ms,
+                now_ms,
+                fetched,
+                inserted,
+                "; ".join(errors) if errors else None,
+            )
+
+        if args.include_coinglass:
+            fetched, inserted, errors = await _sync_coinglass_snapshots(writer, symbols, now_ms)
+            total_fetched += fetched
+            total_inserted += inserted
+            all_errors.extend(errors)
+            _record_sync_run(
+                writer,
+                "coinglass",
+                "snapshots",
+                "completed" if not errors else "partial",
+                start_ms,
+                now_ms,
+                fetched,
+                inserted,
+                "; ".join(errors) if errors else None,
+            )
+
+        if args.include_coingecko_basis:
+            fetched, inserted, errors = await _sync_coingecko_basis(writer, symbols, now_ms)
+            total_fetched += fetched
+            total_inserted += inserted
+            all_errors.extend(errors)
+            _record_sync_run(
+                writer,
+                "coingecko",
+                "basis_premium",
                 "completed" if not errors else "partial",
                 start_ms,
                 now_ms,
@@ -294,6 +463,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-funding", action="store_true", help="Fetch funding-rate history.")
     parser.add_argument("--include-open-interest", action="store_true", help="Fetch open-interest history.")
     parser.add_argument("--include-long-short", action="store_true", help="Fetch long/short account ratio.")
+    parser.add_argument("--include-coinglass", action="store_true", help="Fetch CoinGlass v4 funding/OI snapshots.")
+    parser.add_argument("--include-coingecko-basis", action="store_true", help="Write CoinGecko spot vs Binance perp basis snapshots.")
     parser.add_argument("--use-mock", action="store_true", help="Use deterministic mock OHLCV instead of Binance.")
     return parser.parse_args()
 

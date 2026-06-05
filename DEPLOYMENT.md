@@ -138,7 +138,7 @@ curl http://127.0.0.1:3001
 
 ## Заполнение market data
 
-После первого production deploy PostgreSQL создаётся пустым: миграции поднимают схему, но не загружают рыночные данные. Чтобы вручную загрузить свежие публичные данные Binance USD-M в MVP data-layer:
+После первого production deploy PostgreSQL создаётся пустым: миграции поднимают схему, но не загружают рыночные данные. Чтобы вручную загрузить свежие market data в MVP data-layer:
 
 ```bash
 cd /opt/deltagrid
@@ -151,8 +151,15 @@ sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv
 - `funding_rates`;
 - `open_interest`;
 - `long_short_ratio`;
+- `basis_premium`;
 - `provider_sync_runs`;
 - `backfill_jobs`.
+
+Источники текущего MVP sync:
+
+- Binance USD-M: OHLCV, funding history, open interest history, long/short ratio.
+- CoinGlass v4: funding/OI snapshots с provider name `coinglass`.
+- CoinGecko: spot price для расчёта approximate `basis_premium` против последнего Binance perp close.
 
 Проверка после синка:
 
@@ -162,7 +169,7 @@ curl "http://127.0.0.1:8000/api/v1/data/ohlcv?symbol=BTC&exchange=binance&interv
 curl https://deltagrid.pro/api/v1/data/health
 ```
 
-Ожидаемо: `row_counts.ohlcv` больше `0`, у `providers.binance` появляется последний `last_sync`, а `data_quality.score` перестаёт быть `0` при наличии market rows.
+Ожидаемо: `row_counts.ohlcv`, `row_counts.open_interest`, `row_counts.funding_rates` и `row_counts.basis_premium` больше `0`, у `providers.binance`, `providers.coinglass` и `providers.coingecko` появляется последний `last_sync`, а `data_quality.score` перестаёт быть `0` при наличии market rows.
 
 Ручной вариант без wrapper-скрипта:
 
@@ -174,7 +181,36 @@ docker compose --env-file .env.production -f docker-compose.prod.yml exec -T bac
   --ohlcv-intervals 1m,5m,1h \
   --include-funding \
   --include-open-interest \
-  --include-long-short
+  --include-long-short \
+  --include-coinglass \
+  --include-coingecko-basis
+```
+
+## Регулярный market data sync
+
+Для production MVP используется host-level cron без отдельного scheduler-сервиса:
+
+```bash
+cd /opt/deltagrid
+sudo sh scripts/install-market-sync-cron.sh
+```
+
+По умолчанию cron создаёт `/etc/cron.d/deltagrid-market-sync` и запускает:
+
+```bash
+sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 2 --ohlcv-intervals 1m,5m,1h
+```
+
+Расписание по умолчанию: каждые 15 минут. Лог:
+
+```bash
+tail -100 /var/log/deltagrid-market-sync.log
+```
+
+Изменить расписание можно через env при установке:
+
+```bash
+sudo SCHEDULE="*/30 * * * *" LOOKBACK_HOURS=4 sh scripts/install-market-sync-cron.sh
 ```
 
 Важно:

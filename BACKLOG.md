@@ -8,11 +8,12 @@
 - [x] Выполнить первый production sync market data и проверить `/api/v1/data/health` через домен.
 - [x] Добавить CoinGecko/CoinGlass provider API keys в server `.env.production`.
 - [x] Перевести CoinGlass client на v4 endpoint/header для production health и funding enrichments.
+- [x] Расширить production sync до CoinGlass funding/OI snapshots и CoinGecko-derived basis snapshots.
+- [x] Добавить host-level cron для регулярного market data sync.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования окна обслуживания выполнить reboot сервера из-за pending kernel upgrade.
 - [ ] Настроить минимальный внешний uptime/health monitoring для `https://deltagrid.pro/api/v1/health/readiness`.
 - [ ] Ввести регулярный backup PostgreSQL volume перед миграциями и деплоем.
-- [ ] Настроить безопасный регулярный запуск market data sync после ручной проверки качества данных.
 - [ ] Реализовать сбор Binance liquidations или подключить отдельный источник ликвидаций.
 
 ## Frontend MVP Terminal — 2026-06-04

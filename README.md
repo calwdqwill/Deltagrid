@@ -117,6 +117,14 @@ sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv
 curl https://deltagrid.pro/api/v1/data/health
 ```
 
+Sync пишет Binance OHLCV/funding/OI/L/S, CoinGlass v4 funding/OI snapshots и CoinGecko-derived basis snapshots. Для регулярного запуска на сервере:
+
+```bash
+cd /opt/deltagrid
+sudo sh scripts/install-market-sync-cron.sh
+tail -100 /var/log/deltagrid-market-sync.log
+```
+
 На сервере используйте `docker compose`, `.env.production` и `docker-compose.prod.yml` из `/opt/deltagrid`. Старый SQLite-файл `deltagrid.db` не используется в production runtime.
 
 ## Features

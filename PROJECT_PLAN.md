@@ -35,6 +35,8 @@
 - [x] Развернуть приложение на сервере `2.25.143.143` в `/opt/deltagrid`.
 - [x] Выпустить SSL и проверить `https://deltagrid.pro`.
 - [x] Добавить ручную production-safe команду синка Binance market data в PostgreSQL.
+- [x] Расширить sync до CoinGlass v4 snapshots и CoinGecko-derived basis snapshots.
+- [x] Подготовить host-level cron для регулярного market data sync.
 
 ## Следующие шаги
 
@@ -49,7 +51,7 @@
 - [x] Выполнить первый ручной sync market data на сервере и проверить `row_counts` в `/api/v1/data/health`.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
-- [ ] Подключить регулярный market data sync после ручной проверки качества данных.
+- [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
 - [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования контрактов.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.

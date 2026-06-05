@@ -11,4 +11,6 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T backend \
   --include-funding \
   --include-open-interest \
   --include-long-short \
+  --include-coinglass \
+  --include-coingecko-basis \
   "$@"

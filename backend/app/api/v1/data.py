@@ -23,7 +23,7 @@ from app.schemas.common import ApiResponse
 router = APIRouter(prefix="/data", tags=["data"])
 
 MAX_ROWS = 1000
-WATCHED_PROVIDERS = ("binance", "coinglass")
+WATCHED_PROVIDERS = ("binance", "coinglass", "coingecko")
 
 
 def _iso(value: Any) -> Any:

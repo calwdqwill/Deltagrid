@@ -10,7 +10,7 @@ DeltaGrid — аналитическое приложение для крипт�
 - `backend/app/api/v1/` — FastAPI routes и API boundary.
 - `backend/app/services/` — бизнес-логика: market, scanner, alerts, execution, RWA, treasury, auth.
 - `backend/app/adapters/` — внешние провайдеры и exchange/data adapters.
-- `backend/app/adapters/data/sync_market_data.py` — ручная production-safe команда для первичного и повторного наполнения data-layer из публичных Binance USD-M endpoints.
+- `backend/app/adapters/data/sync_market_data.py` — production-safe команда для первичного и повторного наполнения data-layer из Binance USD-M, CoinGlass v4 и CoinGecko-derived spot snapshots.
 - `backend/app/domain/models.py` — SQLAlchemy ORM-модели.
 - `backend/app/persistence/` — sync/async DB engines и Alembic migrations.
 
@@ -60,6 +60,8 @@ Frontend HTTP API использует относительный `/api/v1` и �
 - JSON-like поля сохраняются как `Text` с суффиксом `_json`, чтобы не менять существующую сериализацию.
 - Финансовые значения PnL, balances, RWA/treasury используют `DECIMAL`.
 - OHLCV/funding/OI market data пока используют `Float`; это допустимо для MVP-аналитики, но требует пересмотра перед точными расчётами PnL/execution.
+- CoinGlass funding snapshots сохраняются в `funding_rates.funding_rate` как decimal, чтобы совпадать с Binance convention; v4 percent-like значения делятся на `100`.
+- `basis_premium` — approximate snapshot: CoinGecko spot price сравнивается с последним Binance 1m perp close. Это аналитический MVP-снимок, не execution-grade pricing.
 
 ## Data Flow
 
@@ -88,5 +90,5 @@ Frontend hooks / pages
 - Перед следующими production-итерациями нужно добавлять backup PostgreSQL перед миграциями и проверять `certbot renew --dry-run`.
 - Старые SQLite `.db` файлы не мигрируются автоматически; если нужны исторические данные, потребуется отдельный экспорт/импорт.
 - Нужно регулярно проверять `GET /api/v1/health/readiness` в staging/prod, чтобы ловить рассинхрон Alembic до открытия пользовательского трафика.
-- Market data ingestion для production MVP сейчас запускается вручную через `scripts/sync-market-data.sh`; регулярный scheduler/cron ещё не настроен.
+- Market data ingestion для production MVP запускается через `scripts/sync-market-data.sh`; на сервере используется host-level cron `/etc/cron.d/deltagrid-market-sync`.
 - Основной frontend terminal пока использует подготовленный mock adapter для части экранов; полное подключение всех виджетов к backend data-layer остаётся отдельной frontend-итерацией.
