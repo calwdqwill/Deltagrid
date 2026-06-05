@@ -6,6 +6,7 @@
 - `GET /api/v1/data/health` теперь отслеживает provider `coingecko` вместе с `binance` и `coinglass`.
 - `scripts/sync-market-data.sh` по умолчанию включает `--include-coinglass` и `--include-coingecko-basis`.
 - Добавлен `scripts/install-market-sync-cron.sh`, который создаёт `/etc/cron.d/deltagrid-market-sync` для запуска sync каждые 15 минут.
+- CoinGecko API key больше не передаётся в query params, чтобы HTTP logs не содержали секреты.
 - `DEPLOYMENT.md`, `ARCHITECTURE.md`, `BACKLOG.md`, `PROJECT_PLAN.md` и `CURRENT_TASK.md` обновлены под регулярный multi-provider sync.
 
 ## [2026-06-05] — [DATA] — Provider API keys и CoinGlass v4

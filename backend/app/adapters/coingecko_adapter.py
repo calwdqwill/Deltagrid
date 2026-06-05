@@ -36,10 +36,7 @@ class CoinGeckoAdapter(BaseAdapter):
         return headers
 
     def _params(self) -> dict:
-        params = {}
-        if self.api_key:
-            params["x_cg_pro_api_key"] = self.api_key
-        return params
+        return {}
 
     async def fetch_tickers(self, instrument_ids: list[str]) -> list[RawTicker]:
         """Fetch spot prices for instruments via /simple/price."""
