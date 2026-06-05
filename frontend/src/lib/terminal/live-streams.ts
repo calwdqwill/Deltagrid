@@ -200,15 +200,13 @@ async function fetchRows<T>(path: string): Promise<T[]> {
 
 async function symbolStreams(symbol: string) {
   const normalizedSymbol = symbol.toUpperCase();
-  const [ohlcv, funding, oiBinance, oiCoinGlass, basis, longShort, liquidations] = await Promise.all([
-    fetchRows<OhlcvRow>(`/data/ohlcv?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}&interval=1m`),
-    fetchRows<FundingRow>(`/data/funding?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`),
-    fetchRows<OpenInterestRow>(`/data/open-interest?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`),
-    fetchRows<OpenInterestRow>(`/data/open-interest?symbol=${normalizedSymbol}&exchange=coinglass`),
-    fetchRows<BasisPremiumRow>(`/data/basis-premium?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`),
-    fetchRows<LongShortRow>(`/data/long-short-ratio?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`),
-    fetchRows<LiquidationRow>(`/data/liquidations?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`),
-  ]);
+  const ohlcv = await fetchRows<OhlcvRow>(`/data/ohlcv?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}&interval=1m`);
+  const funding = await fetchRows<FundingRow>(`/data/funding?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
+  const oiBinance = await fetchRows<OpenInterestRow>(`/data/open-interest?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
+  const oiCoinGlass = await fetchRows<OpenInterestRow>(`/data/open-interest?symbol=${normalizedSymbol}&exchange=coinglass`);
+  const basis = await fetchRows<BasisPremiumRow>(`/data/basis-premium?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
+  const longShort = await fetchRows<LongShortRow>(`/data/long-short-ratio?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
+  const liquidations = await fetchRows<LiquidationRow>(`/data/liquidations?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
 
   return {
     symbol: normalizedSymbol,

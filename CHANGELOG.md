@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] - [FIX/DATA] - Устойчивость live data SSR
+- Backend SQLAlchemy pool стал управляемым через env: `DATABASE_POOL_SIZE`, `DATABASE_MAX_OVERFLOW`, `DATABASE_POOL_TIMEOUT_SECONDS`.
+- Frontend server-side API client получил таймаут `BACKEND_FETCH_TIMEOUT_MS`, чтобы live-страница не зависала бесконечно при проблемном backend-запросе.
+- Live stream loader снизил параллельность запросов на один символ: `Charts`, `Market Matrix`, `Arbitrage Scanner` и `Strategy Lab` больше не открывают десятки DB-сессий одномоментно.
+- Production-риск: таблица `liquidations` пока пустая, поэтому liquidation-блоки остаются в честном pending-состоянии до подключения ingestion.
+
 ## [2026-06-05] - [DATA/FRONTEND] - Live data streams для Charts, Matrix и Scanner
 - Добавлены read-only backend endpoint'ы для уже сохраняемых PostgreSQL потоков: `GET /api/v1/data/open-interest`, `/data/long-short-ratio`, `/data/basis-premium` и `/data/liquidations`.
 - Расширены regression tests `backend/tests/test_data_api.py`: новые data endpoints должны возвращать `200` даже при пустых таблицах.

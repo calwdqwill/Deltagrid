@@ -26,6 +26,9 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "postgresql://deltagrid:deltagrid@127.0.0.1:5432/deltagrid"
+    database_pool_size: int = 10
+    database_max_overflow: int = 20
+    database_pool_timeout_seconds: int = 10
 
     # Cache
     cache_backend: str = "in_memory"  # or "redis"

@@ -30,6 +30,9 @@ services:
       - COINGLASS_STANDARD_API_KEY=${COINGLASS_STANDARD_API_KEY:-}
       - CACHE_TTL_SECONDS=60
       - DATABASE_URL=postgresql://deltagrid:deltagrid@postgres:5432/deltagrid
+      - DATABASE_POOL_SIZE=${DATABASE_POOL_SIZE:-10}
+      - DATABASE_MAX_OVERFLOW=${DATABASE_MAX_OVERFLOW:-20}
+      - DATABASE_POOL_TIMEOUT_SECONDS=${DATABASE_POOL_TIMEOUT_SECONDS:-10}
       - SECRET_KEY=${SECRET_KEY:-local-dev-secret-change-me}
       - VAULT_MASTER_KEY=${VAULT_MASTER_KEY:-}
       - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
@@ -49,6 +52,7 @@ services:
       - "3000:3000"
     environment:
       - BACKEND_INTERNAL_URL=http://backend:8000
+      - BACKEND_FETCH_TIMEOUT_MS=${BACKEND_FETCH_TIMEOUT_MS:-5000}
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend

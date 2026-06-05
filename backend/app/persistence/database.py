@@ -20,6 +20,9 @@ def create_database_engine(database_url: str) -> Engine:
         engine_kwargs["poolclass"] = StaticPool
     else:
         engine_kwargs["pool_pre_ping"] = True
+        engine_kwargs["pool_size"] = settings.database_pool_size
+        engine_kwargs["max_overflow"] = settings.database_max_overflow
+        engine_kwargs["pool_timeout"] = settings.database_pool_timeout_seconds
 
     return create_engine(sync_url, **engine_kwargs)
 

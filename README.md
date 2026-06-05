@@ -101,6 +101,23 @@ docker compose up --build
 
 Compose поднимает PostgreSQL, ждёт healthcheck, применяет `alembic upgrade head` и запускает backend.
 
+### Runtime tuning live data
+
+Live-страницы `Charts`, `Market Matrix`, `Arbitrage Scanner` и `Strategy Lab` читают несколько PostgreSQL-потоков через backend SSR-запросами. Для production используются явные лимиты:
+
+```env
+DATABASE_POOL_SIZE=10
+DATABASE_MAX_OVERFLOW=20
+DATABASE_POOL_TIMEOUT_SECONDS=10
+BACKEND_FETCH_TIMEOUT_MS=5000
+```
+
+Если live-страницы начинают подвисать, сначала проверьте backend logs на `QueuePool` timeout и row counts через:
+
+```bash
+curl https://deltagrid.pro/api/v1/data/health
+```
+
 ### Production deploy
 
 Минимальный серверный сценарий для `deltagrid.pro` описан в [DEPLOYMENT.md](DEPLOYMENT.md): `.env.production`, `docker-compose.prod.yml`, reverse proxy, SSL, readiness checks, backup и rollback.
