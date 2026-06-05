@@ -67,7 +67,7 @@
 - [x] Проверить, что `/api/v1/data/health` показывает `row_counts.ohlcv > 0` и последний Binance sync.
 - [x] Установить `scripts/install-market-sync-cron.sh` на сервере.
 - [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
-- [ ] Задеплоить live data streams fix на сервер и проверить `https://deltagrid.pro/charts`, `/market-matrix`, `/arbitrage-scanner`, `/strategy-lab`.
+- [x] Задеплоить live data streams fix на сервер и проверить `https://deltagrid.pro/charts`, `/market-matrix`, `/arbitrage-scanner`, `/strategy-lab`.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования времени выполнить reboot сервера из-за pending kernel upgrade.
 
