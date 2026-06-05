@@ -28,6 +28,10 @@
 - [x] Добавлены `scripts/bootstrap-ubuntu.sh`, `scripts/deploy-production.sh` и `deploy/dns/deltagrid.pro.md`.
 - [x] Добавлен `scripts/configure-nginx-ssl.sh` для включения Nginx site и выпуска Let's Encrypt SSL.
 - [x] SSH-доступ `root@2.25.143.143` по ключу подтверждён; production frontend port перенесён на `3001`, чтобы не трогать служебный процесс на `3000`.
+- [x] DNS Cloudflare активирован: `deltagrid.pro` и `www.deltagrid.pro` указывают на `2.25.143.143`.
+- [x] Реальный серверный rollout выполнен: `/opt/deltagrid`, `.env.production`, PostgreSQL, backend, frontend и Nginx.
+- [x] HTTPS включён через Let's Encrypt; `https://deltagrid.pro` и `https://www.deltagrid.pro` отвечают.
+- [x] Server smoke-check через HTTPS прошёл; основные frontend pages и API routes возвращают `200`.
 
 ## Следующая итерация
 
@@ -36,13 +40,15 @@
 - [x] Проверить frontend against backend после запуска PostgreSQL окружения.
 - [x] Добавить production readiness gate для env/DB/migrations.
 - [x] Подготовить server deployment checklist: migrations, readiness, reverse proxy, SSL, backups.
-- [ ] Получить SSH-команду и учётные данные для `2.25.143.143`.
-- [ ] Перенастроить DNS `deltagrid.pro` на `2.25.143.143`.
-- [ ] На реальном сервере создать staging/prod `.env.production` с production secrets (`SECRET_KEY`, `VAULT_MASTER_KEY`) для `deltagrid.pro`.
-- [ ] Прогнать server preflight на сервере.
-- [ ] Настроить Nginx/SSL на сервере после DNS cutover.
-- [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
-- [ ] Прогнать smoke-check на сервере локально и через домен.
+- [x] Получить SSH-команду и учётные данные для `2.25.143.143`.
+- [x] Перенастроить DNS `deltagrid.pro` на `2.25.143.143`.
+- [x] На реальном сервере создать staging/prod `.env.production` с production secrets (`SECRET_KEY`, `VAULT_MASTER_KEY`) для `deltagrid.pro`.
+- [x] Прогнать server preflight на сервере.
+- [x] Настроить Nginx/SSL на сервере после DNS cutover.
+- [x] Проверить reverse proxy/SSL на `deltagrid.pro` по `DEPLOYMENT.md`.
+- [x] Прогнать smoke-check на сервере локально и через домен.
+- [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
+- [ ] После согласования времени выполнить reboot сервера из-за pending kernel upgrade.
 
 ## Frontend MVP Summary — 2026-06-04
 

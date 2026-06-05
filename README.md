@@ -101,6 +101,14 @@ Compose поднимает PostgreSQL, ждёт healthcheck, применяет 
 
 Минимальный серверный сценарий для `deltagrid.pro` описан в [DEPLOYMENT.md](DEPLOYMENT.md): `.env.production`, `docker-compose.prod.yml`, reverse proxy, SSL, readiness checks, backup и rollback.
 
+Текущее production-состояние от 2026-06-05:
+
+- домен `https://deltagrid.pro` активен через Cloudflare DNS и указывает на сервер `2.25.143.143`;
+- приложение развёрнуто на Ubuntu 22.04 в `/opt/deltagrid` из ветки `preview`;
+- PostgreSQL, backend и frontend запущены через `docker-compose.prod.yml`;
+- внешний доступ идёт через Nginx и Let's Encrypt SSL;
+- локальные server ports: backend `127.0.0.1:8000`, frontend `127.0.0.1:3001`, PostgreSQL наружу не опубликован.
+
 ## Features
 
 ### Phase 1 — MVP Scanner ✅

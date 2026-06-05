@@ -34,6 +34,8 @@ SQLite больше не является production runtime. Он может и
 
 Frontend HTTP API использует относительный `/api/v1` и проксируется Next.js rewrite'ом на `BACKEND_INTERNAL_URL`. Так как Next.js запекает rewrites во время build, Docker Compose передаёт `BACKEND_INTERNAL_URL=http://backend:8000` через frontend build args. WebSocket stream выбирает `NEXT_PUBLIC_WS_URL`, если он задан, иначе использует `127.0.0.1:8000` локально и same-origin `/api/v1/stream/ws` на production-домене.
 
+Фактический production rollout на `deltagrid.pro` выполнен на Ubuntu 22.04 сервере `2.25.143.143`: код расположен в `/opt/deltagrid`, Docker Compose поднимает PostgreSQL/backend/frontend, frontend опубликован на `127.0.0.1:3001`, backend на `127.0.0.1:8000`, а Nginx обслуживает `https://deltagrid.pro` и `https://www.deltagrid.pro` с сертификатом Let's Encrypt.
+
 ## Миграции
 
 Схема управляется через `backend/app/persistence/migrations`.
@@ -80,6 +82,6 @@ Frontend hooks / pages
 
 - Исторические JSON-поля пока не переведены на PostgreSQL `JSONB`.
 - Часть data-layer чисел использует `Float`; для финансово-критичных расчётов нужны `DECIMAL` и отдельная проверка формул.
-- Перед production-деплоем нужно прогнать миграции на пустой PostgreSQL и на staging с реальными env-переменными.
+- Перед следующими production-итерациями нужно добавлять backup PostgreSQL перед миграциями и проверять `certbot renew --dry-run`.
 - Старые SQLite `.db` файлы не мигрируются автоматически; если нужны исторические данные, потребуется отдельный экспорт/импорт.
 - Нужно регулярно проверять `GET /api/v1/health/readiness` в staging/prod, чтобы ловить рассинхрон Alembic до открытия пользовательского трафика.

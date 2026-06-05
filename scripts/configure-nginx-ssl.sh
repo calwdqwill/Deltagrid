@@ -13,12 +13,6 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-if [ -z "$EMAIL" ]; then
-  printf 'LETSENCRYPT_EMAIL is required.\n'
-  printf 'Example: sudo LETSENCRYPT_EMAIL=you@example.com sh scripts/configure-nginx-ssl.sh\n'
-  exit 1
-fi
-
 if [ ! -f "$APP_DIR/deploy/nginx/deltagrid.conf.example" ]; then
   printf 'Nginx template not found at %s/deploy/nginx/deltagrid.conf.example\n' "$APP_DIR"
   exit 1
@@ -44,13 +38,24 @@ nginx -t
 systemctl reload nginx
 
 printf 'Requesting SSL certificate for %s and www.%s...\n' "$DOMAIN" "$DOMAIN"
-certbot --nginx \
-  -d "$DOMAIN" \
-  -d "www.$DOMAIN" \
-  --non-interactive \
-  --agree-tos \
-  --email "$EMAIL" \
-  --redirect
+if [ -n "$EMAIL" ]; then
+  certbot --nginx \
+    -d "$DOMAIN" \
+    -d "www.$DOMAIN" \
+    --non-interactive \
+    --agree-tos \
+    --email "$EMAIL" \
+    --redirect
+else
+  printf 'LETSENCRYPT_EMAIL is empty; issuing without expiry email notifications.\n'
+  certbot --nginx \
+    -d "$DOMAIN" \
+    -d "www.$DOMAIN" \
+    --non-interactive \
+    --agree-tos \
+    --register-unsafely-without-email \
+    --redirect
+fi
 
 nginx -t
 systemctl reload nginx

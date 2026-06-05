@@ -150,6 +150,8 @@ curl http://127.0.0.1:3001
 sudo LETSENCRYPT_EMAIL=you@example.com sh scripts/configure-nginx-ssl.sh
 ```
 
+Email рекомендован для уведомлений о продлении сертификата. Если `LETSENCRYPT_EMAIL` не задан, скрипт выпустит сертификат без email-уведомлений через `--register-unsafely-without-email`.
+
 Скрипт копирует `deploy/nginx/deltagrid.conf.example`, включает site, проверяет `nginx -t`, перезагружает Nginx и выпускает сертификат Let's Encrypt для `deltagrid.pro` и `www.deltagrid.pro`.
 
 Готовый шаблон лежит в `deploy/nginx/deltagrid.conf.example` и уже настроен на `deltagrid.pro`:
@@ -215,6 +217,16 @@ sh scripts/server-smoke.sh
 ```bash
 BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh
 ```
+
+Фактический production rollout от 2026-06-05:
+
+- DNS Cloudflare активен: `deltagrid.pro` и `www.deltagrid.pro` указывают на `2.25.143.143`.
+- `/opt/deltagrid` развёрнут из ветки `preview`.
+- Docker Compose stack запущен: PostgreSQL, backend и frontend healthy.
+- Frontend опубликован локально как `127.0.0.1:3001`, backend как `127.0.0.1:8000`.
+- Nginx reverse proxy обслуживает `https://deltagrid.pro` и `https://www.deltagrid.pro`.
+- Let's Encrypt сертификат выпущен для `deltagrid.pro` и `www.deltagrid.pro`; автообновление `certbot renew --dry-run` прошло успешно.
+- `BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh` прошёл успешно.
 
 Для Windows/PowerShell:
 

@@ -1,5 +1,15 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] — [DEPLOY] — Реальный запуск `deltagrid.pro` на сервере
+- DNS Cloudflare активирован: `deltagrid.pro` и `www.deltagrid.pro` указывают на `2.25.143.143`, старая `AAAA`-запись для корня отсутствует.
+- SSH-доступ `root@2.25.143.143` по ключу подтверждён; код развёрнут в `/opt/deltagrid` из ветки `preview`.
+- На Ubuntu 22.04 установлен Nginx/Certbot, Docker Compose stack поднят с PostgreSQL, backend и frontend.
+- `.env.production` создан на сервере с production secrets; файл не коммитится.
+- Приложение работает через Nginx: `https://deltagrid.pro` и `https://www.deltagrid.pro`.
+- Let's Encrypt сертификат выпущен для `deltagrid.pro` и `www.deltagrid.pro`, срок действия до `2026-09-03`; `certbot renew --dry-run` прошёл успешно.
+- Проверки: server smoke-check через HTTPS прошёл; страницы `/`, `/market`, `/data-health`, `/watchlist`, `/settings`, `/funding`, `/perp-dex`, `/assets`, `/charts`, `/strategy-lab` возвращают `200`; API `/api/v1/health`, `/api/v1/health/readiness`, `/api/v1/data/health`, `/api/v1/market/trending` возвращают `200`.
+- `scripts/deploy-production.sh` теперь ждёт healthcheck сервисов перед smoke-check, чтобы убрать race condition первого запуска frontend.
+
 ## [2026-06-05] — [DEPLOY] — Привязка deployment flow к `deltagrid.pro`
 - `.env.production.example` обновлён под `https://deltagrid.pro` и `https://www.deltagrid.pro`.
 - `deploy/nginx/deltagrid.conf.example` теперь содержит `server_name deltagrid.pro www.deltagrid.pro`.

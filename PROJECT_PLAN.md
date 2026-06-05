@@ -32,17 +32,21 @@
 - [x] Добавить Ubuntu bootstrap/deploy scripts и DNS checklist для `deltagrid.pro`.
 - [x] Добавить скрипт настройки Nginx и Let's Encrypt SSL для `deltagrid.pro`.
 - [x] Учесть занятый порт `3000` на сервере и перевести production frontend binding на `127.0.0.1:3001`.
+- [x] Развернуть приложение на сервере `2.25.143.143` в `/opt/deltagrid`.
+- [x] Выпустить SSL и проверить `https://deltagrid.pro`.
 
 ## Следующие шаги
 
 - [x] Прогнать миграции на чистой PostgreSQL БД в локальном Docker.
 - [x] Проверить основные backend routes после миграции: `/health`, `/data/health`, `/data/ohlcv`, `/market/trending`.
-- [ ] На реальном сервере создать `.env.production` с реальными secrets для `deltagrid.pro` и non-local `DATABASE_URL`.
-- [ ] Прогнать `DOMAIN=deltagrid.pro sh scripts/server-preflight.sh` на сервере.
-- [ ] Перенаправить DNS `deltagrid.pro`/`www.deltagrid.pro` на `2.25.143.143` и убрать старую AAAA-запись, если IPv6 не настроен.
-- [ ] Проверить reverse proxy/SSL на staging-домене по `DEPLOYMENT.md`.
-- [ ] Выполнить `sudo LETSENCRYPT_EMAIL=... sh scripts/configure-nginx-ssl.sh` после DNS cutover.
-- [ ] Прогнать `scripts/server-smoke.sh` локально на сервере и через `https://deltagrid.pro`.
+- [x] На реальном сервере создать `.env.production` с реальными secrets для `deltagrid.pro` и PostgreSQL `DATABASE_URL`.
+- [x] Прогнать `DOMAIN=deltagrid.pro sh scripts/server-preflight.sh` на сервере.
+- [x] Перенаправить DNS `deltagrid.pro`/`www.deltagrid.pro` на `2.25.143.143` и убрать старую `AAAA`-запись для корня.
+- [x] Проверить reverse proxy/SSL на `deltagrid.pro` по `DEPLOYMENT.md`.
+- [x] Выпустить Let's Encrypt SSL после DNS cutover.
+- [x] Прогнать `scripts/server-smoke.sh` локально на сервере и через `https://deltagrid.pro`.
+- [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
+- [ ] Запланировать reboot сервера после pending kernel upgrade.
 - [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования контрактов.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.
