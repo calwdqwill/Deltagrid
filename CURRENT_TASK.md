@@ -37,6 +37,8 @@
 - [x] Первый production sync Binance market data выполнен: `6837` rows inserted, `/api/v1/data/health` через домен показывает `binance healthy`.
 - [x] Provider API keys добавлены в server `.env.production`; CoinGlass v4 health/funding endpoints работают через production-домен.
 - [x] Sync-команда расширена до CoinGlass funding/OI snapshots и CoinGecko-derived `basis_premium`.
+- [x] Host-level cron `/etc/cron.d/deltagrid-market-sync` установлен; cron service активен.
+- [x] `/api/v1/data/health` показывает `binance`, `coinglass` и `coingecko` healthy.
 
 ## Следующая итерация
 
@@ -55,7 +57,8 @@
 - [x] Проверить Cloudflare proxy, `Full (strict)` и WebSocket после включения оранжевого облака.
 - [x] Выполнить `sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv-intervals 1m,5m,1h` на сервере.
 - [x] Проверить, что `/api/v1/data/health` показывает `row_counts.ohlcv > 0` и последний Binance sync.
-- [ ] Установить `scripts/install-market-sync-cron.sh` на сервере и проверить первый cron-run по логам.
+- [x] Установить `scripts/install-market-sync-cron.sh` на сервере.
+- [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования времени выполнить reboot сервера из-за pending kernel upgrade.
 

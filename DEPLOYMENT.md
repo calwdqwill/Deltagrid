@@ -313,6 +313,7 @@ BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/ser
 - `BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh` прошёл успешно.
 - Cloudflare proxy включён, SSL mode установлен в `Full (strict)`, API и WebSocket `/api/v1/stream/ws` проверены через Cloudflare edge.
 - Первый ручной `scripts/sync-market-data.sh` выполнен: Binance public market data записаны в PostgreSQL, `/api/v1/data/health` через домен показывает `binance healthy` и ненулевые `row_counts`.
+- Multi-provider sync расширен до CoinGlass v4 и CoinGecko-derived basis snapshots; `/etc/cron.d/deltagrid-market-sync` установлен и cron service активен.
 
 Для Windows/PowerShell:
 

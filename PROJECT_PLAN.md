@@ -37,6 +37,7 @@
 - [x] Добавить ручную production-safe команду синка Binance market data в PostgreSQL.
 - [x] Расширить sync до CoinGlass v4 snapshots и CoinGecko-derived basis snapshots.
 - [x] Подготовить host-level cron для регулярного market data sync.
+- [x] Установить host-level cron на сервере `2.25.143.143` и проверить `cron` service.
 
 ## Следующие шаги
 
