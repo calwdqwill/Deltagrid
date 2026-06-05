@@ -1,7 +1,7 @@
 # Current Task — DeltaGrid
 
 **Phase**: Production-ready MVP hardening ✅ PostgreSQL runtime READY
-**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Добавлен production startup gate, readiness endpoint и минимальный server deployment flow для `deltagrid.pro`. Frontend MVP terminal `v1.2.0` сохранён без UI-изменений.
+**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Production deploy на `deltagrid.pro` выполнен, Cloudflare proxy работает в `Full (strict)`. Добавлена ручная команда sync market data для заполнения PostgreSQL из Binance USD-M.
 **Last Updated**: 2026-06-05
 
 ## PostgreSQL MVP Summary — 2026-06-05
@@ -23,7 +23,7 @@
 - [x] Добавлены `deploy/nginx/deltagrid.conf.example` и `scripts/server-smoke.sh`.
 - [x] Добавлены `scripts/server-preflight.sh` и `scripts/generate-production-env.sh`.
 - [x] Deploy-шаблоны и документация привязаны к домену `deltagrid.pro`.
-- [x] DNS preflight: `deltagrid.pro` и `www.deltagrid.pro` сейчас указывают на `31.31.196.50` / `2a00:f940:2:2:1:1:0:266`; HTTP отдаёт parking page REG.RU.
+- [x] DNS Cloudflare активен: `deltagrid.pro` и `www.deltagrid.pro` проходят через Cloudflare edge к серверу `2.25.143.143`.
 - [x] Серверный IP получен: `2.25.143.143`; SSH `22` открыт, HTTP `80` и HTTPS `443` пока закрыты.
 - [x] Добавлены `scripts/bootstrap-ubuntu.sh`, `scripts/deploy-production.sh` и `deploy/dns/deltagrid.pro.md`.
 - [x] Добавлен `scripts/configure-nginx-ssl.sh` для включения Nginx site и выпуска Let's Encrypt SSL.
@@ -33,6 +33,7 @@
 - [x] HTTPS включён через Let's Encrypt; `https://deltagrid.pro` и `https://www.deltagrid.pro` отвечают.
 - [x] Server smoke-check через HTTPS прошёл; основные frontend pages и API routes возвращают `200`.
 - [x] Cloudflare proxy + SSL mode `Full (strict)` включены и проверены; WebSocket route проходит через Cloudflare.
+- [x] Добавлена команда `python -m app.adapters.data.sync_market_data` и wrapper `scripts/sync-market-data.sh` для первичного заполнения data-layer.
 
 ## Следующая итерация
 
@@ -49,6 +50,8 @@
 - [x] Проверить reverse proxy/SSL на `deltagrid.pro` по `DEPLOYMENT.md`.
 - [x] Прогнать smoke-check на сервере локально и через домен.
 - [x] Проверить Cloudflare proxy, `Full (strict)` и WebSocket после включения оранжевого облака.
+- [ ] Выполнить `sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv-intervals 1m,5m,1h` на сервере.
+- [ ] Проверить, что `/api/v1/data/health` показывает `row_counts.ohlcv > 0` и последний Binance sync.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования времени выполнить reboot сервера из-за pending kernel upgrade.
 

@@ -34,6 +34,7 @@
 - [x] Учесть занятый порт `3000` на сервере и перевести production frontend binding на `127.0.0.1:3001`.
 - [x] Развернуть приложение на сервере `2.25.143.143` в `/opt/deltagrid`.
 - [x] Выпустить SSL и проверить `https://deltagrid.pro`.
+- [x] Добавить ручную production-safe команду синка Binance market data в PostgreSQL.
 
 ## Следующие шаги
 
@@ -45,8 +46,10 @@
 - [x] Проверить reverse proxy/SSL на `deltagrid.pro` по `DEPLOYMENT.md`.
 - [x] Выпустить Let's Encrypt SSL после DNS cutover.
 - [x] Прогнать `scripts/server-smoke.sh` локально на сервере и через `https://deltagrid.pro`.
+- [ ] Выполнить первый ручной sync market data на сервере и проверить `row_counts` в `/api/v1/data/health`.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
+- [ ] Подключить регулярный market data sync после ручной проверки качества данных.
 - [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования контрактов.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.

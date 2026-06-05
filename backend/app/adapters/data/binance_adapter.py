@@ -10,7 +10,13 @@ from typing import Optional
 import httpx
 
 from .base_adapter import BaseDataAdapter
-from .data_models import OHLCVCandle, ProviderHealthStatus
+from .data_models import (
+    FundingRate,
+    LongShortRatio,
+    OHLCVCandle,
+    OpenInterest,
+    ProviderHealthStatus,
+)
 from .rate_limiter import GlobalRateLimiter, RetryPolicy
 from .symbol_mapper import SymbolMapper
 
@@ -74,15 +80,66 @@ class BinanceAdapter(BaseDataAdapter):
         data = await self._execute_with_protection(_do_request)
         return [self._normalize_candle(raw, canonical_symbol, interval) for raw in data]
 
-    async def fetch_funding(self, symbol: str, start_ms: int, end_ms: int) -> list:
-        """Stub — funding rates for Binance."""
-        # TODO: implement /fapi/v1/fundingRate
-        return []
+    async def fetch_funding(self, symbol: str, start_ms: int, end_ms: int) -> list[FundingRate]:
+        """Fetch Binance USD-M funding-rate history."""
+        canonical_symbol = symbol.upper()
+        native_symbol = SymbolMapper().to_provider(canonical_symbol, "binance")
 
-    async def fetch_oi(self, symbol: str, interval: str = "1h") -> list:
-        """Stub — open interest for Binance."""
-        # TODO: implement /fapi/v1/openInterestHist
-        return []
+        url = f"{BINANCE_FAPI_BASE}/fapi/v1/fundingRate"
+        params = {
+            "symbol": native_symbol,
+            "startTime": start_ms,
+            "endTime": end_ms,
+            "limit": 1000,
+        }
+
+        async def _do_request():
+            resp = await self.client.get(url, params=params)
+            resp.raise_for_status()
+            return resp.json()
+
+        data = await self._execute_with_protection(_do_request)
+        return [
+            FundingRate(
+                timestamp_ms=int(raw["fundingTime"]),
+                symbol=canonical_symbol,
+                exchange="binance",
+                funding_rate=float(raw["fundingRate"]),
+                next_funding_time_ms=int(raw["fundingTime"]) + 8 * 60 * 60 * 1000,
+                interval="8h",
+            )
+            for raw in data
+        ]
+
+    async def fetch_oi(self, symbol: str, interval: str = "1h") -> list[OpenInterest]:
+        """Fetch Binance USD-M open-interest history."""
+        canonical_symbol = symbol.upper()
+        native_symbol = SymbolMapper().to_provider(canonical_symbol, "binance")
+
+        url = f"{BINANCE_FAPI_BASE}/futures/data/openInterestHist"
+        params = {
+            "symbol": native_symbol,
+            "period": interval,
+            "limit": 500,
+        }
+
+        async def _do_request():
+            resp = await self.client.get(url, params=params)
+            resp.raise_for_status()
+            return resp.json()
+
+        data = await self._execute_with_protection(_do_request)
+        return [
+            OpenInterest(
+                timestamp_ms=int(raw["timestamp"]),
+                symbol=canonical_symbol,
+                exchange="binance",
+                interval=interval,
+                oi_usd=float(raw.get("sumOpenInterestValue") or 0),
+                oi_coins=float(raw.get("sumOpenInterest") or 0),
+            )
+            for raw in data
+        ]
 
     async def fetch_liquidations(self, symbol: str, start_ms: int, end_ms: int) -> list:
         """Stub — liquidations for Binance."""
@@ -91,10 +148,39 @@ class BinanceAdapter(BaseDataAdapter):
 
     async def fetch_long_short_ratio(
         self, symbol: str, interval: str, start_ms: int, end_ms: int
-    ) -> list:
-        """Stub — long/short ratio for Binance."""
-        # TODO: implement /futures/data/globalLongShortAccountRatio
-        return []
+    ) -> list[LongShortRatio]:
+        """Fetch Binance USD-M global long/short account ratio."""
+        canonical_symbol = symbol.upper()
+        native_symbol = SymbolMapper().to_provider(canonical_symbol, "binance")
+
+        url = f"{BINANCE_FAPI_BASE}/futures/data/globalLongShortAccountRatio"
+        params = {
+            "symbol": native_symbol,
+            "period": interval,
+            "startTime": start_ms,
+            "endTime": end_ms,
+            "limit": 500,
+        }
+
+        async def _do_request():
+            resp = await self.client.get(url, params=params)
+            resp.raise_for_status()
+            return resp.json()
+
+        data = await self._execute_with_protection(_do_request)
+        return [
+            LongShortRatio(
+                timestamp_ms=int(raw["timestamp"]),
+                symbol=canonical_symbol,
+                exchange="binance",
+                interval=interval,
+                long_ratio=float(raw.get("longAccount") or 0),
+                short_ratio=float(raw.get("shortAccount") or 0),
+                long_account_ratio=float(raw.get("longAccount") or 0),
+                short_account_ratio=float(raw.get("shortAccount") or 0),
+            )
+            for raw in data
+        ]
 
     async def health_check(self) -> ProviderHealthStatus:
         if self.use_mock:

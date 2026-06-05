@@ -109,6 +109,16 @@ Compose поднимает PostgreSQL, ждёт healthcheck, применяет 
 - внешний доступ идёт через Nginx и Let's Encrypt SSL;
 - локальные server ports: backend `127.0.0.1:8000`, frontend `127.0.0.1:3001`, PostgreSQL наружу не опубликован.
 
+Для ручной загрузки свежих market data в production PostgreSQL:
+
+```bash
+cd /opt/deltagrid
+sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv-intervals 1m,5m,1h
+curl https://deltagrid.pro/api/v1/data/health
+```
+
+На сервере используйте `docker compose`, `.env.production` и `docker-compose.prod.yml` из `/opt/deltagrid`. Старый SQLite-файл `deltagrid.db` не используется в production runtime.
+
 ## Features
 
 ### Phase 1 — MVP Scanner ✅

@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] — [DATA] — Ручной production sync market data
+- Добавлена backend-команда `python -m app.adapters.data.sync_market_data` для загрузки свежих Binance USD-M данных в PostgreSQL без нового scheduler/cron.
+- `BinanceAdapter` теперь реально загружает funding history, open interest history и global long/short account ratio; liquidations остаются отдельной задачей.
+- Добавлен wrapper `scripts/sync-market-data.sh` для запуска синка внутри production Compose stack из `/opt/deltagrid`.
+- Sync пишет OHLCV, funding, open interest, long/short ratio, `backfill_jobs` и `provider_sync_runs`, поэтому `/api/v1/data/health` может показывать актуальные `row_counts` и последний sync.
+- `DEPLOYMENT.md`, `README.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `BACKLOG.md` и `CURRENT_TASK.md` обновлены с инструкциями по заполнению market data и текущими ограничениями.
+
 ## [2026-06-05] — [DEPLOY] — Реальный запуск `deltagrid.pro` на сервере
 - DNS Cloudflare активирован: `deltagrid.pro` и `www.deltagrid.pro` указывают на `2.25.143.143`, старая `AAAA`-запись для корня отсутствует.
 - SSH-доступ `root@2.25.143.143` по ключу подтверждён; код развёрнут в `/opt/deltagrid` из ветки `preview`.

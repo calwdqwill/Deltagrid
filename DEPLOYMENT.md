@@ -136,6 +136,54 @@ curl http://127.0.0.1:3001
 
 `/api/v1/health/readiness` должен вернуть `status: ready`, а `current_revision` должен совпадать с `expected_heads`.
 
+## Заполнение market data
+
+После первого production deploy PostgreSQL создаётся пустым: миграции поднимают схему, но не загружают рыночные данные. Чтобы вручную загрузить свежие публичные данные Binance USD-M в MVP data-layer:
+
+```bash
+cd /opt/deltagrid
+sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv-intervals 1m,5m,1h
+```
+
+Скрипт запускает backend-команду внутри production Compose stack и пишет в PostgreSQL:
+
+- `ohlcv`;
+- `funding_rates`;
+- `open_interest`;
+- `long_short_ratio`;
+- `provider_sync_runs`;
+- `backfill_jobs`.
+
+Проверка после синка:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/data/health
+curl "http://127.0.0.1:8000/api/v1/data/ohlcv?symbol=BTC&exchange=binance&interval=1m"
+curl https://deltagrid.pro/api/v1/data/health
+```
+
+Ожидаемо: `row_counts.ohlcv` больше `0`, у `providers.binance` появляется последний `last_sync`, а `data_quality.score` перестаёт быть `0` при наличии market rows.
+
+Ручной вариант без wrapper-скрипта:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml exec -T backend \
+  python -m app.adapters.data.sync_market_data \
+  --symbols BTC,ETH,SOL \
+  --lookback-hours 24 \
+  --ohlcv-intervals 1m,5m,1h \
+  --include-funding \
+  --include-open-interest \
+  --include-long-short
+```
+
+Важно:
+
+- на сервере рабочая директория проекта — `/opt/deltagrid`, не `/root`;
+- используется Docker Compose v2: команда `docker compose`, а не `docker-compose`;
+- production env лежит в `/opt/deltagrid/.env.production`, а не в `backend/.env`;
+- production БД — PostgreSQL, поэтому проверять нужно таблицы `ohlcv`, `funding_rates`, `open_interest`, а не SQLite-файл `deltagrid.db`.
+
 ## Reverse proxy
 
 Минимальная схема:
@@ -279,6 +327,7 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
 - [ ] PostgreSQL volume создан и не публикует порт наружу.
 - [ ] `alembic upgrade head` прошёл внутри backend startup.
 - [ ] `/api/v1/health/readiness` возвращает `ready`.
+- [ ] Первый `sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv-intervals 1m,5m,1h` прошёл без критических ошибок.
 - [ ] `/api/v1/data/health` возвращает ожидаемые row counts и provider status.
 - [ ] `sh scripts/server-smoke.sh` проходит локально на сервере.
 - [ ] Frontend открывается через домен.

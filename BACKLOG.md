@@ -4,10 +4,13 @@
 - [x] Развернуть `deltagrid.pro` на сервере `2.25.143.143` с PostgreSQL, backend, frontend, Nginx и Let's Encrypt SSL.
 - [x] Проверить HTTPS smoke-check, основные frontend pages и API routes.
 - [x] В Cloudflare включить proxy + SSL mode `Full (strict)` и проверить frontend/API/WebSocket.
+- [x] Добавить ручной production sync market data из Binance USD-M в PostgreSQL.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования окна обслуживания выполнить reboot сервера из-за pending kernel upgrade.
 - [ ] Настроить минимальный внешний uptime/health monitoring для `https://deltagrid.pro/api/v1/health/readiness`.
 - [ ] Ввести регулярный backup PostgreSQL volume перед миграциями и деплоем.
+- [ ] Настроить безопасный регулярный запуск market data sync после ручной проверки качества данных.
+- [ ] Реализовать сбор Binance liquidations или подключить отдельный источник ликвидаций.
 
 ## Frontend MVP Terminal — 2026-06-04
 - [x] Перевести основной frontend shell на тёмный terminal layout: left sidebar, top workspace tabs, search и compact controls.
@@ -24,6 +27,7 @@
 - [x] Добавить Arbitrage Scanner route как non-funding scanner.
 - [ ] Реализовать полноценный Charts screen на `lightweight-charts`: price candles, volume, OI, basis и Funding Chart как временной ряд без превращения Charts в funding strategy module.
 - [ ] Подключить frontend MVP adapter к backend/data-layer endpoint'ам после согласования API-контрактов для CoinGecko/CoinGlass-derived данных.
+- [ ] Подключить `/data-health` frontend screen к `GET /api/v1/data/health` вместо placeholder/mock-состояния.
 - [ ] Добавить visual regression/screenshot checklist для 6 MVP-экранов после стабилизации layout.
 
 ## Standalone HTML Preview — 2026-06-02

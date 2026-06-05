@@ -10,6 +10,7 @@ DeltaGrid — аналитическое приложение для крипт�
 - `backend/app/api/v1/` — FastAPI routes и API boundary.
 - `backend/app/services/` — бизнес-логика: market, scanner, alerts, execution, RWA, treasury, auth.
 - `backend/app/adapters/` — внешние провайдеры и exchange/data adapters.
+- `backend/app/adapters/data/sync_market_data.py` — ручная production-safe команда для первичного и повторного наполнения data-layer из публичных Binance USD-M endpoints.
 - `backend/app/domain/models.py` — SQLAlchemy ORM-модели.
 - `backend/app/persistence/` — sync/async DB engines и Alembic migrations.
 
@@ -69,6 +70,8 @@ Adapters
     ↓
 Services
     ↓
+Manual sync command / DataWriter
+    ↓
 SQLAlchemy ORM / DataWriter
     ↓
 PostgreSQL
@@ -85,3 +88,5 @@ Frontend hooks / pages
 - Перед следующими production-итерациями нужно добавлять backup PostgreSQL перед миграциями и проверять `certbot renew --dry-run`.
 - Старые SQLite `.db` файлы не мигрируются автоматически; если нужны исторические данные, потребуется отдельный экспорт/импорт.
 - Нужно регулярно проверять `GET /api/v1/health/readiness` в staging/prod, чтобы ловить рассинхрон Alembic до открытия пользовательского трафика.
+- Market data ingestion для production MVP сейчас запускается вручную через `scripts/sync-market-data.sh`; регулярный scheduler/cron ещё не настроен.
+- Основной frontend terminal пока использует подготовленный mock adapter для части экранов; полное подключение всех виджетов к backend data-layer остаётся отдельной frontend-итерацией.
