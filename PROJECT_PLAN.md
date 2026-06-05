@@ -46,7 +46,7 @@
 - [x] Проверить reverse proxy/SSL на `deltagrid.pro` по `DEPLOYMENT.md`.
 - [x] Выпустить Let's Encrypt SSL после DNS cutover.
 - [x] Прогнать `scripts/server-smoke.sh` локально на сервере и через `https://deltagrid.pro`.
-- [ ] Выполнить первый ручной sync market data на сервере и проверить `row_counts` в `/api/v1/data/health`.
+- [x] Выполнить первый ручной sync market data на сервере и проверить `row_counts` в `/api/v1/data/health`.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
 - [ ] Подключить регулярный market data sync после ручной проверки качества данных.

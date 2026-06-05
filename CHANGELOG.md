@@ -5,6 +5,7 @@
 - `BinanceAdapter` теперь реально загружает funding history, open interest history и global long/short account ratio; liquidations остаются отдельной задачей.
 - Добавлен wrapper `scripts/sync-market-data.sh` для запуска синка внутри production Compose stack из `/opt/deltagrid`.
 - Sync пишет OHLCV, funding, open interest, long/short ratio, `backfill_jobs` и `provider_sync_runs`, поэтому `/api/v1/data/health` может показывать актуальные `row_counts` и последний sync.
+- Первый production sync выполнен на сервере `2.25.143.143`: загружено `6837` rows, `/api/v1/data/health` через `https://deltagrid.pro` показывает `binance healthy`, `ohlcv=5256`, `funding_rates=9`, `open_interest=1500`, `long_short_ratio=72`, `data_quality.score=100`.
 - `DEPLOYMENT.md`, `README.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `BACKLOG.md` и `CURRENT_TASK.md` обновлены с инструкциями по заполнению market data и текущими ограничениями.
 
 ## [2026-06-05] — [DEPLOY] — Реальный запуск `deltagrid.pro` на сервере

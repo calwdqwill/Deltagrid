@@ -34,6 +34,7 @@
 - [x] Server smoke-check через HTTPS прошёл; основные frontend pages и API routes возвращают `200`.
 - [x] Cloudflare proxy + SSL mode `Full (strict)` включены и проверены; WebSocket route проходит через Cloudflare.
 - [x] Добавлена команда `python -m app.adapters.data.sync_market_data` и wrapper `scripts/sync-market-data.sh` для первичного заполнения data-layer.
+- [x] Первый production sync Binance market data выполнен: `6837` rows inserted, `/api/v1/data/health` через домен показывает `binance healthy`.
 
 ## Следующая итерация
 
@@ -50,10 +51,11 @@
 - [x] Проверить reverse proxy/SSL на `deltagrid.pro` по `DEPLOYMENT.md`.
 - [x] Прогнать smoke-check на сервере локально и через домен.
 - [x] Проверить Cloudflare proxy, `Full (strict)` и WebSocket после включения оранжевого облака.
-- [ ] Выполнить `sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv-intervals 1m,5m,1h` на сервере.
-- [ ] Проверить, что `/api/v1/data/health` показывает `row_counts.ohlcv > 0` и последний Binance sync.
+- [x] Выполнить `sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv-intervals 1m,5m,1h` на сервере.
+- [x] Проверить, что `/api/v1/data/health` показывает `row_counts.ohlcv > 0` и последний Binance sync.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования времени выполнить reboot сервера из-за pending kernel upgrade.
+- [ ] Настроить регулярный market data sync, чтобы данные не устаревали после ручной загрузки.
 
 ## Frontend MVP Summary — 2026-06-04
 

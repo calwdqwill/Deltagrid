@@ -276,6 +276,7 @@ BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/ser
 - Let's Encrypt сертификат выпущен для `deltagrid.pro` и `www.deltagrid.pro`; автообновление `certbot renew --dry-run` прошло успешно.
 - `BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh` прошёл успешно.
 - Cloudflare proxy включён, SSL mode установлен в `Full (strict)`, API и WebSocket `/api/v1/stream/ws` проверены через Cloudflare edge.
+- Первый ручной `scripts/sync-market-data.sh` выполнен: Binance public market data записаны в PostgreSQL, `/api/v1/data/health` через домен показывает `binance healthy` и ненулевые `row_counts`.
 
 Для Windows/PowerShell:
 
