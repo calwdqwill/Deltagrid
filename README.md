@@ -90,9 +90,9 @@ Frontend runs at `http://127.0.0.1:3000`
 
 Текущий frontend открывается как тёмный terminal MVP с разделами Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts placeholder и Strategy Lab.
 
-`Market Overview`, `Assets`, `Funding` и `/data-health` уже читают live backend/PostgreSQL data-layer через backend API. `Market Overview` использует CoinGecko global/markets, alternative.me Fear & Greed и CoinGlass funding. `Assets` показывает live spot/funding/OHLCV для SOL и не подмешивает fake order book/liquidations.
+`Market Overview`, `Assets`, `Funding`, `Charts`, `Market Matrix`, `Arbitrage Scanner` и `/data-health` уже читают live backend/PostgreSQL data-layer через backend API. `Market Overview` использует CoinGecko global/markets, alternative.me Fear & Greed и CoinGlass funding. `Assets` показывает live spot/funding/OHLCV/liquidations-readiness для SOL и не подмешивает fake order book/liquidations.
 
-`Perp DEX` пока показывает статус `DEX data pending`, потому что live DEX venue adapter ещё не подключён; mock DEX volume/OI/liquidity не выдаются за production-данные. Order book, liquidations, Market Matrix, Arbitrage Scanner и Strategy Lab требуют отдельного подключения live provider endpoints перед тем, как считать их production-grade данными.
+`Perp DEX` пока показывает статус `DEX data pending`, потому что live DEX venue adapter ещё не подключён; mock DEX volume/OI/liquidity не выдаются за production-данные. `Strategy Lab` показывает readiness live inputs, но не показывает fake PnL/trades до появления реального backtest engine. Order book и полноценный liquidation ingestion остаются отдельными provider задачами.
 
 ### Docker Compose
 ```bash

@@ -65,6 +65,16 @@ interface OhlcvRow {
   quote_volume?: number | null;
 }
 
+interface LiquidationRow {
+  timestamp: number;
+  symbol: string;
+  exchange: string;
+  side: string;
+  quantity?: number | null;
+  price?: number | null;
+  value_usd?: number | null;
+}
+
 export interface LiveMarketOverview {
   data: MarketOverviewData;
   fearGreed: FearGreedPoint[];
@@ -368,12 +378,42 @@ function mapOhlcv(rows: OhlcvRow[]): Candle[] {
   }));
 }
 
+function mapLiquidations(rows: LiquidationRow[]): AssetDeepDiveData["liquidations"] {
+  const totals = rows.reduce(
+    (acc, row) => {
+      const value = toNumber(row.value_usd);
+      const side = row.side.toLowerCase();
+      if (side.includes("long") || side === "buy") {
+        acc.longUsd += value;
+      } else if (side.includes("short") || side === "sell") {
+        acc.shortUsd += value;
+      }
+      acc.byVenue.set(row.exchange, (acc.byVenue.get(row.exchange) ?? 0) + value);
+      return acc;
+    },
+    { longUsd: 0, shortUsd: 0, byVenue: new Map<string, number>() }
+  );
+  const totalByVenue = Array.from(totals.byVenue.values()).reduce((sum, value) => sum + value, 0);
+
+  return {
+    longUsd: totals.longUsd,
+    shortUsd: totals.shortUsd,
+    byVenue: totalByVenue
+      ? Array.from(totals.byVenue.entries()).map(([label, value]) => ({
+          label,
+          value: (value / totalByVenue) * 100,
+        }))
+      : [],
+  };
+}
+
 export async function getLiveAssetDeepDive(symbol: string): Promise<LiveAssetDeepDive> {
   const normalizedSymbol = symbol.toUpperCase();
-  const [marketsResponse, fundingResponse, ohlcvResponse, healthResponse] = await Promise.all([
+  const [marketsResponse, fundingResponse, ohlcvResponse, liquidationsResponse, healthResponse] = await Promise.all([
     fetchServerApi<MarketCoin[]>("/market/markets?limit=50"),
     fetchServerApi<MarketFundingRate[]>("/market/funding-rates"),
     fetchServerApi<OhlcvRow[]>(`/data/ohlcv?symbol=${normalizedSymbol}&exchange=binance&interval=1m`),
+    fetchServerApi<LiquidationRow[]>(`/data/liquidations?symbol=${normalizedSymbol}&exchange=binance`),
     fetchServerApi<DataHealthPayload>("/data/health"),
   ]);
 
@@ -396,6 +436,7 @@ export async function getLiveAssetDeepDive(symbol: string): Promise<LiveAssetDee
   const asset = mapCoinToAsset(coin, fundingBySymbol);
   const funding = fundingBySymbol.get(normalizedSymbol);
   const candles = ohlcvResponse?.success ? mapOhlcv(ohlcvResponse.data) : [];
+  const liquidations = liquidationsResponse?.success ? mapLiquidations(liquidationsResponse.data) : { longUsd: 0, shortUsd: 0, byVenue: [] };
 
   const data: AssetDeepDiveData = {
     asset,
@@ -416,7 +457,7 @@ export async function getLiveAssetDeepDive(symbol: string): Promise<LiveAssetDee
     ],
     venueBreakdown: [],
     orderBook: { bids: [], asks: [] },
-    liquidations: { longUsd: 0, shortUsd: 0, byVenue: [] },
+    liquidations,
   };
 
   return {
@@ -427,6 +468,7 @@ export async function getLiveAssetDeepDive(symbol: string): Promise<LiveAssetDee
       ["Spot market", market ? "CoinGecko /markets" : "No data"],
       ["Funding/OI", funding ? `${funding.exchange} live` : "No data"],
       ["OHLCV", candles.length ? `${candles.length} Binance candles` : "No data"],
+      ["Liquidations", liquidations.byVenue.length ? "Binance live" : "No rows"],
     ],
   };
 }

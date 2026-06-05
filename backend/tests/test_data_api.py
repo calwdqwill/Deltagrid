@@ -121,6 +121,38 @@ def test_funding_returns_200() -> None:
     assert payload["data"] == []
 
 
+def test_open_interest_returns_200() -> None:
+    """Open-interest endpoint must be reachable even when table is empty."""
+    response = client.get("/api/v1/data/open-interest?symbol=BTC&exchange=binance")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["data"] == []
+
+
+def test_long_short_ratio_returns_200() -> None:
+    """Long/short ratio endpoint must be reachable even when table is empty."""
+    response = client.get("/api/v1/data/long-short-ratio?symbol=BTC&exchange=binance")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["data"] == []
+
+
+def test_basis_premium_returns_200() -> None:
+    """Basis endpoint must be reachable even when table is empty."""
+    response = client.get("/api/v1/data/basis-premium?symbol=BTC&exchange=binance")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["data"] == []
+
+
+def test_liquidations_returns_200() -> None:
+    """Liquidations endpoint must be reachable even when table is empty."""
+    response = client.get("/api/v1/data/liquidations?symbol=BTC&exchange=binance")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["data"] == []
+
+
 def test_health_returns_200() -> None:
     """Data health endpoint must summarize row counts."""
     response = client.get("/api/v1/data/health")

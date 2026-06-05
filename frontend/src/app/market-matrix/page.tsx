@@ -1,23 +1,65 @@
 import { Shell } from "@/components/layout/Shell";
 import {
+  formatCompactCurrency,
   formatNumber,
-  SegmentedControl,
+  KpiStrip,
   SelectPill,
   StatusBadge,
   TerminalPanel,
+  TerminalTable,
   toneText,
 } from "@/components/terminal/terminal-ui";
-import { terminalDataAdapter } from "@/lib/terminal/adapters";
+import { getLiveMarketMatrix, LiveMatrixRow } from "@/lib/terminal/live-streams";
 
-function cellTone(value: number, average: number) {
-  const diff = (value - average) / average;
-  if (diff > 0.002) return "bg-emerald-500/18 text-emerald-100";
-  if (diff < -0.002) return "bg-rose-500/18 text-rose-100";
-  return "bg-slate-500/10 text-slate-200";
+export const dynamic = "force-dynamic";
+
+function formatMaybePrice(value: number | null): string {
+  if (value === null) return "No data";
+  return value >= 100 ? `$${formatNumber(value)}` : `$${value.toFixed(4)}`;
+}
+
+function formatMaybePercent(value: number | null, digits = 3): string {
+  if (value === null) return "No data";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(digits)}%`;
+}
+
+function percentTone(value: number | null) {
+  if (value === null) return "warning";
+  if (value > 0) return "positive";
+  if (value < 0) return "negative";
+  return "neutral";
+}
+
+function rowCells(row: LiveMatrixRow) {
+  return [
+    <span key="asset" className="font-semibold text-white">
+      {row.asset}
+    </span>,
+    <span key="spot" className="font-mono text-slate-100">
+      {formatMaybePrice(row.spotPrice)}
+    </span>,
+    <span key="perp" className="font-mono text-slate-100">
+      {formatMaybePrice(row.perpPrice)}
+    </span>,
+    <span key="basis" className={toneText(percentTone(row.basisPct))}>
+      {formatMaybePercent(row.basisPct)}
+    </span>,
+    <span key="funding" className={toneText(percentTone(row.fundingPct))}>
+      {formatMaybePercent(row.fundingPct)}
+    </span>,
+    <span key="oi" className="font-mono text-slate-100">
+      {row.openInterestUsd === null ? "No data" : formatCompactCurrency(row.openInterestUsd)}
+    </span>,
+    <span key="long" className={toneText(row.longAccountRatio === null ? "warning" : row.longAccountRatio >= 50 ? "positive" : "negative")}>
+      {formatMaybePercent(row.longAccountRatio, 2)}
+    </span>,
+  ];
 }
 
 export default async function MarketMatrixPage() {
-  const data = await terminalDataAdapter.getMarketMatrix();
+  const live = await getLiveMarketMatrix();
+  const sourceRows = live.sourceRows.map(([stream, source]) => [stream, source]);
 
   return (
     <Shell>
@@ -25,77 +67,32 @@ export default async function MarketMatrixPage() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">Market Matrix</div>
-            <h1 className="mt-1 text-2xl font-semibold text-white">Overview (No Funding)</h1>
+            <h1 className="mt-1 text-2xl font-semibold text-white">Live Data Matrix</h1>
           </div>
-          <StatusBadge label="Price / spread / OI matrix only" tone="neutral" />
+          <StatusBadge label={live.statusLabel} tone={live.statusTone} />
         </div>
 
         <TerminalPanel>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            <SelectPill label="Metric" value="Price" />
-            <SelectPill label="Market Type" value="Perpetuals" />
-            <SelectPill label="Assets" value="Top 10" />
-            <SelectPill label="Venues" value="6 selected" />
-            <SelectPill label="Timeframe" value="1D" />
-          </div>
-          <div className="mt-4">
-            <SegmentedControl
-              items={["Price", "Spread", "Open Interest", "Volume", "Liquidity", "Depth", "Slippage"]}
-              active="Price"
-            />
+            <SelectPill label="Universe" value="BTC / ETH / SOL" />
+            <SelectPill label="Price" value="CoinGecko + Binance" />
+            <SelectPill label="Derivatives" value="Funding / OI / L/S" />
+            <SelectPill label="Basis" value="Spot vs Perp" />
+            <SelectPill label="Storage" value="PostgreSQL" />
           </div>
         </TerminalPanel>
 
-        <TerminalPanel title="Cross-Exchange Price Matrix" caption="Rows are assets, columns are venues">
-          <div className="overflow-x-auto rounded-lg border border-white/[0.08]">
-            <table className="w-full border-separate border-spacing-0 text-sm">
-              <thead>
-                <tr>
-                  <th className="sticky left-0 z-10 border-b border-white/[0.08] bg-[#101827] px-4 py-3 text-left text-slate-500">
-                    Asset
-                  </th>
-                  {data.venues.map((venue) => (
-                    <th key={venue} className="border-b border-white/[0.08] bg-[#101827] px-4 py-3 text-left text-slate-300">
-                      {venue}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.rows.map((row) => {
-                  const values = Object.values(row.values);
-                  const average = values.reduce((sum, value) => sum + value, 0) / values.length;
-                  return (
-                    <tr key={row.asset}>
-                      <td className="sticky left-0 z-10 border-b border-white/[0.06] bg-[#101827] px-4 py-3 font-semibold text-white">
-                        {row.asset}
-                      </td>
-                      {data.venues.map((venue) => (
-                        <td
-                          key={`${row.asset}-${venue}`}
-                          className={`border-b border-white/[0.06] px-4 py-3 font-mono ${cellTone(row.values[venue], average)}`}
-                        >
-                          {row.values[venue] > 100 ? formatNumber(row.values[venue]) : row.values[venue].toFixed(3)}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        <KpiStrip metrics={live.kpis} />
+
+        <TerminalPanel title="Live Stream Matrix" caption="Rows are assets, columns are persisted data streams">
+          <TerminalTable
+            columns={["Asset", "Spot", "Perp Close", "Basis", "Funding", "Open Interest", "Long Accounts"]}
+            rows={live.rows.map(rowCells)}
+          />
         </TerminalPanel>
 
-        <TerminalPanel title="Matrix Insights">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-            {data.insights.map((insight) => (
-              <div key={insight.label} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <div className="text-xs text-slate-500">{insight.label}</div>
-                <div className={`mt-3 text-base font-semibold ${toneText(insight.tone)}`}>{insight.value}</div>
-                <div className="mt-2 font-mono text-sm text-slate-300">{insight.caption}</div>
-              </div>
-            ))}
-          </div>
+        <TerminalPanel title="Matrix Sources">
+          <TerminalTable columns={["Stream", "Source"]} rows={sourceRows} />
         </TerminalPanel>
       </div>
     </Shell>

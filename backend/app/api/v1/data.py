@@ -88,6 +88,55 @@ def _serialize_funding(row: Any) -> dict[str, Any]:
     }
 
 
+def _serialize_open_interest(row: Any) -> dict[str, Any]:
+    return {
+        "timestamp": row.timestamp,
+        "symbol": row.symbol,
+        "exchange": row.exchange,
+        "interval": row.interval,
+        "oi_usd": row.oi_usd,
+        "oi_coins": row.oi_coins,
+    }
+
+
+def _serialize_liquidation(row: Any) -> dict[str, Any]:
+    return {
+        "timestamp": row.timestamp,
+        "symbol": row.symbol,
+        "exchange": row.exchange,
+        "side": row.side,
+        "quantity": row.quantity,
+        "price": row.price,
+        "value_usd": row.value_usd,
+    }
+
+
+def _serialize_long_short_ratio(row: Any) -> dict[str, Any]:
+    return {
+        "timestamp": row.timestamp,
+        "symbol": row.symbol,
+        "exchange": row.exchange,
+        "interval": row.interval,
+        "long_ratio": row.long_ratio,
+        "short_ratio": row.short_ratio,
+        "long_account_ratio": row.long_account_ratio,
+        "short_account_ratio": row.short_account_ratio,
+    }
+
+
+def _serialize_basis_premium(row: Any) -> dict[str, Any]:
+    return {
+        "id": row.id,
+        "timestamp": row.timestamp,
+        "symbol": row.symbol,
+        "exchange": row.exchange,
+        "spot_price": row.spot_price,
+        "perp_price": row.perp_price,
+        "basis_pct": row.basis_pct,
+        "premium_pct": row.premium_pct,
+    }
+
+
 def _latest_sync_from_runs(db: Session, provider_name: str) -> Optional[dict[str, Any]]:
     row = (
         db.query(ProviderSyncRun)
@@ -315,6 +364,179 @@ async def get_funding(
     rows = _fetch_time_series(query, DataFundingRate, start, end)
     return ApiResponse(
         data=[_serialize_funding(row) for row in rows],
+        meta={
+            "count": len(rows),
+            "limit": MAX_ROWS,
+            "symbol": normalized_symbol,
+            "exchange": normalized_exchange,
+            "start": start,
+            "end": end,
+        },
+    )
+
+
+@router.get("/open-interest", response_model=ApiResponse)
+async def get_open_interest(
+    symbol: str = Query(..., min_length=1),
+    exchange: str = Query(..., min_length=1),
+    start: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
+    end: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
+    interval: Optional[str] = Query(None, min_length=1),
+    db: Session = Depends(get_db),
+):
+    """Read open-interest history from the configured database. Limit is fixed at 1000 rows."""
+    _validate_time_range(start, end)
+    normalized_symbol = _normalize_symbol(symbol)
+    normalized_exchange = _normalize_exchange(exchange)
+
+    query = db.query(
+        DataOpenInterest.timestamp,
+        DataOpenInterest.symbol,
+        DataOpenInterest.exchange,
+        DataOpenInterest.interval,
+        DataOpenInterest.oi_usd,
+        DataOpenInterest.oi_coins,
+    ).filter(
+        func.upper(DataOpenInterest.symbol) == normalized_symbol,
+        func.lower(DataOpenInterest.exchange) == normalized_exchange,
+    )
+    if interval:
+        query = query.filter(DataOpenInterest.interval == interval.strip())
+
+    rows = _fetch_time_series(query, DataOpenInterest, start, end)
+    return ApiResponse(
+        data=[_serialize_open_interest(row) for row in rows],
+        meta={
+            "count": len(rows),
+            "limit": MAX_ROWS,
+            "symbol": normalized_symbol,
+            "exchange": normalized_exchange,
+            "interval": interval.strip() if interval else None,
+            "start": start,
+            "end": end,
+        },
+    )
+
+
+@router.get("/liquidations", response_model=ApiResponse)
+async def get_liquidations(
+    symbol: str = Query(..., min_length=1),
+    exchange: str = Query(..., min_length=1),
+    start: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
+    end: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
+    side: Optional[str] = Query(None, min_length=1),
+    db: Session = Depends(get_db),
+):
+    """Read liquidation history from the configured database. Limit is fixed at 1000 rows."""
+    _validate_time_range(start, end)
+    normalized_symbol = _normalize_symbol(symbol)
+    normalized_exchange = _normalize_exchange(exchange)
+
+    query = db.query(
+        DataLiquidation.timestamp,
+        DataLiquidation.symbol,
+        DataLiquidation.exchange,
+        DataLiquidation.side,
+        DataLiquidation.quantity,
+        DataLiquidation.price,
+        DataLiquidation.value_usd,
+    ).filter(
+        func.upper(DataLiquidation.symbol) == normalized_symbol,
+        func.lower(DataLiquidation.exchange) == normalized_exchange,
+    )
+    if side:
+        query = query.filter(func.lower(DataLiquidation.side) == side.strip().lower())
+
+    rows = _fetch_time_series(query, DataLiquidation, start, end)
+    return ApiResponse(
+        data=[_serialize_liquidation(row) for row in rows],
+        meta={
+            "count": len(rows),
+            "limit": MAX_ROWS,
+            "symbol": normalized_symbol,
+            "exchange": normalized_exchange,
+            "side": side.strip().lower() if side else None,
+            "start": start,
+            "end": end,
+        },
+    )
+
+
+@router.get("/long-short-ratio", response_model=ApiResponse)
+async def get_long_short_ratio(
+    symbol: str = Query(..., min_length=1),
+    exchange: str = Query(..., min_length=1),
+    start: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
+    end: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
+    interval: Optional[str] = Query(None, min_length=1),
+    db: Session = Depends(get_db),
+):
+    """Read long/short account ratio history from the configured database. Limit is fixed at 1000 rows."""
+    _validate_time_range(start, end)
+    normalized_symbol = _normalize_symbol(symbol)
+    normalized_exchange = _normalize_exchange(exchange)
+
+    query = db.query(
+        DataLongShortRatio.timestamp,
+        DataLongShortRatio.symbol,
+        DataLongShortRatio.exchange,
+        DataLongShortRatio.interval,
+        DataLongShortRatio.long_ratio,
+        DataLongShortRatio.short_ratio,
+        DataLongShortRatio.long_account_ratio,
+        DataLongShortRatio.short_account_ratio,
+    ).filter(
+        func.upper(DataLongShortRatio.symbol) == normalized_symbol,
+        func.lower(DataLongShortRatio.exchange) == normalized_exchange,
+    )
+    if interval:
+        query = query.filter(DataLongShortRatio.interval == interval.strip())
+
+    rows = _fetch_time_series(query, DataLongShortRatio, start, end)
+    return ApiResponse(
+        data=[_serialize_long_short_ratio(row) for row in rows],
+        meta={
+            "count": len(rows),
+            "limit": MAX_ROWS,
+            "symbol": normalized_symbol,
+            "exchange": normalized_exchange,
+            "interval": interval.strip() if interval else None,
+            "start": start,
+            "end": end,
+        },
+    )
+
+
+@router.get("/basis-premium", response_model=ApiResponse)
+async def get_basis_premium(
+    symbol: str = Query(..., min_length=1),
+    exchange: str = Query(..., min_length=1),
+    start: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
+    end: Optional[int] = Query(None, ge=0, description="Inclusive Unix timestamp in milliseconds"),
+    db: Session = Depends(get_db),
+):
+    """Read spot/perp basis snapshots from the configured database. Limit is fixed at 1000 rows."""
+    _validate_time_range(start, end)
+    normalized_symbol = _normalize_symbol(symbol)
+    normalized_exchange = _normalize_exchange(exchange)
+
+    query = db.query(
+        BasisPremium.id,
+        BasisPremium.timestamp,
+        BasisPremium.symbol,
+        BasisPremium.exchange,
+        BasisPremium.spot_price,
+        BasisPremium.perp_price,
+        BasisPremium.basis_pct,
+        BasisPremium.premium_pct,
+    ).filter(
+        func.upper(BasisPremium.symbol) == normalized_symbol,
+        func.lower(BasisPremium.exchange) == normalized_exchange,
+    )
+
+    rows = _fetch_time_series(query, BasisPremium, start, end)
+    return ApiResponse(
+        data=[_serialize_basis_premium(row) for row in rows],
         meta={
             "count": len(rows),
             "limit": MAX_ROWS,

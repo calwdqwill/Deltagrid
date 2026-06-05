@@ -1,5 +1,15 @@
 # Changelog — DeltaGrid
 
+## [2026-06-05] - [DATA/FRONTEND] - Live data streams для Charts, Matrix и Scanner
+- Добавлены read-only backend endpoint'ы для уже сохраняемых PostgreSQL потоков: `GET /api/v1/data/open-interest`, `/data/long-short-ratio`, `/data/basis-premium` и `/data/liquidations`.
+- Расширены regression tests `backend/tests/test_data_api.py`: новые data endpoints должны возвращать `200` даже при пустых таблицах.
+- `Charts` заменён с placeholder на live stream workspace: price, volume, open interest, basis, funding и long/short читаются через backend data-layer.
+- `Market Matrix` больше не использует `terminalDataAdapter`: BTC/ETH/SOL matrix строится из CoinGecko spot, Binance perp close, basis, funding, OI и long/short.
+- `Arbitrage Scanner` больше не показывает mock opportunities: таблица строится из persisted `basis_premium` и `funding_rates` как read-only research candidates.
+- `Strategy Lab` очищен от fake backtest PnL/trades: экран показывает readiness live inputs и блокирует backtest output до появления реального engine.
+- `Assets` теперь читает `/data/liquidations`; пока строк нет, блок остаётся pending, но будущий ingestion автоматически появится в UI.
+- Проверка: `venv\Scripts\python.exe -m pytest tests/test_data_api.py -q` — `10 passed`; `python -m compileall backend/app` и `npm run build` проходят успешно.
+
 ## [2026-06-05] - [FRONTEND] - Live Market Overview и Assets
 - Добавлен backend endpoint `GET /api/v1/market/markets` для топовых spot markets из CoinGecko с `24h` и `7d` изменениями.
 - `Market Overview` больше не читает `terminalDataAdapter`: global cap/volume, BTC/ETH dominance, heatmap, top assets, gainers/losers и `Fear & Greed Index` строятся из live backend API.

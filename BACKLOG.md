@@ -35,10 +35,13 @@
 - [x] Сделать nested tabs в `Funding` и `Perp DEX` кликабельными через стабильный `view` query-param.
 - [x] Подключить `Market Overview` к live backend endpoints вместо `terminalDataAdapter`.
 - [x] Подключить `Assets` к live SOL spot/funding/OHLCV и убрать fake order book/liquidations из production UI.
-- [ ] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам после согласования контрактов.
+- [x] Открыть read-only endpoint'ы для `open_interest`, `long_short_ratio`, `basis_premium` и `liquidations`.
+- [x] Подключить Charts, Market Matrix и Arbitrage Scanner к live persisted data streams.
+- [x] Убрать fake backtest results из Strategy Lab и заменить их на live input readiness.
 - [ ] Реализовать live Perp DEX venue adapter для Hyperliquid/dYdX/GMX, прежде чем показывать DEX volume/OI/liquidity как реальные данные.
 - [ ] Добавить live order book endpoint для ключевых CEX pairs, начиная с Binance `BTCUSDT`, `ETHUSDT`, `SOLUSDT`.
 - [ ] Добавить live liquidations ingestion/API, прежде чем возвращать блок `Liquidations (24h)` в режим с реальными значениями.
+- [ ] Реализовать настоящий backtest engine для Strategy Lab: расчёт PnL/drawdown/trades только из PostgreSQL inputs.
 - [ ] Добавить visual regression/screenshot checklist для 6 MVP-экранов после стабилизации layout.
 
 ## Standalone HTML Preview — 2026-06-02

@@ -42,6 +42,9 @@
 - [x] Исправить кликабельность nested tabs в `Funding` и `Perp DEX`.
 - [x] Подключить `Market Overview` к live backend endpoints: CoinGecko global/markets, alternative.me Fear & Greed, CoinGlass funding и data health.
 - [x] Подключить `Assets` к live SOL spot/funding/OHLCV и убрать fake order book/liquidations из production UI.
+- [x] Открыть read-only data endpoints для `open_interest`, `long_short_ratio`, `basis_premium` и `liquidations`.
+- [x] Подключить `Charts`, `Market Matrix` и `Arbitrage Scanner` к persisted backend/data-layer streams.
+- [x] Убрать fake backtest output из `Strategy Lab` и заменить его на readiness live inputs.
 
 ## Следующие шаги
 
@@ -58,7 +61,7 @@
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
 - [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
 - [x] Подключить Funding/Data Health frontend screens к backend/data-layer endpoint'ам.
-- [ ] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам после согласования контрактов.
+- [x] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам или честным pending/readiness states.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
 - [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.
