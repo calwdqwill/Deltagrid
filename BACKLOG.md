@@ -11,11 +11,12 @@
 - [x] Расширить production sync до CoinGlass funding/OI snapshots и CoinGecko-derived basis snapshots.
 - [x] Добавить host-level cron для регулярного market data sync.
 - [x] Стабилизировать live SSR-потоки: снизить параллельность frontend-запросов, добавить timeout и env-настройки DB pool.
+- [x] Подключить CoinGlass aggregated liquidation history к production sync и таблице `liquidations`.
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] После согласования окна обслуживания выполнить reboot сервера из-за pending kernel upgrade.
 - [ ] Настроить минимальный внешний uptime/health monitoring для `https://deltagrid.pro/api/v1/health/readiness`.
 - [ ] Ввести регулярный backup PostgreSQL volume перед миграциями и деплоем.
-- [ ] Реализовать сбор Binance liquidations или подключить отдельный источник ликвидаций.
+- [ ] Если для стратегии потребуется точность выше MVP, подключить отдельный per-order liquidation tape вместо агрегированных CoinGlass USD-снимков.
 
 ## Frontend MVP Terminal — 2026-06-04
 - [x] Перевести основной frontend shell на тёмный terminal layout: left sidebar, top workspace tabs, search и compact controls.
@@ -41,7 +42,7 @@
 - [x] Убрать fake backtest results из Strategy Lab и заменить их на live input readiness.
 - [ ] Реализовать live Perp DEX venue adapter для Hyperliquid/dYdX/GMX, прежде чем показывать DEX volume/OI/liquidity как реальные данные.
 - [ ] Добавить live order book endpoint для ключевых CEX pairs, начиная с Binance `BTCUSDT`, `ETHUSDT`, `SOLUSDT`.
-- [ ] Добавить live liquidations ingestion/API, прежде чем возвращать блок `Liquidations (24h)` в режим с реальными значениями.
+- [x] Добавить live liquidations ingestion/API через CoinGlass aggregated history, прежде чем возвращать блок `Liquidations (24h)` в режим с реальными значениями.
 - [ ] Реализовать настоящий backtest engine для Strategy Lab: расчёт PnL/drawdown/trades только из PostgreSQL inputs.
 - [ ] Добавить visual regression/screenshot checklist для 6 MVP-экранов после стабилизации layout.
 
@@ -297,7 +298,7 @@
 - [x] Добавить `GET /api/v1/health/readiness` для проверки DB connectivity и актуального Alembic head.
 - [x] Подготовить минимальный server deployment flow: `.env.production.example`, `docker-compose.prod.yml`, `DEPLOYMENT.md`.
 - [x] Убрать frontend deploy-риск из hardcoded `127.0.0.1:8000` для Next.js API rewrite и WebSocket stream.
-- [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S (вместо пустых stub'ов).
+- [ ] Расширить CoinGlass data adapter до дополнительных provider-specific L/S потоков, если Binance global L/S будет недостаточно для MVP.
 - [ ] Реализовать backtest engine и scheduler (следующий milestone после data quality gate).
 
 ## Known Tech Debt (не блокирует разработку)

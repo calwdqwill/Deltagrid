@@ -9,15 +9,16 @@ import asyncio
 import logging
 import time
 import uuid
-from typing import Iterable
+from datetime import datetime, timezone
+from typing import Any, Iterable
 
 from sqlalchemy import text
 
 from app.adapters.coingecko_adapter import CoinGeckoAdapter
 from app.adapters.data.backfill_orchestrator import BackfillJob, BackfillOrchestrator
 from app.adapters.data.binance_adapter import BinanceAdapter
+from app.adapters.data.data_models import FundingRate, Liquidation, OpenInterest
 from app.adapters.data.data_writer import DataWriter
-from app.adapters.data.data_models import FundingRate, OpenInterest
 from app.adapters.data.rate_limiter import GlobalRateLimiter
 from app.adapters.data.symbol_mapper import SymbolMapper
 from app.services.providers.coinglass_client import CoinGlassClient
@@ -122,6 +123,137 @@ def _coinglass_rate_to_decimal(raw_value) -> float:
     if raw_value is None:
         return 0.0
     return float(raw_value) / 100
+
+
+def _to_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        for key in ("usd", "value", "turnover", "amount", "total"):
+            parsed = _to_float(value.get(key))
+            if parsed is not None:
+                return parsed
+        return None
+    try:
+        return float(str(value).replace(",", ""))
+    except (TypeError, ValueError):
+        return None
+
+
+def _coinglass_timestamp_ms(row: dict[str, Any]) -> int | None:
+    for key in ("timestamp", "time", "ts", "t", "date"):
+        raw_value = row.get(key)
+        if raw_value is None:
+            continue
+        if isinstance(raw_value, (int, float)):
+            timestamp = int(raw_value)
+            return timestamp * 1000 if timestamp < 10_000_000_000 else timestamp
+        if isinstance(raw_value, str):
+            value = raw_value.strip()
+            if not value:
+                continue
+            numeric = _to_float(value)
+            if numeric is not None:
+                timestamp = int(numeric)
+                return timestamp * 1000 if timestamp < 10_000_000_000 else timestamp
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                return int(parsed.timestamp() * 1000)
+            except ValueError:
+                continue
+    return None
+
+
+def _coinglass_liquidation_payload(row: dict[str, Any], exchange: str) -> dict[str, Any]:
+    exchange_keys = [
+        exchange,
+        exchange.lower(),
+        exchange.upper(),
+        exchange.capitalize(),
+        exchange.title(),
+        "all",
+        "All",
+        "total",
+        "Total",
+    ]
+    for key in exchange_keys:
+        value = row.get(key)
+        if isinstance(value, dict):
+            return value
+    return row
+
+
+def _coinglass_liquidation_amount(source: dict[str, Any], side: str) -> float | None:
+    if side == "long":
+        keys = (
+            "aggregated_long_liquidation_usd",
+            "longLiquidationUsd",
+            "long_liquidation_usd",
+            "longLiquidation",
+            "long_liquidation",
+            "longTurnover",
+            "long_turnover",
+            "longVolUsd",
+            "long_volume_usd",
+            "longUsd",
+            "long",
+        )
+    else:
+        keys = (
+            "aggregated_short_liquidation_usd",
+            "shortLiquidationUsd",
+            "short_liquidation_usd",
+            "shortLiquidation",
+            "short_liquidation",
+            "shortTurnover",
+            "short_turnover",
+            "shortVolUsd",
+            "short_volume_usd",
+            "shortUsd",
+            "short",
+        )
+
+    for key in keys:
+        parsed = _to_float(source.get(key))
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _normalize_coinglass_liquidations(
+    symbol: str,
+    rows: Iterable[dict[str, Any]],
+    exchange: str = "binance",
+) -> list[Liquidation]:
+    normalized: list[Liquidation] = []
+
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        timestamp_ms = _coinglass_timestamp_ms(row)
+        if timestamp_ms is None:
+            continue
+
+        payload = _coinglass_liquidation_payload(row, exchange)
+        for side in ("long", "short"):
+            value_usd = _coinglass_liquidation_amount(payload, side)
+            if value_usd is None or value_usd <= 0:
+                continue
+            normalized.append(
+                Liquidation(
+                    timestamp_ms=timestamp_ms,
+                    symbol=symbol.upper(),
+                    exchange=exchange,
+                    side=side,
+                    quantity=0.0,
+                    price=0.0,
+                    value_usd=float(value_usd),
+                )
+            )
+
+    return sorted(normalized, key=lambda item: (item.timestamp_ms, item.side))
 
 
 async def _sync_coinglass_snapshots(
@@ -317,6 +449,60 @@ async def _sync_long_short(
     return fetched, inserted, errors
 
 
+async def _sync_liquidations(
+    writer: DataWriter,
+    symbols: Iterable[str],
+    start_ms: int,
+    end_ms: int,
+    interval: str,
+) -> tuple[int, int, list[str]]:
+    fetched = 0
+    inserted = 0
+    errors: list[str] = []
+    mapper = SymbolMapper()
+    client = CoinGlassClient()
+
+    try:
+        for symbol in symbols:
+            try:
+                provider_symbol = mapper.to_provider(symbol, "coinglass")
+            except Exception:
+                provider_symbol = symbol.upper()
+
+            try:
+                rows = await client.get_liquidation_aggregated_history(
+                    symbol=provider_symbol,
+                    exchange_list="Binance",
+                    interval=interval,
+                    start_time=start_ms,
+                    end_time=end_ms,
+                )
+                if not rows:
+                    message = f"liquidations {symbol}: no CoinGlass data returned"
+                    errors.append(message)
+                    logger.warning(message)
+                    continue
+
+                liquidations = _normalize_coinglass_liquidations(symbol, rows, exchange="binance")
+                fetched += len(rows)
+                inserted += writer.upsert_liquidations(liquidations)
+                logger.info(
+                    "liquidations %s %s fetched=%s normalized=%s",
+                    symbol,
+                    interval,
+                    len(rows),
+                    len(liquidations),
+                )
+            except Exception as exc:
+                message = f"liquidations {symbol}: {exc}"
+                errors.append(message)
+                logger.exception(message)
+    finally:
+        await client.close()
+
+    return fetched, inserted, errors
+
+
 async def run(args: argparse.Namespace) -> int:
     symbols = _csv(args.symbols)
     intervals = _csv_lower(args.ohlcv_intervals)
@@ -413,6 +599,29 @@ async def run(args: argparse.Namespace) -> int:
                 "; ".join(errors) if errors else None,
             )
 
+        if args.include_liquidations:
+            fetched, inserted, errors = await _sync_liquidations(
+                writer,
+                symbols,
+                start_ms,
+                now_ms,
+                args.liquidation_interval,
+            )
+            total_fetched += fetched
+            total_inserted += inserted
+            all_errors.extend(errors)
+            _record_sync_run(
+                writer,
+                "coinglass",
+                "liquidations",
+                "completed" if not errors else "partial",
+                start_ms,
+                now_ms,
+                fetched,
+                inserted,
+                "; ".join(errors) if errors else None,
+            )
+
         if args.include_coinglass:
             fetched, inserted, errors = await _sync_coinglass_snapshots(writer, symbols, now_ms)
             total_fetched += fetched
@@ -454,7 +663,7 @@ async def run(args: argparse.Namespace) -> int:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Sync recent Binance market data into DeltaGrid DB.")
+    parser = argparse.ArgumentParser(description="Sync recent market data into DeltaGrid DB.")
     parser.add_argument("--symbols", default="BTC,ETH,SOL", help="Comma-separated canonical symbols.")
     parser.add_argument("--ohlcv-intervals", default="1m,5m,1h", help="Comma-separated OHLCV intervals.")
     parser.add_argument("--lookback-hours", type=float, default=24.0, help="Historical window to fetch.")
@@ -463,6 +672,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-funding", action="store_true", help="Fetch funding-rate history.")
     parser.add_argument("--include-open-interest", action="store_true", help="Fetch open-interest history.")
     parser.add_argument("--include-long-short", action="store_true", help="Fetch long/short account ratio.")
+    parser.add_argument("--include-liquidations", action="store_true", help="Fetch CoinGlass aggregated liquidation history.")
+    parser.add_argument("--liquidation-interval", default="1h", help="Interval for CoinGlass liquidation history.")
     parser.add_argument("--include-coinglass", action="store_true", help="Fetch CoinGlass v4 funding/OI snapshots.")
     parser.add_argument("--include-coingecko-basis", action="store_true", help="Write CoinGecko spot vs Binance perp basis snapshots.")
     parser.add_argument("--use-mock", action="store_true", help="Use deterministic mock OHLCV instead of Binance.")

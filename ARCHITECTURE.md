@@ -67,6 +67,7 @@ Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/fun
 - Финансовые значения PnL, balances, RWA/treasury используют `DECIMAL`.
 - OHLCV/funding/OI market data пока используют `Float`; это допустимо для MVP-аналитики, но требует пересмотра перед точными расчётами PnL/execution.
 - CoinGlass funding snapshots сохраняются в `funding_rates.funding_rate` как decimal, чтобы совпадать с Binance convention; v4 percent-like значения делятся на `100`.
+- CoinGlass aggregated liquidation history сохраняется в `liquidations.value_usd` как long/short USD-снимки с `exchange=binance`; `quantity` и `price` равны `0.0`, потому что этот источник не является per-order tape.
 - `basis_premium` — approximate snapshot: CoinGecko spot price сравнивается с последним Binance 1m perp close. Это аналитический MVP-снимок, не execution-grade pricing.
 
 ## Data Flow
@@ -97,5 +98,5 @@ Frontend hooks / pages
 - Старые SQLite `.db` файлы не мигрируются автоматически; если нужны исторические данные, потребуется отдельный экспорт/импорт.
 - Нужно регулярно проверять `GET /api/v1/health/readiness` в staging/prod, чтобы ловить рассинхрон Alembic до открытия пользовательского трафика.
 - Market data ingestion для production MVP запускается через `scripts/sync-market-data.sh`; на сервере используется host-level cron `/etc/cron.d/deltagrid-market-sync`.
-- Основной frontend terminal больше не использует `terminalDataAdapter` в app routes. Оставшийся долг — не mock UI, а отсутствующие production-grade источники для DEX venues, order book, liquidations ingestion и backtest engine.
+- Основной frontend terminal больше не использует `terminalDataAdapter` в app routes. Оставшийся долг — не mock UI, а отсутствующие production-grade источники для DEX venues, order book, per-order liquidations tape и backtest engine.
 - Для `Perp DEX` нужен отдельный live venue adapter, иначе нельзя корректно показывать DEX volume/OI/liquidity как production-данные.

@@ -90,9 +90,9 @@ Frontend runs at `http://127.0.0.1:3000`
 
 Текущий frontend открывается как тёмный terminal MVP с разделами Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts placeholder и Strategy Lab.
 
-`Market Overview`, `Assets`, `Funding`, `Charts`, `Market Matrix`, `Arbitrage Scanner` и `/data-health` уже читают live backend/PostgreSQL data-layer через backend API. `Market Overview` использует CoinGecko global/markets, alternative.me Fear & Greed и CoinGlass funding. `Assets` показывает live spot/funding/OHLCV/liquidations-readiness для SOL и не подмешивает fake order book/liquidations.
+`Market Overview`, `Assets`, `Funding`, `Charts`, `Market Matrix`, `Arbitrage Scanner` и `/data-health` уже читают live backend/PostgreSQL data-layer через backend API. `Market Overview` использует CoinGecko global/markets, alternative.me Fear & Greed и CoinGlass funding. `Assets` показывает live spot/funding/OHLCV и CoinGlass aggregated liquidations для SOL, когда в таблице `liquidations` есть строки; fake order book/liquidations не подмешиваются.
 
-`Perp DEX` пока показывает статус `DEX data pending`, потому что live DEX venue adapter ещё не подключён; mock DEX volume/OI/liquidity не выдаются за production-данные. `Strategy Lab` показывает readiness live inputs, но не показывает fake PnL/trades до появления реального backtest engine. Order book и полноценный liquidation ingestion остаются отдельными provider задачами.
+`Perp DEX` пока показывает статус `DEX data pending`, потому что live DEX venue adapter ещё не подключён; mock DEX volume/OI/liquidity не выдаются за production-данные. `Strategy Lab` показывает readiness live inputs, но не показывает fake PnL/trades до появления реального backtest engine. Order book и per-order liquidation tape остаются отдельными provider задачами.
 
 ### Docker Compose
 ```bash
@@ -138,7 +138,7 @@ sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv
 curl https://deltagrid.pro/api/v1/data/health
 ```
 
-Sync пишет Binance OHLCV/funding/OI/L/S, CoinGlass v4 funding/OI snapshots и CoinGecko-derived basis snapshots. Для регулярного запуска на сервере:
+Sync пишет Binance OHLCV/funding/OI/L/S, CoinGlass v4 funding/OI snapshots, CoinGlass aggregated liquidation history и CoinGecko-derived basis snapshots. Для регулярного запуска на сервере:
 
 ```bash
 cd /opt/deltagrid

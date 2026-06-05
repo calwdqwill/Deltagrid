@@ -12,6 +12,7 @@ import httpx
 from .base_adapter import BaseDataAdapter
 from .data_models import (
     FundingRate,
+    Liquidation,
     LongShortRatio,
     OHLCVCandle,
     OpenInterest,
@@ -141,9 +142,8 @@ class BinanceAdapter(BaseDataAdapter):
             for raw in data
         ]
 
-    async def fetch_liquidations(self, symbol: str, start_ms: int, end_ms: int) -> list:
-        """Stub — liquidations for Binance."""
-        # TODO: implement /fapi/v1/allForceOrders or /fapi/v1/forceOrders
+    async def fetch_liquidations(self, symbol: str, start_ms: int, end_ms: int) -> list[Liquidation]:
+        """Binance REST force-order history is unavailable; use CoinGlass v4 ingestion."""
         return []
 
     async def fetch_long_short_ratio(

@@ -1,7 +1,7 @@
 # Current Task — DeltaGrid
 
 **Phase**: Production-ready MVP hardening ✅ PostgreSQL runtime READY
-**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Production deploy на `deltagrid.pro` выполнен, Cloudflare proxy работает в `Full (strict)`. Market data sync расширен до Binance, CoinGlass v4 и CoinGecko-derived basis snapshots. Frontend Market Overview, Assets, Funding, Charts, Market Matrix, Arbitrage Scanner и Data Health подключены к live backend/data-layer; Strategy Lab показывает live input readiness без fake backtest results.
+**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Production deploy на `deltagrid.pro` выполнен, Cloudflare proxy работает в `Full (strict)`. Market data sync расширен до Binance, CoinGlass v4, CoinGlass aggregated liquidation history и CoinGecko-derived basis snapshots. Frontend Market Overview, Assets, Funding, Charts, Market Matrix, Arbitrage Scanner и Data Health подключены к live backend/data-layer; Strategy Lab показывает live input readiness без fake backtest results.
 **Last Updated**: 2026-06-05
 
 ## PostgreSQL MVP Summary — 2026-06-05
@@ -37,6 +37,7 @@
 - [x] Первый production sync Binance market data выполнен: `6837` rows inserted, `/api/v1/data/health` через домен показывает `binance healthy`.
 - [x] Provider API keys добавлены в server `.env.production`; CoinGlass v4 health/funding endpoints работают через production-домен.
 - [x] Sync-команда расширена до CoinGlass funding/OI snapshots и CoinGecko-derived `basis_premium`.
+- [x] Sync-команда расширена до CoinGlass aggregated liquidation history с записью в таблицу `liquidations`.
 - [x] Host-level cron `/etc/cron.d/deltagrid-market-sync` установлен; cron service активен.
 - [x] `/api/v1/data/health` показывает `binance`, `coinglass` и `coingecko` healthy.
 - [x] `Funding` читает persisted PostgreSQL funding rows и data health вместо mock fixture.
@@ -45,6 +46,7 @@
 - [x] `Market Overview` читает live CoinGecko/CoinGlass/alternative.me backend endpoints вместо mock fixture.
 - [x] `Assets` читает live SOL spot/funding/OHLCV и показывает pending-состояния вместо fake order book/liquidations.
 - [x] Backend открыл read-only endpoints для `open_interest`, `long_short_ratio`, `basis_premium` и `liquidations`.
+- [x] `/data/liquidations` теперь получает реальные агрегированные CoinGlass rows после production sync.
 - [x] `Charts`, `Market Matrix` и `Arbitrage Scanner` читают live persisted data streams вместо mock fixture.
 - [x] `Strategy Lab` больше не показывает fake PnL/trades; экран показывает readiness live inputs до реального backtest engine.
 

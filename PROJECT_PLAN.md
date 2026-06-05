@@ -46,6 +46,7 @@
 - [x] Подключить `Charts`, `Market Matrix` и `Arbitrage Scanner` к persisted backend/data-layer streams.
 - [x] Убрать fake backtest output из `Strategy Lab` и заменить его на readiness live inputs.
 - [x] Стабилизировать live data SSR: снизить параллельность потоков, добавить backend fetch timeout и env-настройки SQLAlchemy pool.
+- [x] Подключить CoinGlass aggregated liquidation history к production sync и существующему `/data/liquidations` endpoint.
 
 ## Следующие шаги
 
@@ -65,7 +66,7 @@
 - [x] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам или честным pending/readiness states.
 - [x] Задеплоить live data SSR fix и проверить `/charts`, `/market-matrix`, `/arbitrage-scanner`, `/strategy-lab` через Cloudflare.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
-- [ ] Реализовать CoinGlass data adapter для funding/OI/liquidations/L/S.
+- [ ] Расширить CoinGlass data adapter до дополнительных provider-specific L/S потоков, если Binance global L/S будет недостаточно для MVP.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.
 
 ## Критерии готовности к деплою

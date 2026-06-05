@@ -94,6 +94,42 @@ class CoinGlassClient:
             return rows
         return None
 
+    async def get_liquidation_aggregated_history(
+        self,
+        symbol: str,
+        exchange_list: str = "Binance",
+        interval: str = "1h",
+        limit: int = 1000,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None,
+    ) -> Optional[list[dict]]:
+        """Fetch aggregated long/short liquidation history for a futures coin."""
+        params = {
+            "exchange_list": exchange_list,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": min(limit, 1000),
+        }
+        if start_time is not None:
+            params["start_time"] = start_time
+        if end_time is not None:
+            params["end_time"] = end_time
+
+        data = await self._request(
+            "GET",
+            "/api/futures/liquidation/aggregated-history",
+            params=params,
+        )
+        rows = self._extract_data(data)
+        if isinstance(rows, list):
+            return rows
+        if isinstance(rows, dict):
+            for key in ("list", "items", "rows", "data"):
+                nested = rows.get(key)
+                if isinstance(nested, list):
+                    return nested
+        return None
+
     async def health_check(self) -> bool:
         """Quick health check."""
         if not self.api_key:
