@@ -88,6 +88,8 @@ BRANCH=main ENV_FILE=.env.production COMPOSE_PROJECT_NAME=deltagrid sh scripts/d
 BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh scripts/deploy-compose-stack.sh
 ```
 
+Скрипт сначала собирает `backend` и `frontend`, и только после успешного build явно пересоздаёт app containers через `compose rm -sf backend frontend` и `compose up -d --no-build backend frontend`. PostgreSQL container и volume при этом не удаляются.
+
 Фактический preview rollout от 2026-06-14:
 
 - `/opt/deltagrid-preview` развёрнут из ветки `preview`;

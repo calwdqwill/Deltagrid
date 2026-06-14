@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-14] - [OPS] - Docker Compose deploy recreate стабилизирован
+- `scripts/deploy-compose-stack.sh` больше не использует единый `docker compose up -d --build backend frontend`, который на preview дважды приводил к Docker Compose name-conflict при recreate backend.
+- Новый порядок deploy: сначала `compose build backend frontend`, затем явный `compose rm -sf backend frontend`, затем `compose up -d --no-build backend frontend`.
+- PostgreSQL container и volume не удаляются; изменение касается только пересоздания app containers `backend` и `frontend`.
+- Добавлен `.gitattributes` с `*.sh text eol=lf`, чтобы shell-скрипты не получали CRLF/mixed line endings в Windows workspace.
+- Проверка на `/opt/deltagrid-preview`: `sh -n scripts/deploy-compose-stack.sh` проходит, ручной preview deploy завершился без name-conflict, backend/frontend/PostgreSQL healthy, `scripts/server-smoke.sh` прошёл.
+
 ## [2026-06-14] - [CI/SECURITY] - Frontend audit gate для high/critical advisory
 - Проверен Next.js 16 regression path: актуальный stable `next@16.2.9` требует Node `>=20.9.0`, но всё ещё содержит bundled `postcss 8.4.31`, поэтому не закрывает остаточный `moderate` advisory `postcss <8.5.10`.
 - Fixed `postcss 8.5.10` найден только в `next@canary`; canary-версия не переводится в production/preview runtime без отдельного решения.
