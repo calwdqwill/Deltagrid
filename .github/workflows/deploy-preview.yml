@@ -87,6 +87,34 @@ jobs:
           expected="SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg"
           test "$actual" = "$expected"
 
+      - name: Preview SSH_HOST value expected
+        if: ${{ env.SSH_HOST == '2.25.143.143' }}
+        run: echo "SSH_HOST matches expected VPS IP"
+
+      - name: Preview SSH_HOST value mismatch
+        if: ${{ env.SSH_HOST != '2.25.143.143' }}
+        run: exit 1
+
+      - name: Preview SSH_USER value expected
+        if: ${{ env.SSH_USER == 'root' }}
+        run: echo "SSH_USER matches expected user"
+
+      - name: Preview SSH_USER value mismatch
+        if: ${{ env.SSH_USER != 'root' }}
+        run: exit 1
+
+      - name: Preview APP_DIR value expected
+        if: ${{ env.APP_DIR == '/opt/deltagrid-preview' }}
+        run: echo "APP_DIR matches expected path"
+
+      - name: Preview APP_DIR value mismatch
+        if: ${{ env.APP_DIR != '/opt/deltagrid-preview' }}
+        run: exit 1
+
+      - name: Check preview SSH port
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: timeout 10 bash -c "cat < /dev/null > /dev/tcp/$SSH_HOST/22"
+
       - name: Test preview SSH login
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
