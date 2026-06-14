@@ -3,6 +3,7 @@
 ## [2026-06-14] - [FRONTEND/SECURITY] - Next.js обновлён до 15.5.19
 - Frontend dependency `next` обновлена с `14.1.0` до `15.5.19`, чтобы закрыть critical/high advisory из старой версии.
 - App Router страницы `/assets`, `/charts`, `/funding` и `/perp-dex` мигрированы на async `searchParams`, который требуется Next.js 15 при production build.
+- `scripts/server-smoke.sh` переключён с проверки корня frontend на `/market`, чтобы deploy smoke оставался строгим по HTTP `200` и не падал на ожидаемом redirect `/ -> /market`.
 - `README.md` и `ARCHITECTURE.md` обновлены до актуального стека Next.js 15.
 - Проверка локально: `npm run build` во `frontend` проходит на Next.js `15.5.19`.
 - `npm audit --json` после апгрейда показывает `0 high`, `0 critical` и `2 moderate`; остаточный риск связан с bundled `postcss <8.5.10` внутри Next и вынесен в отдельный regression pass для Next.js 16.x или upstream patch.
