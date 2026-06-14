@@ -23,6 +23,7 @@ jobs:
       COMPOSE_PROJECT_NAME: ${{ secrets.PREVIEW_COMPOSE_PROJECT_NAME }}
       SMOKE_BASE_URL: ${{ secrets.PREVIEW_SMOKE_BASE_URL }}
       SMOKE_FRONTEND_URL: ${{ secrets.PREVIEW_SMOKE_FRONTEND_URL }}
+      SSH_COMMON_OPTIONS: "-o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 -o ConnectionAttempts=3 -o ServerAliveInterval=15 -o ServerAliveCountMax=2"
 
     steps:
       - name: Report preview secret readiness
@@ -123,18 +124,19 @@ jobs:
       - name: Test preview SSH login
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
-          ssh -i ~/.ssh/deltagrid_preview_key \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=accept-new \
-            "$SSH_USER@$SSH_HOST" "echo preview ssh ok"
+          for attempt in 1 2 3; do
+            if ssh -i ~/.ssh/deltagrid_preview_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "echo preview ssh ok"; then
+              exit 0
+            fi
+            echo "::warning::Preview SSH login failed on attempt $attempt"
+            sleep $((attempt * 10))
+          done
+          exit 1
 
       - name: Check preview app directory
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
-          ssh -i ~/.ssh/deltagrid_preview_key \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=accept-new \
-            "$SSH_USER@$SSH_HOST" "
+          ssh -i ~/.ssh/deltagrid_preview_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "
             set -e
             test -d '$APP_DIR'
             cd '$APP_DIR'
@@ -145,10 +147,7 @@ jobs:
       - name: Deploy preview
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
-          ssh -i ~/.ssh/deltagrid_preview_key \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=accept-new \
-            "$SSH_USER@$SSH_HOST" "
+          ssh -i ~/.ssh/deltagrid_preview_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "
             set -e
             cd '$APP_DIR'
             BRANCH=preview \
