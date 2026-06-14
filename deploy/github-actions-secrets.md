@@ -45,6 +45,14 @@ PROD_SMOKE_FRONTEND_URL=http://127.0.0.1:3001
 
 Для MVP можно использовать один dedicated SSH key для обоих стендов. Позже лучше заменить `root` на отдельного пользователя `deploy` с ограниченными правами.
 
+Текущее состояние от 2026-06-14:
+
+- dedicated key уже создан локально в `outputs/deploy-keys/github-actions-deltagrid-deploy`;
+- public key добавлен на VPS в `/root/.ssh/authorized_keys`;
+- non-interactive SSH-login этим ключом проверен;
+- fingerprint: `SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg`;
+- в GitHub repository secrets ещё нужно вручную добавить private key как `PREVIEW_SSH_KEY` и `PROD_SSH_KEY`.
+
 На локальной машине:
 
 ```powershell

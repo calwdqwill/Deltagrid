@@ -23,6 +23,7 @@
 - Preview пока не опубликован через DNS/Nginx; внешний доступ к `3012` не открыт.
 - Подготовлены preview publication assets: `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh`, `deploy/dns/preview.deltagrid.pro.md`.
 - Подготовлен чеклист GitHub Actions deploy secrets: `deploy/github-actions-secrets.md`; сами secrets ещё нужно добавить в GitHub.
+- Dedicated SSH deploy key создан локально в `outputs/deploy-keys/github-actions-deltagrid-deploy`; public key добавлен на VPS, non-interactive login проверен.
 - Восстановлен отсутствующий `AGENTS.md` с проектными правилами для Codex/AI-агентов.
 
 ## Обновление 2026-06-14 — Production universe v1

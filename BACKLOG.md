@@ -8,6 +8,7 @@
 - [x] Подготовить отдельный preview stack contract: `.env.preview.example`, Compose project `deltagrid-preview`, ports `8011/3012`.
 - [x] Добавить общий `scripts/deploy-compose-stack.sh` для ручного и GitHub deploy production/preview.
 - [x] Подготовить runbook для GitHub deploy secrets: `deploy/github-actions-secrets.md`.
+- [x] Создать dedicated SSH deploy key и добавить public key на VPS для GitHub Actions.
 - [ ] Настроить GitHub repository secrets для deploy: `PREVIEW_*` и `PROD_*`.
 - [x] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
 - [x] Подготовить DNS/Nginx/SSL runbook и template для `preview.deltagrid.pro`.

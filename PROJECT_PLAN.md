@@ -168,6 +168,7 @@
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
 - [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
 - [ ] Добавить DNS-запись `preview.deltagrid.pro` и включить preview Nginx/SSL через `scripts/configure-preview-nginx-ssl.sh`.
+- [x] Создать dedicated SSH deploy key и добавить public key на VPS для GitHub Actions.
 - [ ] Добавить GitHub repository secrets `PREVIEW_*` и `PROD_*`, чтобы deploy workflows перестали делать skip.
 - [x] Подключить Funding/Data Health frontend screens к backend/data-layer endpoint'ам.
 - [x] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам или честным pending/readiness states.

@@ -6,6 +6,7 @@
 - Добавлен `scripts/configure-preview-nginx-ssl.sh` для безопасной публикации preview-домена: DNS-precheck, отдельный site `deltagrid-preview`, отдельный Let's Encrypt сертификат, без изменения production site `deltagrid`.
 - Добавлен DNS-чеклист `deploy/dns/preview.deltagrid.pro.md` с Cloudflare/DNS записью, командами проверки и smoke-check после SSL.
 - Добавлен чеклист `deploy/github-actions-secrets.md` для repository secrets `PREVIEW_*` и `PROD_*`, включая создание dedicated SSH key и проверку первого auto-deploy.
+- Создан dedicated SSH deploy key `github-actions-deltagrid-deploy`; public key добавлен на VPS в `/root/.ssh/authorized_keys`, non-interactive login проверен. Private key сохранён локально в `outputs/deploy-keys/` и не коммитится.
 - Документация обновлена: `README.md`, `DEPLOYMENT.md`, `RELEASES.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `CURRENT_TASK.md`, `BACKLOG.md`.
 - Фактическая проверка перед правками: `preview.deltagrid.pro` ещё не резолвится; production и preview containers на VPS находятся в состоянии `healthy`.
 
