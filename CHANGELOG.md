@@ -5,6 +5,7 @@
 - Добавлен `RELEASES.md` с правилами SemVer, ветками `preview/main`, release flow и назначением файлов `CHANGELOG.md`, `CURRENT_TASK.md`, `PROJECT_PLAN.md`, `BACKLOG.md`, `ARCHITECTURE.md`.
 - Добавлен GitHub Actions workflow `CI`: backend tests, `compileall app`, frontend `npm ci` и `npm run build`.
 - `CI` устанавливает `pytest` отдельно от backend runtime dependencies, чтобы production `requirements.txt` не раздувался тестовыми пакетами.
+- Backend CI запускает `pytest tests`, чтобы legacy smoke scripts `test_api.py` и `regression_test.py` не исполнялись как unit tests без поднятого сервера.
 - Добавлены GitHub Actions workflows `Deploy Preview` и `Deploy Production`; они деплоят `preview` и `main` по SSH после успешного CI, если соответствующие secrets настроены.
 - Deploy workflows безопасно пропускают deploy, если SSH secrets ещё не заведены в GitHub.
 - `.gitignore` дополнен `outputs/`, чтобы локальные логи и временные deploy-архивы не попадали в release commit.
