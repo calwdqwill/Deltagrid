@@ -13,7 +13,7 @@ jobs:
   deploy:
     name: Deploy preview branch
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'preview' }}
     env:
       SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
       SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
