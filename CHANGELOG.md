@@ -9,6 +9,7 @@
 - Создан dedicated SSH deploy key `github-actions-deltagrid-deploy`; public key добавлен на VPS в `/root/.ssh/authorized_keys`, non-interactive login проверен. Private key сохранён локально в `outputs/deploy-keys/` и не коммитится.
 - `main` fast-forward синхронизирован с `preview` на ops commit `104502e`, потому что `workflow_run` использует deploy workflows из default branch. Production checkout `/opt/deltagrid` также fast-forward обновлён без rebuild; local smoke-check прошёл.
 - Preview deploy probe `fdb08ec` показал, что workflow запускается после preview CI, но deploy пока safe-skip из-за отсутствующих или неполных GitHub secrets `PREVIEW_*`.
+- Deploy workflows получили безопасную диагностику readiness: логи показывают только `configured/missing` для обязательных SSH secrets, без вывода значений.
 - Документация обновлена: `README.md`, `DEPLOYMENT.md`, `RELEASES.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `CURRENT_TASK.md`, `BACKLOG.md`.
 - Фактическая проверка перед правками: `preview.deltagrid.pro` ещё не резолвится; production и preview containers на VPS находятся в состоянии `healthy`.
 

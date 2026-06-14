@@ -25,6 +25,16 @@ jobs:
       SMOKE_FRONTEND_URL: ${{ secrets.PROD_SMOKE_FRONTEND_URL }}
 
     steps:
+      - name: Report production secret readiness
+        run: |
+          for name in SSH_HOST SSH_USER SSH_KEY APP_DIR; do
+            if [ -n "${!name}" ]; then
+              echo "$name configured"
+            else
+              echo "::warning::$name missing"
+            fi
+          done
+
       - name: Skip when production secrets are not configured
         if: ${{ env.SSH_HOST == '' || env.SSH_USER == '' || env.SSH_KEY == '' || env.APP_DIR == '' }}
         run: echo "Production deploy skipped because SSH secrets are not configured."

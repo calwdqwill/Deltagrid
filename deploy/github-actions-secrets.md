@@ -53,6 +53,7 @@ PROD_SMOKE_FRONTEND_URL=http://127.0.0.1:3001
 - fingerprint: `SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg`;
 - в GitHub repository secrets ещё нужно вручную добавить private key как `PREVIEW_SSH_KEY` и `PROD_SSH_KEY`.
 - preview deploy probe `fdb08ec` подтвердил, что workflow запускается, но делает safe-skip, пока обязательные secrets не настроены.
+- deploy workflows логируют только readiness-состояние обязательных secrets как `configured/missing`; сами значения secrets в логах не печатаются.
 
 На локальной машине:
 
