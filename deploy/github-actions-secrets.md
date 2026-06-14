@@ -55,6 +55,7 @@ PROD_SMOKE_FRONTEND_URL=http://127.0.0.1:3001
 - preview deploy probe `fdb08ec` подтвердил safe-skip без обязательных secrets.
 - preview auto-deploy от 2026-06-14 проверен end-to-end: `PREVIEW_*` secrets, fingerprint deploy key, SSH login, `/opt/deltagrid-preview`, deploy step и server smoke прошли.
 - после flaky GitHub runner preview workflow усилен: TCP port probe не блокирует deploy, а SSH login использует явные timeout/keepalive и retry; контрольный probe после hardening дошёл до `/opt/deltagrid-preview`.
+- production auto-deploy пока не считается подтверждённым: hardening `Deploy Production` подготовлен в `preview`, но перенос в `main` и проверка `PROD_*` выполняются отдельной production-итерацией.
 - deploy workflows логируют только readiness-состояние обязательных secrets как `configured/missing`; сами значения secrets в логах не печатаются.
 
 На локальной машине:

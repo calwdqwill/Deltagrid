@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-14] - [OPS] - Production deploy diagnostics подготовлены в preview
+- В ветке `preview` подготовлен hardening для `Deploy Production`: явные `configured/missing` шаги для `PROD_*`, проверка fingerprint deploy key, expected values для `2.25.143.143/root//opt/deltagrid`, warning-only TCP port probe, SSH login retry и проверка production app dir перед deploy.
+- Safe-skip семантика сохранена: если обязательный production secret отсутствует, workflow не должен падать на value-check шагах.
+- Preview workflow также получил guard для value-check шагов, чтобы пустой secret не превращал safe-skip в failure.
+- Изменение пока не активировано на `main`; production `/opt/deltagrid` не менялся и остаётся healthy.
+- Проверка после preview auto-deploy: `/opt/deltagrid-preview` обновился до `9aab346`, backend/frontend/PostgreSQL healthy, `scripts/server-smoke.sh` прошёл.
+
 ## [2026-06-14] - [OPS] - Preview Nginx HTTP pre-stage
 - На VPS заранее включён отдельный Nginx site `deltagrid-preview` для `preview.deltagrid.pro`: frontend проксируется на `127.0.0.1:3012`, backend/API/WebSocket — на `127.0.0.1:8011`.
 - Production site `deltagrid` не изменялся; `nginx -t` прошёл успешно, Nginx reload выполнен.

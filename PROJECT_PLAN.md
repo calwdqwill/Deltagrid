@@ -15,6 +15,7 @@
 - Preview/dev stack поднят на VPS локально: отдельный Compose project `deltagrid-preview`, отдельная PostgreSQL БД, smoke-check зелёный, 7d BTC/ETH/SOL data sync выполнен без ошибок.
 - Preview auto-deploy через GitHub Actions проверен end-to-end: `PREVIEW_*` secrets, SSH login, deploy в `/opt/deltagrid-preview`, healthy containers и server smoke на ports `8011/3012`.
 - Preview Nginx HTTP site заранее включён на VPS и проверен через `Host: preview.deltagrid.pro`; публичный HTTPS ждёт DNS-запись `preview -> 2.25.143.143`.
+- Production deploy diagnostics подготовлены в `preview`, но ещё не активированы на `main`: `PROD_*` нужно проверить отдельной безопасной production-итерацией.
 - Подготовлены runbook'и для следующего ops-шагa: `deploy/github-actions-secrets.md` для GitHub deploy secrets и `deploy/dns/preview.deltagrid.pro.md` для публикации preview-домена через Nginx/SSL.
 
 ## Что уже готово
@@ -174,7 +175,9 @@
 - [x] Создать dedicated SSH deploy key и добавить public key на VPS для GitHub Actions.
 - [x] Синхронизировать `main` и `preview` на актуальных ops/deploy workflows после проверки CI.
 - [x] Добавить и проверить GitHub repository secrets `PREVIEW_*`, чтобы `Deploy Preview` выполнял реальный deploy вместо skip.
+- [x] Подготовить production deploy diagnostics/hardening в `preview` без изменения production runtime.
 - [ ] Добавить и проверить GitHub repository secrets `PROD_*`, чтобы `Deploy Production` был готов к отдельной безопасной production-итерации.
+- [ ] Перенести production deploy hardening в `main` и подтвердить реальный production auto-deploy через `/opt/deltagrid`.
 - [x] Подключить Funding/Data Health frontend screens к backend/data-layer endpoint'ам.
 - [x] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам или честным pending/readiness states.
 - [x] Задеплоить live data SSR fix и проверить `/charts`, `/market-matrix`, `/arbitrage-scanner`, `/strategy-lab` через Cloudflare.
