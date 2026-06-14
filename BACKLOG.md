@@ -13,6 +13,7 @@
 - [x] Проверить preview deploy workflow probe: workflow запускается после CI, но безопасно пропускает deploy без GitHub secrets.
 - [x] Настроить и проверить GitHub repository secrets `PREVIEW_*` для preview auto-deploy.
 - [x] Проверить preview auto-deploy end-to-end через GitHub Actions: deploy key fingerprint, SSH login, `/opt/deltagrid-preview`, deploy step и server smoke.
+- [x] Усилить preview deploy workflow после flaky GitHub runner: TCP port probe warning-only, SSH login с timeout/keepalive и retry.
 - [ ] Настроить и проверить GitHub repository secrets `PROD_*` для production auto-deploy отдельной безопасной итерацией.
 - [x] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
 - [x] Подготовить DNS/Nginx/SSL runbook и template для `preview.deltagrid.pro`.

@@ -3,7 +3,8 @@
 ## [2026-06-14] - [OPS] - Preview auto-deploy через GitHub Actions
 - GitHub repository secrets `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY` и `PREVIEW_APP_DIR` доведены до рабочего состояния для preview deploy.
 - Workflow `Deploy Preview` прошёл end-to-end: readiness обязательных secrets, fingerprint deploy key, SSH port/login, проверка `/opt/deltagrid-preview` и сам deploy step.
-- Preview VPS `/opt/deltagrid-preview` обновлён до `1e1371c`; backend/frontend/PostgreSQL в Compose project `deltagrid-preview` находятся в состоянии `healthy`.
+- Preview VPS `/opt/deltagrid-preview` обновлён через GitHub Actions; контрольные probes `1e1371c` и `6e8edb2` подтвердили реальный deploy, backend/frontend/PostgreSQL в Compose project `deltagrid-preview` находятся в состоянии `healthy`.
+- Preview workflow усилен после flaky GitHub runner: TCP port probe переведён в warning-only diagnostics, SSH login получил явные timeout/keepalive и retry.
 - Проверка после auto-deploy: `BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/server-smoke.sh` прошёл.
 - Production deploy в этой итерации не менялся; следующий ops-шаг — DNS/Nginx/SSL для `preview.deltagrid.pro` и отдельная проверка `PROD_*` secrets.
 

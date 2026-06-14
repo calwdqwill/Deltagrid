@@ -53,7 +53,8 @@ PROD_SMOKE_FRONTEND_URL=http://127.0.0.1:3001
 - fingerprint: `SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg`;
 - в GitHub repository secrets private key добавляется как `PREVIEW_SSH_KEY` и `PROD_SSH_KEY`.
 - preview deploy probe `fdb08ec` подтвердил safe-skip без обязательных secrets.
-- preview auto-deploy от 2026-06-14 проверен end-to-end: `PREVIEW_*` secrets, fingerprint deploy key, SSH login, `/opt/deltagrid-preview`, deploy step и server smoke прошли; последний проверенный preview SHA `1e1371c`.
+- preview auto-deploy от 2026-06-14 проверен end-to-end: `PREVIEW_*` secrets, fingerprint deploy key, SSH login, `/opt/deltagrid-preview`, deploy step и server smoke прошли.
+- после flaky GitHub runner preview workflow усилен: TCP port probe не блокирует deploy, а SSH login использует явные timeout/keepalive и retry; контрольный probe после hardening дошёл до `/opt/deltagrid-preview`.
 - deploy workflows логируют только readiness-состояние обязательных secrets как `configured/missing`; сами значения secrets в логах не печатаются.
 
 На локальной машине:
