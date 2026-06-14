@@ -21,6 +21,7 @@
 - [x] Подготовить DNS/Nginx/SSL runbook и template для `preview.deltagrid.pro`.
 - [x] Включить preview Nginx HTTP site `deltagrid-preview` на VPS и проверить routing через `Host: preview.deltagrid.pro`.
 - [ ] Добавить DNS-запись `preview.deltagrid.pro` и выпустить Let's Encrypt SSL через `scripts/configure-preview-nginx-ssl.sh`.
+- [ ] Разобраться с Docker Compose name-conflict при ручном preview deploy/recreate backend, чтобы recovery не требовал ручного `docker rm` для `deltagrid-preview-*`.
 - [x] Перевести production `/opt/deltagrid` на чистый `main` checkout после push baseline.
 - [x] Восстановить `AGENTS.md` как проектные правила для Codex/AI-агентов.
 
