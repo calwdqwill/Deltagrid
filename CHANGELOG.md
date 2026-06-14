@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [DATA] - Provider discovery v1 для expansion candidates
+- Добавлен read-only CLI `python -m app.adapters.data.discover_provider_universe` для live discovery по OKX, CoinGlass, CoinGecko и legacy Binance без записи в PostgreSQL.
+- CLI проверяет candidate symbols из MVP1 inventory: OKX USDT swap instrument/OHLCV/funding/OI/long-short, CoinGlass OKX snapshots/liquidations, CoinGecko spot price и Binance USD-M как legacy diagnostic.
+- Добавлены retry/backoff и спокойный OKX pacing, чтобы discovery не ловил ложные `429` на long/short endpoint.
+- Preview/VPS discovery выполнен внутри `deltagrid-preview-backend`: OKX/CoinGlass/CoinGecko `healthy`, Binance legacy `blocked_http_451`, все `20/20` symbols получили `eligible_for_24h_sync_dry_run`.
+- Добавлены unit tests для parser/readiness/markdown report helpers.
+
 ## [2026-06-15] - [DATA] - Provider inventory v0 для расширения universe
 - Добавлен read-only endpoint `GET /api/v1/data/provider-inventory`, который строит inventory кандидатов на расширение universe поверх уже сохранённых coverage/freshness сигналов.
 - Default candidate set расширен за пределы `BTC/ETH/SOL`: `HYPE`, `XRP`, `DOGE`, `BNB`, `ADA`, `LINK`, `AVAX`, `SUI`, `TON`, `TRX`, `DOT`, `LTC`, `BCH`, `AAVE`, `UNI`, `APT`, `ARB`.

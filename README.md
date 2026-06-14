@@ -309,6 +309,25 @@ tail -100 /var/log/deltagrid-market-sync.log
 Для sparse event streams вроде `liquidations` `/data/health` различает возраст последнего события и свежесть sync-run: отсутствие новых событий не считается stale, если `coinglass/liquidations` sync свежий и успешный.
 `/data/coverage` и блок `coverage` внутри `/data/health` используют ту же семантику для sparse streams: свежий успешный sync-run подтверждает provider coverage даже при отсутствии новых liquidation events.
 
+### Provider Discovery CLI
+
+Read-only discovery перед расширением universe:
+
+```bash
+cd backend
+python -m app.adapters.data.discover_provider_universe --env-file ../.env.providers.local --format markdown
+```
+
+На preview/VPS тот же CLI запускается внутри backend container:
+
+```bash
+cd /opt/deltagrid-preview
+docker compose --env-file .env.preview -p deltagrid-preview -f docker-compose.prod.yml exec -T backend \
+  python -m app.adapters.data.discover_provider_universe --format markdown
+```
+
+CLI не пишет в PostgreSQL и не меняет sync/UI-конфигурацию. Он проверяет OKX, CoinGlass, CoinGecko и legacy Binance, после чего выдаёт `eligible_for_24h_sync_dry_run`, `okx_core_only_review` или `do_not_expand_sync_yet`.
+
 ## Roadmap
 
 | Phase | Status | Focus |

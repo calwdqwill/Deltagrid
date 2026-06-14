@@ -1,8 +1,16 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Provider inventory v0 добавлен как read-only persisted-data gate перед расширением universe.
+**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Provider inventory v0 и provider discovery v1 завершены; следующий безопасный шаг — `SymbolMapper`/alias plan и 24h sync dry-run малой группы без расширения UI.
 **Last Updated**: 2026-06-15
+
+## Обновление 2026-06-15 — Provider discovery v1
+
+- Добавлен CLI `python -m app.adapters.data.discover_provider_universe` для read-only live discovery по OKX, CoinGlass, CoinGecko и legacy Binance.
+- Preview/VPS discovery выполнен внутри `deltagrid-preview-backend`: OKX/CoinGlass/CoinGecko `healthy`, Binance legacy `blocked_http_451`.
+- Все `20/20` candidate symbols получили `eligible_for_24h_sync_dry_run`.
+- Discovery не пишет в PostgreSQL, не расширяет sync и не меняет UI.
+- Следующий шаг: `SymbolMapper`/alias expansion plan для `HYPE/XRP/DOGE/ADA/LINK`, затем 24h sync dry-run на preview и проверка errors/gaps/coverage.
 
 ## Обновление 2026-06-15 — Provider inventory v0
 
@@ -117,7 +125,9 @@
 - [x] P1: добавить coverage matrix для BTC/ETH/SOL по OHLCV/funding/OI/long-short/liquidations/basis/spot-perp.
 - [x] P1: сформировать production universe v1 на основе coverage matrix.
 - [x] P1: провести provider inventory v0 для расширения universe за пределы BTC/ETH/SOL через read-only persisted-data endpoint.
-- [ ] P1: провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
+- [x] P1: провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
+- [ ] P1: подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
+- [ ] P1: выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
 - [ ] P2: backtest engine и scheduler делать только после стабилизации исторических рядов.
 
 ## PostgreSQL MVP Summary — 2026-06-05

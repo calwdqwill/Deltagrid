@@ -105,6 +105,14 @@
 - Для каждого symbol возвращаются `promotion_candidate`, `next_action`, readiness status, coverage summaries и freshness tracking.
 - Следующий milestone: внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance и только затем расширение aliases/sync universe.
 
+## Provider discovery v1 — 2026-06-15
+
+- Добавлен CLI `python -m app.adapters.data.discover_provider_universe`, который выполняет read-only live discovery без записи в PostgreSQL.
+- Проверяются OKX USDT swaps, CoinGlass OKX futures snapshots/liquidations, CoinGecko spot price и Binance USD-M как legacy diagnostic.
+- Preview/VPS результат: OKX/CoinGlass/CoinGecko `healthy`, Binance legacy заблокирован `HTTP 451`.
+- Все `20/20` MVP1 candidate symbols получили `eligible_for_24h_sync_dry_run`: `BTC/ETH/SOL/HYPE/XRP/DOGE/BNB/ADA/LINK/AVAX/SUI/TON/TRX/DOT/LTC/BCH/AAVE/UNI/APT/ARB`.
+- Следующий milestone: `SymbolMapper`/alias expansion plan и 24h sync dry-run малой группы без расширения UI.
+
 ## Текущая итерация
 
 - [x] Перевести runtime persistence с SQLite на PostgreSQL.
@@ -194,7 +202,9 @@
 - [x] Довести interactive historical charts после production QA: доменный smoke-check, backend window endpoint и coverage matrix выполнены.
 - [x] Сформировать production universe v1 на основе coverage matrix.
 - [x] Провести provider inventory v0 для расширения universe за пределы BTC/ETH/SOL через read-only persisted-data endpoint.
-- [ ] Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
+- [x] Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
+- [ ] Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
+- [ ] Выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
 - [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
