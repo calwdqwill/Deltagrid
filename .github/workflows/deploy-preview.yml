@@ -113,7 +113,12 @@ jobs:
 
       - name: Check preview SSH port
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
-        run: timeout 10 bash -c "cat < /dev/null > /dev/tcp/$SSH_HOST/22"
+        run: |
+          if timeout 10 bash -c "cat < /dev/null > /dev/tcp/$SSH_HOST/22"; then
+            echo "SSH port 22 is reachable"
+          else
+            echo "::warning::SSH port 22 probe failed; continuing to the SSH login check"
+          fi
 
       - name: Test preview SSH login
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
