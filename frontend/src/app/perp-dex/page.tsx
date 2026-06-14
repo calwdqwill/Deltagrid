@@ -137,8 +137,13 @@ function opportunityCells(opportunity: LiveArbitrageOpportunity) {
   ];
 }
 
-export default async function PerpDexPage({ searchParams }: { searchParams?: { view?: string } }) {
-  const activeView = normalizeView(searchParams?.view);
+type PerpDexPageProps = {
+  searchParams?: Promise<{ view?: string }>;
+};
+
+export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
+  const params = await searchParams;
+  const activeView = normalizeView(params?.view);
   const activeTab = perpDexViews.find((item) => item.view === activeView) ?? perpDexViews[0];
   const [health, matrix, scanner] = await Promise.all([
     getLiveDataHealth(),

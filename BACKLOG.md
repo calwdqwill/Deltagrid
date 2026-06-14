@@ -43,7 +43,8 @@
 - [x] P1: Задеплоить charts v0 на `deltagrid.pro` и проверить `/charts?symbol=BTC&interval=1m&range=7d` через домен.
 - [x] P1: Задеплоить sparse liquidation freshness fix: для `liquidations` различать отсутствие свежих событий и свежесть `coinglass/liquidations` sync-run.
 - [x] P1: Задеплоить отдельный backend window endpoint для OHLCV и убрать client-side pagination из основного `/charts` path.
-- [ ] P1: Обновить `next` до patched версии после отдельного regression pass, так как `npm audit` показывает critical advisory для текущего `next@14.1.0`.
+- [x] P1: Обновить `next` до `15.5.19` и мигрировать App Router `searchParams`; critical/high advisory для `next@14.1.0` закрыты, production build проходит.
+- [ ] P1: Отдельным regression pass решить переход на Next.js 16.x или другой upstream patch, чтобы убрать остаточный `moderate` audit по bundled `postcss <8.5.10` внутри Next.
 - [ ] P2: Подготовить настоящий backtest engine после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
 
 ## Production Ops — 2026-06-05
@@ -375,7 +376,8 @@
 - [ ] Перевести `_json` Text-поля на PostgreSQL `JSONB` после стабилизации API-сериализации.
 - [ ] Пересмотреть `Float` в market data там, где значения начнут использоваться для финансово-критичных расчётов.
 - [ ] Подготовить отдельный one-off export/import, если потребуется перенос исторических данных из старого SQLite `.db`.
-- [ ] Обновить Next.js до patched версии: Docker build сообщает о security vulnerability в `next@14.1.0`.
+- [x] Обновить Next.js до `15.5.19`: critical/high advisory для `next@14.1.0` закрыты, frontend production build проходит.
+- [ ] Отдельно проверить Next.js 16.x для полного снятия остаточного `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Перевести оставшиеся `datetime.utcnow()` на timezone-aware UTC timestamps.
 - [ ] Перевести Pydantic class-based `Config` на `ConfigDict`, чтобы убрать deprecation warnings перед Pydantic v3.
 - [ ] Разобраться с локальными permission warning для `.pytest_cache` в OneDrive workspace.

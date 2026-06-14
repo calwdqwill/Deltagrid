@@ -16,6 +16,7 @@
 - Preview auto-deploy через GitHub Actions проверен end-to-end: `PREVIEW_*` secrets, SSH login, deploy в `/opt/deltagrid-preview`, healthy containers и server smoke на ports `8011/3012`.
 - Preview Nginx HTTP site заранее включён на VPS и проверен через `Host: preview.deltagrid.pro`; публичный HTTPS ждёт DNS-запись `preview -> 2.25.143.143`.
 - Production deploy diagnostics подготовлены в `preview`, но ещё не активированы на `main`: `PROD_*` нужно проверить отдельной безопасной production-итерацией.
+- Frontend security baseline обновлён до Next.js `15.5.19`; critical/high advisory из `next@14.1.0` закрыты, App Router страницы мигрированы на async `searchParams`.
 - Подготовлены runbook'и для следующего ops-шагa: `deploy/github-actions-secrets.md` для GitHub deploy secrets и `deploy/dns/preview.deltagrid.pro.md` для публикации preview-домена через Nginx/SSL.
 
 ## Что уже готово
@@ -61,7 +62,7 @@
 - График читает OKX USDT Swap историю из существующего read-only data-layer API. Для 7d `1m` режима frontend постранично собирает окно поверх лимита `/data/ohlcv=1000` строк, не меняя backend контракт.
 - Browser QA через SSH tunnel к production backend подтвердил desktop `BTC 1m 7d` с `10,080` свечами и mobile `ETH 5m 24h` с `288` свечами.
 - Production deploy charts v0 выполнен на `deltagrid.pro`; доменный smoke-check и Browser QA подтвердили desktop `BTC 1m 7d` и mobile `ETH 5m 24h`.
-- Следующий milestone: решение по отдельному backend window endpoint, если клиентская пагинация станет ограничением, и отдельный security upgrade `next`.
+- Следующий milestone по charts backend window endpoint выполнен; security upgrade `next` выполнен до `15.5.19`. Остаточный frontend security follow-up: отдельный regression pass для Next.js 16.x или upstream patch из-за `moderate` audit по bundled `postcss <8.5.10`.
 
 ## Sparse liquidation freshness — 2026-06-14
 
@@ -158,6 +159,7 @@
 - [x] MVP1/P1: задеплоить backend OHLCV window endpoint для 7d/1m и проверить production `/charts`.
 - [x] MVP1/P1: добавить coverage matrix для BTC/ETH/SOL по основным persisted streams.
 - [x] MVP1/P1: сформировать production universe v1 поверх coverage/freshness.
+- [x] MVP1/P1: обновить frontend Next.js до `15.5.19` и закрыть critical/high audit advisory для `next@14.1.0`.
 - [x] Прогнать миграции на чистой PostgreSQL БД в локальном Docker.
 - [x] Проверить основные backend routes после миграции: `/health`, `/data/health`, `/data/ohlcv`, `/market/trending`.
 - [x] На реальном сервере создать `.env.production` с реальными secrets для `deltagrid.pro` и PostgreSQL `DATABASE_URL`.
@@ -184,6 +186,7 @@
 - [x] Довести interactive historical charts после production QA: доменный smoke-check, backend window endpoint и coverage matrix выполнены.
 - [x] Сформировать production universe v1 на основе coverage matrix.
 - [ ] Провести provider inventory для расширения universe за пределы BTC/ETH/SOL.
+- [ ] Провести отдельный regression pass Next.js 16.x или дождаться upstream patch, чтобы убрать остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
 - [ ] Расширить CoinGlass data adapter до дополнительных provider-specific L/S потоков, если Binance global L/S будет недостаточно для MVP.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.

@@ -6,7 +6,7 @@ Production-ready crypto research terminal для анализа spot/perp рын
 
 ## Архитектура
 
-- **Frontend**: Next.js 14 + React + TypeScript + Tailwind CSS + Zustand + TanStack Query + lightweight-charts
+- **Frontend**: Next.js 15 + React + TypeScript + Tailwind CSS + Zustand + TanStack Query + lightweight-charts
 - **Backend**: FastAPI + Python 3.11 + SQLAlchemy + PostgreSQL
 - **Data**: OKX public market data (primary perp), CoinGecko API, CoinGlass, GeckoTerminal, alternative.me
 - **Cache**: In-memory LRU with TTL (Redis-ready interface)

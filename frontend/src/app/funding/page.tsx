@@ -36,8 +36,13 @@ function pointLabel(timestamp: number): string {
   return date.toISOString().slice(11, 16);
 }
 
-export default async function FundingPage({ searchParams }: { searchParams?: { view?: string } }) {
-  const activeView = normalizeView(searchParams?.view);
+type FundingPageProps = {
+  searchParams?: Promise<{ view?: string }>;
+};
+
+export default async function FundingPage({ searchParams }: FundingPageProps) {
+  const params = await searchParams;
+  const activeView = normalizeView(params?.view);
   const activeTab = fundingViews.find((item) => item.view === activeView) ?? fundingViews[0];
   const live = await getLiveFundingOverview();
   const data = live.data;

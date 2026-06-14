@@ -154,8 +154,13 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-export default async function AssetsPage({ searchParams }: { searchParams?: { symbol?: string } }) {
-  const symbol = normalizeSymbol(searchParams?.symbol);
+type AssetsPageProps = {
+  searchParams?: Promise<{ symbol?: string }>;
+};
+
+export default async function AssetsPage({ searchParams }: AssetsPageProps) {
+  const params = await searchParams;
+  const symbol = normalizeSymbol(params?.symbol);
   const live = await getLiveAssetDeepDive(symbol);
   const data = live.data;
   const asset = data.asset;

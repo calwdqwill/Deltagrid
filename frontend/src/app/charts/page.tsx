@@ -44,10 +44,15 @@ function chartTooltip(label: string, formatter: (value: number) => string) {
   return (point: { label: string; value: number }) => `${label} ${point.label}: ${formatter(point.value)}`;
 }
 
-export default async function ChartsPage({ searchParams }: { searchParams?: { symbol?: string; interval?: string; range?: string } }) {
-  const symbol = normalizeSymbol(searchParams?.symbol);
-  const interval = normalizeInterval(searchParams?.interval);
-  const range = normalizeRange(searchParams?.range);
+type ChartsPageProps = {
+  searchParams?: Promise<{ symbol?: string; interval?: string; range?: string }>;
+};
+
+export default async function ChartsPage({ searchParams }: ChartsPageProps) {
+  const params = await searchParams;
+  const symbol = normalizeSymbol(params?.symbol);
+  const interval = normalizeInterval(params?.interval);
+  const range = normalizeRange(params?.range);
   const live = await getLiveChartsWorkspace(symbol, interval, range);
 
   return (

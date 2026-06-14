@@ -6,7 +6,7 @@ DeltaGrid — аналитическое приложение для крипт�
 
 ## Основные слои
 
-- `frontend/` — Next.js 14, React, TypeScript, Tailwind CSS, Zustand, TanStack Query и `lightweight-charts` для interactive charts.
+- `frontend/` — Next.js 15, React, TypeScript, Tailwind CSS, Zustand, TanStack Query и `lightweight-charts` для interactive charts.
 - `backend/app/api/v1/` — FastAPI routes и API boundary.
 - `backend/app/services/` — бизнес-логика: market, scanner, alerts, execution, RWA, treasury, auth.
 - `backend/app/adapters/` — внешние провайдеры и exchange/data adapters.

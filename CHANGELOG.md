@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-14] - [FRONTEND/SECURITY] - Next.js обновлён до 15.5.19
+- Frontend dependency `next` обновлена с `14.1.0` до `15.5.19`, чтобы закрыть critical/high advisory из старой версии.
+- App Router страницы `/assets`, `/charts`, `/funding` и `/perp-dex` мигрированы на async `searchParams`, который требуется Next.js 15 при production build.
+- `README.md` и `ARCHITECTURE.md` обновлены до актуального стека Next.js 15.
+- Проверка локально: `npm run build` во `frontend` проходит на Next.js `15.5.19`.
+- `npm audit --json` после апгрейда показывает `0 high`, `0 critical` и `2 moderate`; остаточный риск связан с bundled `postcss <8.5.10` внутри Next и вынесен в отдельный regression pass для Next.js 16.x или upstream patch.
+
 ## [2026-06-14] - [OPS] - Production deploy diagnostics подготовлены в preview
 - В ветке `preview` подготовлен hardening для `Deploy Production`: явные `configured/missing` шаги для `PROD_*`, проверка fingerprint deploy key, expected values для `2.25.143.143/root//opt/deltagrid`, warning-only TCP port probe, SSH login retry и проверка production app dir перед deploy.
 - Safe-skip семантика сохранена: если обязательный production secret отсутствует, workflow не должен падать на value-check шагах.
