@@ -24,6 +24,7 @@
 - Подготовлены preview publication assets: `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh`, `deploy/dns/preview.deltagrid.pro.md`.
 - Подготовлен чеклист GitHub Actions deploy secrets: `deploy/github-actions-secrets.md`; сами secrets ещё нужно добавить в GitHub.
 - Dedicated SSH deploy key создан локально в `outputs/deploy-keys/github-actions-deltagrid-deploy`; public key добавлен на VPS, non-interactive login проверен.
+- `main` и `preview` синхронизированы на ops commit `104502e`, чтобы default-branch GitHub Actions использовал актуальные deploy workflows. Production checkout `/opt/deltagrid` fast-forward обновлён без пересборки контейнеров; smoke-check прошёл.
 - Восстановлен отсутствующий `AGENTS.md` с проектными правилами для Codex/AI-агентов.
 
 ## Обновление 2026-06-14 — Production universe v1

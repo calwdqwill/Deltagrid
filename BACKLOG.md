@@ -9,6 +9,7 @@
 - [x] Добавить общий `scripts/deploy-compose-stack.sh` для ручного и GitHub deploy production/preview.
 - [x] Подготовить runbook для GitHub deploy secrets: `deploy/github-actions-secrets.md`.
 - [x] Создать dedicated SSH deploy key и добавить public key на VPS для GitHub Actions.
+- [x] Перенести актуальные deploy workflows и ops runbooks в `main`, чтобы default-branch GitHub Actions использовал корректный preview/prod deploy path.
 - [ ] Настроить GitHub repository secrets для deploy: `PREVIEW_*` и `PROD_*`.
 - [x] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
 - [x] Подготовить DNS/Nginx/SSL runbook и template для `preview.deltagrid.pro`.
