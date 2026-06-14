@@ -158,7 +158,7 @@ GitHub Actions:
 
 Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview.
 
-Текущее preview-состояние от 2026-06-14: stack поднят на VPS, GitHub Actions auto-deploy проверен, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Внешний DNS/Nginx для `preview.deltagrid.pro` ещё не настроен; подготовлены `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh` и DNS-чеклист [deploy/dns/preview.deltagrid.pro.md](deploy/dns/preview.deltagrid.pro.md).
+Текущее preview-состояние от 2026-06-14: stack поднят на VPS, GitHub Actions auto-deploy проверен, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Preview Nginx HTTP site `deltagrid-preview` уже включён и проверен через `Host: preview.deltagrid.pro`; внешний HTTPS-домен ждёт DNS-запись `preview -> 2.25.143.143` и выпуск SSL по чеклисту [deploy/dns/preview.deltagrid.pro.md](deploy/dns/preview.deltagrid.pro.md).
 
 Для ручной загрузки свежих market data в production PostgreSQL:
 

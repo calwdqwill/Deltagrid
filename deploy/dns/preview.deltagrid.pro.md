@@ -12,6 +12,8 @@
 - Backend: `127.0.0.1:8011`.
 - Frontend: `127.0.0.1:3012`.
 - Внешние порты `8011/3012` не должны открываться в firewall.
+- Nginx HTTP site `deltagrid-preview` уже включён на VPS и проверен через `Host: preview.deltagrid.pro`.
+- Публичный HTTPS пока ждёт DNS-запись `preview -> 2.25.143.143`; до этого certbot запускать рано.
 
 ## DNS
 
@@ -37,6 +39,14 @@ Resolve-DnsName preview.deltagrid.pro
 
 ```bash
 getent hosts preview.deltagrid.pro
+```
+
+Проверка уже включённого HTTP reverse proxy без публичного DNS:
+
+```bash
+curl -H 'Host: preview.deltagrid.pro' http://127.0.0.1/api/v1/health/readiness
+curl -o /dev/null -w '%{http_code}\n' -H 'Host: preview.deltagrid.pro' http://127.0.0.1/
+curl -o /dev/null -w '%{http_code}\n' -H 'Host: preview.deltagrid.pro' 'http://127.0.0.1/charts?symbol=BTC&interval=1m&range=7d'
 ```
 
 ## Nginx и SSL

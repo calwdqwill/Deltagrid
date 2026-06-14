@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-14] - [OPS] - Preview Nginx HTTP pre-stage
+- На VPS заранее включён отдельный Nginx site `deltagrid-preview` для `preview.deltagrid.pro`: frontend проксируется на `127.0.0.1:3012`, backend/API/WebSocket — на `127.0.0.1:8011`.
+- Production site `deltagrid` не изменялся; `nginx -t` прошёл успешно, Nginx reload выполнен.
+- Проверка без публичного DNS через `Host: preview.deltagrid.pro` прошла: backend readiness возвращает `ready`, `/` и `/charts?symbol=BTC&interval=1m&range=7d` возвращают HTTP `200`.
+- DNS `preview.deltagrid.pro` пока не резолвится, поэтому Let's Encrypt SSL ещё не выпускался. Следующий шаг: добавить DNS `A preview -> 2.25.143.143`, затем запустить `scripts/configure-preview-nginx-ssl.sh`.
+
 ## [2026-06-14] - [OPS] - Preview auto-deploy через GitHub Actions
 - GitHub repository secrets `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY` и `PREVIEW_APP_DIR` доведены до рабочего состояния для preview deploy.
 - Workflow `Deploy Preview` прошёл end-to-end: readiness обязательных secrets, fingerprint deploy key, SSH port/login, проверка `/opt/deltagrid-preview` и сам deploy step.

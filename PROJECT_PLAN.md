@@ -14,6 +14,7 @@
 - Подготовлено dev/prod разделение на уровне deployment: production `/opt/deltagrid` + `.env.production` + ports `8000/3001`, preview `/opt/deltagrid-preview` + `.env.preview` + ports `8011/3012`.
 - Preview/dev stack поднят на VPS локально: отдельный Compose project `deltagrid-preview`, отдельная PostgreSQL БД, smoke-check зелёный, 7d BTC/ETH/SOL data sync выполнен без ошибок.
 - Preview auto-deploy через GitHub Actions проверен end-to-end: `PREVIEW_*` secrets, SSH login, deploy в `/opt/deltagrid-preview`, healthy containers и server smoke на ports `8011/3012`.
+- Preview Nginx HTTP site заранее включён на VPS и проверен через `Host: preview.deltagrid.pro`; публичный HTTPS ждёт DNS-запись `preview -> 2.25.143.143`.
 - Подготовлены runbook'и для следующего ops-шагa: `deploy/github-actions-secrets.md` для GitHub deploy secrets и `deploy/dns/preview.deltagrid.pro.md` для публикации preview-домена через Nginx/SSL.
 
 ## Что уже готово
@@ -168,7 +169,8 @@
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
 - [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
-- [ ] Добавить DNS-запись `preview.deltagrid.pro` и включить preview Nginx/SSL через `scripts/configure-preview-nginx-ssl.sh`.
+- [x] Включить preview Nginx HTTP site `deltagrid-preview` и проверить routing через `Host: preview.deltagrid.pro`.
+- [ ] Добавить DNS-запись `preview.deltagrid.pro` и выпустить SSL через `scripts/configure-preview-nginx-ssl.sh`.
 - [x] Создать dedicated SSH deploy key и добавить public key на VPS для GitHub Actions.
 - [x] Синхронизировать `main` и `preview` на актуальных ops/deploy workflows после проверки CI.
 - [x] Добавить и проверить GitHub repository secrets `PREVIEW_*`, чтобы `Deploy Preview` выполнял реальный deploy вместо skip.

@@ -17,7 +17,8 @@
 - [ ] Настроить и проверить GitHub repository secrets `PROD_*` для production auto-deploy отдельной безопасной итерацией.
 - [x] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
 - [x] Подготовить DNS/Nginx/SSL runbook и template для `preview.deltagrid.pro`.
-- [ ] Настроить DNS/Nginx для `preview.deltagrid.pro` после локального smoke preview stack.
+- [x] Включить preview Nginx HTTP site `deltagrid-preview` на VPS и проверить routing через `Host: preview.deltagrid.pro`.
+- [ ] Добавить DNS-запись `preview.deltagrid.pro` и выпустить Let's Encrypt SSL через `scripts/configure-preview-nginx-ssl.sh`.
 - [x] Перевести production `/opt/deltagrid` на чистый `main` checkout после push baseline.
 - [x] Восстановить `AGENTS.md` как проектные правила для Codex/AI-агентов.
 
