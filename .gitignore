@@ -28,6 +28,7 @@ wheels/
 .env
 .env.local
 .env.production
+.env.preview
 .env.*.local
 
 # Database

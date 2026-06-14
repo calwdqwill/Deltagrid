@@ -19,6 +19,10 @@ jobs:
       SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
       SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
       APP_DIR: ${{ secrets.PREVIEW_APP_DIR }}
+      APP_ENV_FILE: ${{ secrets.PREVIEW_ENV_FILE }}
+      COMPOSE_PROJECT_NAME: ${{ secrets.PREVIEW_COMPOSE_PROJECT_NAME }}
+      SMOKE_BASE_URL: ${{ secrets.PREVIEW_SMOKE_BASE_URL }}
+      SMOKE_FRONTEND_URL: ${{ secrets.PREVIEW_SMOKE_FRONTEND_URL }}
 
     steps:
       - name: Skip when preview secrets are not configured
@@ -39,9 +43,10 @@ jobs:
           ssh -i ~/.ssh/deltagrid_preview_key "$SSH_USER@$SSH_HOST" "
             set -e
             cd '$APP_DIR'
-            git fetch origin preview
-            git checkout preview
-            git pull --ff-only origin preview
-            docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build backend frontend
-            sh scripts/server-smoke.sh
+            BRANCH=preview \
+              ENV_FILE='${APP_ENV_FILE:-.env.preview}' \
+              COMPOSE_PROJECT_NAME='${COMPOSE_PROJECT_NAME:-deltagrid-preview}' \
+              BASE_URL='${SMOKE_BASE_URL:-http://127.0.0.1:8001}' \
+              FRONTEND_URL='${SMOKE_FRONTEND_URL:-http://127.0.0.1:3002}' \
+              sh scripts/deploy-compose-stack.sh
           "

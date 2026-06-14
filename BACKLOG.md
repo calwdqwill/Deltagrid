@@ -5,9 +5,12 @@
 - [x] Добавить `VERSION` и `RELEASES.md`.
 - [x] Добавить GitHub Actions CI для backend tests, `compileall` и frontend build.
 - [x] Добавить GitHub Actions deploy workflows для `preview` и `main`.
+- [x] Подготовить отдельный preview stack contract: `.env.preview.example`, Compose project `deltagrid-preview`, ports `8001/3002`.
+- [x] Добавить общий `scripts/deploy-compose-stack.sh` для ручного и GitHub deploy production/preview.
 - [ ] Настроить GitHub repository secrets для deploy: `PREVIEW_*` и `PROD_*`.
-- [ ] Поднять отдельный dev/staging стенд или DNS `dev.deltagrid.pro`/`preview.deltagrid.pro`.
-- [ ] Перевести production `/opt/deltagrid` на чистый `main` checkout после push baseline.
+- [ ] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
+- [ ] Настроить DNS/Nginx для `preview.deltagrid.pro` после локального smoke preview stack.
+- [x] Перевести production `/opt/deltagrid` на чистый `main` checkout после push baseline.
 
 ## MVP1 — Data Quality Gate / Provider Reliability — 2026-06-13
 - [x] P0: Устранить production-блокер Binance Futures API `451` на текущем VPS: primary CEX perp provider выбран как OKX USDT Swap без прокси/VPN.

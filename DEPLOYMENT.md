@@ -68,6 +68,25 @@ GitHub Actions:
 
 Если SSH secrets ещё не заведены, deploy workflow завершится успешным skip и не будет ломать CI.
 
+Опциональные secrets позволяют явно переопределить env-файл, Compose project и smoke URLs:
+
+- preview: `PREVIEW_ENV_FILE`, `PREVIEW_COMPOSE_PROJECT_NAME`, `PREVIEW_SMOKE_BASE_URL`, `PREVIEW_SMOKE_FRONTEND_URL`;
+- production: `PROD_ENV_FILE`, `PROD_COMPOSE_PROJECT_NAME`, `PROD_SMOKE_BASE_URL`, `PROD_SMOKE_FRONTEND_URL`.
+
+Рекомендуемые значения по умолчанию:
+
+| Стенд | Директория | Ветка | Env | Compose project | Backend | Frontend |
+|-------|------------|-------|-----|-----------------|---------|----------|
+| production | `/opt/deltagrid` | `main` | `.env.production` | `deltagrid` | `127.0.0.1:8000` | `127.0.0.1:3001` |
+| preview | `/opt/deltagrid-preview` | `preview` | `.env.preview` | `deltagrid-preview` | `127.0.0.1:8001` | `127.0.0.1:3002` |
+
+Для ручного deploy любого стенда используйте общий скрипт:
+
+```bash
+BRANCH=main ENV_FILE=.env.production COMPOSE_PROJECT_NAME=deltagrid sh scripts/deploy-compose-stack.sh
+BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh scripts/deploy-compose-stack.sh
+```
+
 ## Подготовка env
 
 Автоматический вариант для сервера:
@@ -85,6 +104,14 @@ cp .env.production.example .env.production
 ```
 
 После копирования замените все placeholder-значения.
+
+Для preview-стенда используйте отдельный env-файл:
+
+```bash
+cp .env.preview.example .env.preview
+```
+
+Минимальные отличия preview от production: `PUBLIC_APP_URL=https://preview.deltagrid.pro`, `CORS_ORIGINS=https://preview.deltagrid.pro`, `BACKEND_HOST_PORT=8001`, `FRONTEND_HOST_PORT=3002`, отдельные `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` и `DATABASE_URL`.
 
 Обязательные переменные:
 

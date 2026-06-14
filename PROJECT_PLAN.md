@@ -11,6 +11,7 @@
 - Добавлен `RELEASES.md` с правилами SemVer и release flow.
 - Добавлены GitHub Actions workflows: `CI`, `Deploy Preview`, `Deploy Production`.
 - Deploy workflows используют SSH secrets и не выполняют deploy, если secrets ещё не настроены.
+- Подготовлено dev/prod разделение на уровне deployment: production `/opt/deltagrid` + `.env.production` + ports `8000/3001`, preview `/opt/deltagrid-preview` + `.env.preview` + ports `8001/3002`.
 
 ## Что уже готово
 

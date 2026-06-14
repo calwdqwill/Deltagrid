@@ -6,6 +6,11 @@
 - `main` — production ветка. Сюда попадает только проверенный код, который должен соответствовать `https://deltagrid.pro`.
 - feature-ветки — короткие рабочие ветки для задач, например `codex/mvp1-provider-inventory`.
 
+Рекомендуемая инфраструктура стендов:
+
+- preview stack: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, local ports `8001/3002`;
+- production stack: `/opt/deltagrid`, `.env.production`, Compose project `deltagrid`, local ports `8000/3001`.
+
 ## Версионирование
 
 Используем SemVer:

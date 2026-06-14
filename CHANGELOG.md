@@ -1,5 +1,13 @@
 # Changelog — DeltaGrid
 
+## [2026-06-14] - [RELEASE/OPS] - Preview stack contract
+- Добавлен `.env.preview.example` для отдельного dev/staging стенда: `preview.deltagrid.pro`, ports `8001/3002`, отдельные PostgreSQL credentials и runtime tuning.
+- `.gitignore` дополнен `.env.preview`, чтобы реальные preview secrets не попадали в Git.
+- Добавлен общий `scripts/deploy-compose-stack.sh`, который делает `git pull --ff-only`, запускает нужный Compose project и прогоняет smoke-check для выбранного стенда.
+- `scripts/sync-market-data.sh` теперь поддерживает `COMPOSE_PROJECT_NAME`, чтобы market sync можно было запускать против preview stack без риска затронуть production containers/volume.
+- GitHub workflows `Deploy Preview` и `Deploy Production` переведены на общий deploy script и разные defaults: preview использует `.env.preview`/`deltagrid-preview`/`8001/3002`, production использует `.env.production`/`deltagrid`/`8000/3001`.
+- Документация обновлена под dev/prod разделение: `README.md`, `DEPLOYMENT.md`, `RELEASES.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `CURRENT_TASK.md`, `BACKLOG.md`.
+
 ## [2026-06-14] - [RELEASE/OPS] - Baseline `v1.3.0` и GitHub CI/CD
 - Зафиксирована корневая версия `VERSION=1.3.0`; frontend package version поднят до `1.3.0`.
 - Добавлен `RELEASES.md` с правилами SemVer, ветками `preview/main`, release flow и назначением файлов `CHANGELOG.md`, `CURRENT_TASK.md`, `PROJECT_PLAN.md`, `BACKLOG.md`, `ARCHITECTURE.md`.

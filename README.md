@@ -149,6 +149,13 @@ GitHub Actions:
 
 Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
 
+Рекомендуемая схема стендов на VPS:
+
+- production: `/opt/deltagrid`, branch `main`, env `.env.production`, Compose project `deltagrid`, ports `8000/3001`, домен `https://deltagrid.pro`;
+- preview: `/opt/deltagrid-preview`, branch `preview`, env `.env.preview`, Compose project `deltagrid-preview`, ports `8001/3002`, будущий домен `https://preview.deltagrid.pro`.
+
+Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview.
+
 Для ручной загрузки свежих market data в production PostgreSQL:
 
 ```bash

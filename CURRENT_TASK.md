@@ -1,7 +1,7 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Текущая ops-задача — зафиксировать working production baseline `v1.3.0` в GitHub, разделить `preview`/`main` и подготовить CI/CD.
+**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Текущая ops-задача — поднять отдельный preview/dev stack без риска для production.
 **Last Updated**: 2026-06-14
 
 ## Обновление 2026-06-14 — Release baseline и CI/CD
@@ -11,6 +11,8 @@
 - Добавлены GitHub Actions workflows: `CI`, `Deploy Preview`, `Deploy Production`.
 - Branch policy: `preview` — dev/staging, `main` — production.
 - Deploy workflows используют SSH secrets и безопасно пропускают deploy, если secrets ещё не настроены.
+- Production `/opt/deltagrid` переведён на clean `main`.
+- Подготовлен preview stack contract: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, ports `8001/3002`.
 
 ## Обновление 2026-06-14 — Production universe v1
 
