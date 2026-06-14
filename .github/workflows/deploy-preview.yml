@@ -79,6 +79,14 @@ jobs:
           chmod 600 ~/.ssh/deltagrid_preview_key
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts || true
 
+      - name: Validate preview deploy key fingerprint
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          ssh-keygen -y -f ~/.ssh/deltagrid_preview_key > ~/.ssh/deltagrid_preview_key.pub
+          actual="$(ssh-keygen -lf ~/.ssh/deltagrid_preview_key.pub | awk '{print $2}')"
+          expected="SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg"
+          test "$actual" = "$expected"
+
       - name: Test preview SSH login
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
