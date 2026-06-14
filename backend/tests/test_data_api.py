@@ -384,6 +384,38 @@ def test_universe_reports_not_ready_symbol_policy() -> None:
     assert len(uni["missing_streams_7d"]) > 0
 
 
+def test_provider_inventory_defaults_to_expansion_candidates() -> None:
+    """Provider inventory should expose a read-only candidate list for universe expansion."""
+    response = client.get("/api/v1/data/provider-inventory")
+    assert response.status_code == 200
+    payload = response.json()
+    data = payload["data"]
+
+    assert payload["meta"]["read_only"] is True
+    assert data["scope"]["inventory_mode"] == "persisted_data_only"
+    assert data["scope"]["external_provider_calls"] is False
+    assert data["scope"]["symbols"][:4] == ["BTC", "ETH", "SOL", "HYPE"]
+    assert data["summary"]["total"] == len(data["scope"]["symbols"])
+    assert "promotion_candidates" in data["policy"]
+    assert all("next_action" in row for row in data["symbols"])
+
+
+def test_provider_inventory_defers_symbol_without_coverage() -> None:
+    """Symbols without persisted streams must stay out of UI promotion candidates."""
+    response = client.get("/api/v1/data/provider-inventory?symbols=UNI&exchange=okx")
+    assert response.status_code == 200
+    data = response.json()["data"]
+
+    uni = data["symbols"][0]
+    assert data["scope"]["symbols"] == ["UNI"]
+    assert data["policy"]["promotion_candidates"] == []
+    assert data["policy"]["deferred_symbols"] == ["UNI"]
+    assert uni["promotion_candidate"] is False
+    assert uni["next_action"] == "backfill_required"
+    assert uni["freshness_tracked"] is False
+    assert len(uni["missing_streams_7d"]) > 0
+
+
 def test_health_reports_freshness_and_sync_diagnostics() -> None:
     """Data health must expose stream freshness, sync type split and error classes."""
     _seed_health_rows()

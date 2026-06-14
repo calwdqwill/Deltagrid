@@ -44,6 +44,29 @@ UNIVERSE_RANGES = ("24h", "7d")
 UNIVERSE_CHART_STREAMS = {"ohlcv"}
 WATCHED_PROVIDERS = ("okx", "binance", "coinglass", "coingecko")
 WATCHED_SYMBOLS = ("BTC", "ETH", "SOL")
+PROVIDER_INVENTORY_SYMBOLS = (
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE",
+    "XRP",
+    "DOGE",
+    "BNB",
+    "ADA",
+    "LINK",
+    "AVAX",
+    "SUI",
+    "TON",
+    "TRX",
+    "DOT",
+    "LTC",
+    "BCH",
+    "AAVE",
+    "UNI",
+    "APT",
+    "ARB",
+)
+PROVIDER_INVENTORY_PROMOTION_STATUSES = {"complete_history", "core_perp_ready"}
 PRIMARY_PERP_EXCHANGE = "okx"
 CRON_EXPECTED_INTERVAL_MINUTES = 15
 RECENT_SYNC_WINDOW_HOURS = 24
@@ -186,9 +209,9 @@ def _normalize_exchange(exchange: str) -> str:
     return exchange.strip().lower()
 
 
-def _parse_symbols(symbols: Optional[str]) -> tuple[str, ...]:
+def _parse_symbols(symbols: Optional[str], default: tuple[str, ...] = WATCHED_SYMBOLS) -> tuple[str, ...]:
     if symbols is None or not symbols.strip():
-        return WATCHED_SYMBOLS
+        return default
     parsed = tuple(dict.fromkeys(item.strip().upper() for item in symbols.split(",") if item.strip()))
     if not parsed:
         raise HTTPException(
@@ -1217,6 +1240,104 @@ def _build_universe_report(
     }
 
 
+def _provider_inventory_action(symbol_row: dict[str, Any]) -> tuple[str, str]:
+    if symbol_row["status"] in PROVIDER_INVENTORY_PROMOTION_STATUSES:
+        return "ready_for_ui_review", "symbol already passes the production universe readiness rule"
+    if symbol_row["missing_streams_7d"]:
+        return "backfill_required", "one or more tracked 7d streams are missing in persisted data"
+    if symbol_row["freshness"]["total"] == 0:
+        return "freshness_tracking_required", "coverage exists, but freshness SLA is not tracked for this symbol yet"
+    if symbol_row["partial_streams_7d"]:
+        return "history_completion_required", "all streams exist, but some 7d windows are still partial"
+    return "manual_review_required", "symbol does not match an automated inventory action"
+
+
+def _build_provider_inventory_report(
+    db: Session,
+    symbols: tuple[str, ...] = PROVIDER_INVENTORY_SYMBOLS,
+    exchange: str = PRIMARY_PERP_EXCHANGE,
+) -> dict[str, Any]:
+    normalized_exchange = _normalize_exchange(exchange)
+    coverage_7d = _build_coverage_report(db, symbols, normalized_exchange, "7d")
+    freshness = _build_freshness_report(db)
+    universe = _build_universe_report(
+        db,
+        symbols=symbols,
+        exchange=normalized_exchange,
+        coverage_7d=coverage_7d,
+        freshness=freshness,
+    )
+
+    summary = {
+        "total": 0,
+        "promotion_candidates": 0,
+        "ready_for_ui_review": 0,
+        "backfill_required": 0,
+        "freshness_tracking_required": 0,
+        "history_completion_required": 0,
+        "manual_review_required": 0,
+    }
+    inventory_rows: list[dict[str, Any]] = []
+
+    for symbol_row in universe["symbols"]:
+        next_action, action_reason = _provider_inventory_action(symbol_row)
+        promotion_candidate = symbol_row["status"] in PROVIDER_INVENTORY_PROMOTION_STATUSES
+        summary["total"] += 1
+        if promotion_candidate:
+            summary["promotion_candidates"] += 1
+        summary[next_action] += 1
+
+        inventory_rows.append(
+            {
+                **symbol_row,
+                "promotion_candidate": promotion_candidate,
+                "next_action": next_action,
+                "next_action_reason": action_reason,
+                "freshness_tracked": symbol_row["freshness"]["total"] > 0,
+            }
+        )
+
+    return {
+        "scope": {
+            "symbols": list(symbols),
+            "exchange": normalized_exchange,
+            "ranges": list(UNIVERSE_RANGES),
+            "primary_range": "7d",
+            "inventory_mode": "persisted_data_only",
+            "external_provider_calls": False,
+        },
+        "summary": summary,
+        "policy": {
+            "promotion_candidates": [
+                row["symbol"]
+                for row in inventory_rows
+                if row["promotion_candidate"]
+            ],
+            "deferred_symbols": [
+                row["symbol"]
+                for row in inventory_rows
+                if not row["promotion_candidate"]
+            ],
+            "rule": (
+                "candidate symbols can move to UI review only after production universe readiness "
+                "passes on persisted coverage and freshness signals"
+            ),
+        },
+        "symbols": inventory_rows,
+        "coverage": {
+            "7d": {
+                "summary": coverage_7d["summary"],
+                "by_symbol": coverage_7d["by_symbol"],
+                "by_stream": coverage_7d["by_stream"],
+            },
+        },
+        "notes": [
+            "This endpoint is read-only and does not call OKX, CoinGlass, CoinGecko or legacy Binance.",
+            "Symbols outside the current freshness scope remain blocked until sync and SLA tracking are added.",
+        ],
+    }
+
+
 def _row_counts(db: Session) -> dict[str, int]:
     tables = {
         DataOhlcv.__tablename__: DataOhlcv,
@@ -1648,6 +1769,30 @@ async def get_data_universe(
     report = _build_universe_report(
         db,
         symbols=_parse_symbols(symbols),
+        exchange=exchange,
+    )
+    return ApiResponse(
+        data=report,
+        meta={
+            "timestamp": _utc_now().isoformat(),
+            "read_only": True,
+        },
+    )
+
+
+@router.get("/provider-inventory", response_model=ApiResponse)
+async def get_provider_inventory(
+    symbols: Optional[str] = Query(
+        None,
+        description="Comma-separated canonical symbols; defaults to MVP1 expansion candidates",
+    ),
+    exchange: str = Query(PRIMARY_PERP_EXCHANGE, min_length=1),
+    db: Session = Depends(get_db),
+):
+    """Inventory expansion candidates from persisted coverage and freshness signals."""
+    report = _build_provider_inventory_report(
+        db,
+        symbols=_parse_symbols(symbols, default=PROVIDER_INVENTORY_SYMBOLS),
         exchange=exchange,
     )
     return ApiResponse(

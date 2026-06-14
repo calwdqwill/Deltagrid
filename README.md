@@ -303,6 +303,7 @@ tail -100 /var/log/deltagrid-market-sync.log
 | `GET /api/v1/data/funding?symbol=BTC&exchange=okx&start=...&end=...` | Чтение истории funding rate из PostgreSQL, максимум 1000 строк. |
 | `GET /api/v1/data/coverage?symbols=BTC,ETH,SOL&exchange=okx&range=7d` | Coverage matrix по историческим потокам: rows/expected, coverage %, latest timestamp и reason для OHLCV/funding/OI/long-short/liquidations/basis/spot-perp price. |
 | `GET /api/v1/data/universe?symbols=BTC,ETH,SOL&exchange=okx` | Production universe readiness поверх coverage/freshness: `complete_history`, `core_perp_ready`, `partial_history`, `not_ready`, `ui_universe` и `deferred_symbols`. |
+| `GET /api/v1/data/provider-inventory?symbols=BTC,ETH,SOL,HYPE&exchange=okx` | Read-only inventory кандидатов на расширение universe поверх persisted coverage/freshness: `promotion_candidate`, `next_action`, readiness status и 24h/7d summaries без внешних API-вызовов. |
 | `GET /api/v1/data/health` | Health snapshot data-layer: статусы провайдеров, последние sync, row counts, data quality score, freshness SLA, coverage matrix, universe readiness, health по `sync_type` и cron/data-sync diagnostics. |
 
 Для sparse event streams вроде `liquidations` `/data/health` различает возраст последнего события и свежесть sync-run: отсутствие новых событий не считается stale, если `coinglass/liquidations` sync свежий и успешный.

@@ -40,7 +40,7 @@ Frontend HTTP API использует относительный `/api/v1` и �
 
 `/charts` теперь имеет отдельный client-side слой `InteractiveCandlestickChart` на `lightweight-charts`. Server-side workspace собирает OKX OHLCV окно через `/data/ohlcv/window`, а старая постраничная сборка поверх `/data/ohlcv` оставлена fallback path. Client layer отвечает только за визуализацию candles, volume, crosshair и pan/zoom/scroll; расчёты data quality, freshness и coverage остаются в backend/data-layer.
 
-Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/ohlcv/window`, `/data/funding`, `/data/open-interest`, `/data/long-short-ratio`, `/data/basis-premium`, `/data/liquidations`, `/data/coverage`, `/data/universe` и `/data/health`.
+Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/ohlcv/window`, `/data/funding`, `/data/open-interest`, `/data/long-short-ratio`, `/data/basis-premium`, `/data/liquidations`, `/data/coverage`, `/data/universe`, `/data/provider-inventory` и `/data/health`.
 
 Для interactive charts добавлен отдельный read-only endpoint `/data/ohlcv/window`. Он возвращает bounded OHLCV окно по `symbol + exchange + interval + range`, ограничивает размер ответа `20000` строками и, если `end` не задан, использует последнюю доступную свечу в PostgreSQL как правый край окна. Старый `/data/ohlcv` сохраняет лимит `1000` строк для общих read-side сценариев.
 
@@ -51,6 +51,8 @@ Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/ohl
 - `universe` — policy view для текущего MVP universe: `complete_history`, `core_perp_ready`, `partial_history`, `not_ready`, `policy.ui_universe` и `deferred_symbols`;
 - `sync_health_by_type` — последние sync-runs по `provider_name + sync_type`, чтобы OHLCV, funding, OI, long/short, liquidations и basis были видны отдельно;
 - `sync_diagnostics` — cron-path диагностику по `provider_sync_runs`: последний запуск, последний успешный запуск, fetched/inserted records и классы ошибок вроде `http_451`, `rate_limit`, `circuit_breaker`, `empty_response`.
+
+`/data/provider-inventory` — отдельный read-only endpoint для MVP1 expansion gate. Он строит inventory candidate symbols поверх persisted coverage/freshness, возвращает `promotion_candidate`, `next_action`, readiness status и summaries по 24h/7d. Endpoint не вызывает внешние API и не меняет sync-конфигурацию; внешний discovery OKX/CoinGlass/CoinGecko/legacy Binance остаётся следующим шагом перед расширением `SymbolMapper` и UI universe.
 
 Для sparse event streams, сейчас это `liquidations`, freshness разделяет два сигнала: возраст последнего события и возраст последнего успешного sync-run. Если новых liquidation events нет, но `coinglass/liquidations` sync свежий и успешный, поток остаётся `fresh` с reason `no recent liquidation events`; `/data-health` показывает это как `event age / sync age`.
 

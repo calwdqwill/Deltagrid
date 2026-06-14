@@ -46,6 +46,8 @@
 - [x] P1: Задеплоить отдельный backend window endpoint для OHLCV и убрать client-side pagination из основного `/charts` path.
 - [x] P1: Обновить `next` до `15.5.19` и мигрировать App Router `searchParams`; critical/high advisory для `next@14.1.0` закрыты, production build проходит.
 - [x] P1: Проверить Next.js 16 stable для остаточного PostCSS advisory: `next@16.2.9` всё ещё использует bundled `postcss 8.4.31`, поэтому production-safe апгрейд не закрывает `moderate`.
+- [x] P1: Добавить provider inventory v0 через `GET /api/v1/data/provider-inventory`: read-only persisted-data кандидаты на расширение universe без внешних API-вызовов.
+- [ ] P1: Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
 - [x] P1: Добавить CI audit gate `npm audit --audit-level=high`, чтобы high/critical frontend advisory снова не прошли в `preview/main`.
 - [ ] P1: Дождаться stable Next.js с bundled `postcss >=8.5.10` или другого upstream patch; `next@canary` не использовать в production path без отдельного решения.
 - [ ] P2: Подготовить настоящий backtest engine после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
@@ -73,7 +75,8 @@
 - [x] Реализовать первый interactive historical charts layer на `lightweight-charts`: crosshair tooltip, pan/zoom/scroll, выбор диапазона `2h/8h/24h/7d`, чтение проверенной OKX истории и честный empty-state для потоков без истории.
 - [x] Пройти production QA для charts layer: доменный smoke-check и Browser QA desktop/mobile.
 - [x] Довести charts layer после production QA: backend window endpoint добавлен, `/charts` проверен, coverage matrix подготовлена перед расширением universe.
-- [ ] Провести инвентаризацию perp-инструментов по CoinGlass, CoinGecko, OKX и legacy Binance: для каждого символа зафиксировать наличие OHLCV, funding, OI, long/short, liquidations, basis и цену spot/perp.
+- [x] Провести provider inventory v0 по persisted data: `GET /api/v1/data/provider-inventory` показывает candidate symbols, coverage/freshness readiness, `promotion_candidate` и `next_action`.
+- [ ] Провести внешнюю инвентаризацию perp-инструментов по CoinGlass, CoinGecko, OKX и legacy Binance: для каждого символа зафиксировать наличие OHLCV, funding, OI, long/short, liquidations, basis и цену spot/perp.
 - [ ] Сформировать production universe для дашборда: топ-30 crypto assets плюс RWA-кандидаты, отдельно пометить активы с полной историей и активы только со spot/market данными.
 - [ ] Расширить `SymbolMapper` и sync-конфигурацию только после coverage-матрицы, чтобы не показывать в UI активы без честных backend data streams.
 - [ ] Подготовить RWA coverage map: tokenized commodities, treasuries, equities/stock-like assets, доступные источники CoinGecko/CoinGlass/прочие provider'ы и ограничения по истории.

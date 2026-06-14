@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [DATA] - Provider inventory v0 для расширения universe
+- Добавлен read-only endpoint `GET /api/v1/data/provider-inventory`, который строит inventory кандидатов на расширение universe поверх уже сохранённых coverage/freshness сигналов.
+- Default candidate set расширен за пределы `BTC/ETH/SOL`: `HYPE`, `XRP`, `DOGE`, `BNB`, `ADA`, `LINK`, `AVAX`, `SUI`, `TON`, `TRX`, `DOT`, `LTC`, `BCH`, `AAVE`, `UNI`, `APT`, `ARB`.
+- Endpoint не вызывает OKX, CoinGlass, CoinGecko или legacy Binance: `inventory_mode=persisted_data_only`, `external_provider_calls=false`.
+- Для каждого symbol возвращаются readiness status, 24h/7d coverage summary, freshness tracking, `promotion_candidate`, `next_action` и reason. Символы без persisted streams получают `backfill_required` и не попадают в promotion candidates.
+- Добавлены regression tests для default candidate list и блокировки symbol без coverage.
+
 ## [2026-06-14] - [OPS] - Docker Compose deploy recreate стабилизирован
 - `scripts/deploy-compose-stack.sh` больше не использует единый `docker compose up -d --build backend frontend`, который на preview дважды приводил к Docker Compose name-conflict при recreate backend.
 - Новый порядок deploy: сначала `compose build backend frontend`, затем явный `compose rm -sf backend frontend`, затем `compose up -d --no-build backend frontend`.

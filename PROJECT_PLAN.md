@@ -97,6 +97,14 @@
 - Production deploy выполнен на `deltagrid.pro`: BTC/ETH/SOL классифицированы как `core_perp_ready`, `chart_ready=3/3`, missing streams отсутствуют, partial enrichment streams видны явно.
 - Следующий milestone: provider inventory по расширяемому universe до изменения sync-конфигурации и UI selector'ов.
 
+## Provider inventory v0 — 2026-06-15
+
+- Добавлен `GET /api/v1/data/provider-inventory` для read-only проверки кандидатов на расширение universe поверх persisted coverage/freshness.
+- Endpoint работает без внешних API-вызовов и не меняет sync-конфигурацию, `SymbolMapper` или UI selector'ы.
+- Default candidate set: `BTC/ETH/SOL/HYPE/XRP/DOGE/BNB/ADA/LINK/AVAX/SUI/TON/TRX/DOT/LTC/BCH/AAVE/UNI/APT/ARB`.
+- Для каждого symbol возвращаются `promotion_candidate`, `next_action`, readiness status, coverage summaries и freshness tracking.
+- Следующий milestone: внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance и только затем расширение aliases/sync universe.
+
 ## Текущая итерация
 
 - [x] Перевести runtime persistence с SQLite на PostgreSQL.
@@ -185,7 +193,8 @@
 - [x] Задеплоить live data SSR fix и проверить `/charts`, `/market-matrix`, `/arbitrage-scanner`, `/strategy-lab` через Cloudflare.
 - [x] Довести interactive historical charts после production QA: доменный smoke-check, backend window endpoint и coverage matrix выполнены.
 - [x] Сформировать production universe v1 на основе coverage matrix.
-- [ ] Провести provider inventory для расширения universe за пределы BTC/ETH/SOL.
+- [x] Провести provider inventory v0 для расширения universe за пределы BTC/ETH/SOL через read-only persisted-data endpoint.
+- [ ] Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
 - [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
