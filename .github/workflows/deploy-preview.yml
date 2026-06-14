@@ -89,27 +89,27 @@ jobs:
           test "$actual" = "$expected"
 
       - name: Preview SSH_HOST value expected
-        if: ${{ env.SSH_HOST == '2.25.143.143' }}
+        if: ${{ env.SSH_HOST != '' && env.SSH_HOST == '2.25.143.143' }}
         run: echo "SSH_HOST matches expected VPS IP"
 
       - name: Preview SSH_HOST value mismatch
-        if: ${{ env.SSH_HOST != '2.25.143.143' }}
+        if: ${{ env.SSH_HOST != '' && env.SSH_HOST != '2.25.143.143' }}
         run: exit 1
 
       - name: Preview SSH_USER value expected
-        if: ${{ env.SSH_USER == 'root' }}
+        if: ${{ env.SSH_USER != '' && env.SSH_USER == 'root' }}
         run: echo "SSH_USER matches expected user"
 
       - name: Preview SSH_USER value mismatch
-        if: ${{ env.SSH_USER != 'root' }}
+        if: ${{ env.SSH_USER != '' && env.SSH_USER != 'root' }}
         run: exit 1
 
       - name: Preview APP_DIR value expected
-        if: ${{ env.APP_DIR == '/opt/deltagrid-preview' }}
+        if: ${{ env.APP_DIR != '' && env.APP_DIR == '/opt/deltagrid-preview' }}
         run: echo "APP_DIR matches expected path"
 
       - name: Preview APP_DIR value mismatch
-        if: ${{ env.APP_DIR != '/opt/deltagrid-preview' }}
+        if: ${{ env.APP_DIR != '' && env.APP_DIR != '/opt/deltagrid-preview' }}
         run: exit 1
 
       - name: Check preview SSH port

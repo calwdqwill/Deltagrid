@@ -23,6 +23,7 @@ jobs:
       COMPOSE_PROJECT_NAME: ${{ secrets.PROD_COMPOSE_PROJECT_NAME }}
       SMOKE_BASE_URL: ${{ secrets.PROD_SMOKE_BASE_URL }}
       SMOKE_FRONTEND_URL: ${{ secrets.PROD_SMOKE_FRONTEND_URL }}
+      SSH_COMMON_OPTIONS: "-o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 -o ConnectionAttempts=3 -o ServerAliveInterval=15 -o ServerAliveCountMax=2"
 
     steps:
       - name: Report production secret readiness
@@ -35,6 +36,38 @@ jobs:
             fi
           done
 
+      - name: Production secret SSH_HOST configured
+        if: ${{ env.SSH_HOST != '' }}
+        run: echo "SSH_HOST configured"
+
+      - name: Production secret SSH_HOST missing
+        if: ${{ env.SSH_HOST == '' }}
+        run: echo "SSH_HOST missing"
+
+      - name: Production secret SSH_USER configured
+        if: ${{ env.SSH_USER != '' }}
+        run: echo "SSH_USER configured"
+
+      - name: Production secret SSH_USER missing
+        if: ${{ env.SSH_USER == '' }}
+        run: echo "SSH_USER missing"
+
+      - name: Production secret SSH_KEY configured
+        if: ${{ env.SSH_KEY != '' }}
+        run: echo "SSH_KEY configured"
+
+      - name: Production secret SSH_KEY missing
+        if: ${{ env.SSH_KEY == '' }}
+        run: echo "SSH_KEY missing"
+
+      - name: Production secret APP_DIR configured
+        if: ${{ env.APP_DIR != '' }}
+        run: echo "APP_DIR configured"
+
+      - name: Production secret APP_DIR missing
+        if: ${{ env.APP_DIR == '' }}
+        run: echo "APP_DIR missing"
+
       - name: Skip when production secrets are not configured
         if: ${{ env.SSH_HOST == '' || env.SSH_USER == '' || env.SSH_KEY == '' || env.APP_DIR == '' }}
         run: echo "Production deploy skipped because SSH secrets are not configured."
@@ -45,12 +78,76 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deltagrid_prod_key
           chmod 600 ~/.ssh/deltagrid_prod_key
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts || true
+
+      - name: Validate production deploy key fingerprint
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          ssh-keygen -y -f ~/.ssh/deltagrid_prod_key > ~/.ssh/deltagrid_prod_key.pub
+          actual="$(ssh-keygen -lf ~/.ssh/deltagrid_prod_key.pub | awk '{print $2}')"
+          expected="SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg"
+          test "$actual" = "$expected"
+
+      - name: Production SSH_HOST value expected
+        if: ${{ env.SSH_HOST != '' && env.SSH_HOST == '2.25.143.143' }}
+        run: echo "SSH_HOST matches expected VPS IP"
+
+      - name: Production SSH_HOST value mismatch
+        if: ${{ env.SSH_HOST != '' && env.SSH_HOST != '2.25.143.143' }}
+        run: exit 1
+
+      - name: Production SSH_USER value expected
+        if: ${{ env.SSH_USER != '' && env.SSH_USER == 'root' }}
+        run: echo "SSH_USER matches expected user"
+
+      - name: Production SSH_USER value mismatch
+        if: ${{ env.SSH_USER != '' && env.SSH_USER != 'root' }}
+        run: exit 1
+
+      - name: Production APP_DIR value expected
+        if: ${{ env.APP_DIR != '' && env.APP_DIR == '/opt/deltagrid' }}
+        run: echo "APP_DIR matches expected path"
+
+      - name: Production APP_DIR value mismatch
+        if: ${{ env.APP_DIR != '' && env.APP_DIR != '/opt/deltagrid' }}
+        run: exit 1
+
+      - name: Check production SSH port
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          if timeout 10 bash -c "cat < /dev/null > /dev/tcp/$SSH_HOST/22"; then
+            echo "SSH port 22 is reachable"
+          else
+            echo "::warning::SSH port 22 probe failed; continuing to the SSH login check"
+          fi
+
+      - name: Test production SSH login
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          for attempt in 1 2 3; do
+            if ssh -i ~/.ssh/deltagrid_prod_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "echo production ssh ok"; then
+              exit 0
+            fi
+            echo "::warning::Production SSH login failed on attempt $attempt"
+            sleep $((attempt * 10))
+          done
+          exit 1
+
+      - name: Check production app directory
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          ssh -i ~/.ssh/deltagrid_prod_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "
+            set -e
+            test -d '$APP_DIR'
+            cd '$APP_DIR'
+            test -f scripts/deploy-compose-stack.sh
+            git status --short --branch
+          "
 
       - name: Deploy production
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
-          ssh -i ~/.ssh/deltagrid_prod_key "$SSH_USER@$SSH_HOST" "
+          ssh -i ~/.ssh/deltagrid_prod_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "
             set -e
             cd '$APP_DIR'
             BRANCH=main \
