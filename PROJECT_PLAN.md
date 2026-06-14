@@ -62,7 +62,7 @@
 - График читает OKX USDT Swap историю из существующего read-only data-layer API. Для 7d `1m` режима frontend постранично собирает окно поверх лимита `/data/ohlcv=1000` строк, не меняя backend контракт.
 - Browser QA через SSH tunnel к production backend подтвердил desktop `BTC 1m 7d` с `10,080` свечами и mobile `ETH 5m 24h` с `288` свечами.
 - Production deploy charts v0 выполнен на `deltagrid.pro`; доменный smoke-check и Browser QA подтвердили desktop `BTC 1m 7d` и mobile `ETH 5m 24h`.
-- Следующий milestone по charts backend window endpoint выполнен; security upgrade `next` выполнен до `15.5.19`. Остаточный frontend security follow-up: отдельный regression pass для Next.js 16.x или upstream patch из-за `moderate` audit по bundled `postcss <8.5.10`.
+- Следующий milestone по charts backend window endpoint выполнен; security upgrade `next` выполнен до `15.5.19`. Next.js 16 stable проверен и пока не закрывает остаточный `moderate` audit, потому что `next@16.2.9` всё ещё содержит bundled `postcss 8.4.31`; high/critical baseline защищён CI-шагом `npm audit --audit-level=high`.
 
 ## Sparse liquidation freshness — 2026-06-14
 
@@ -186,7 +186,8 @@
 - [x] Довести interactive historical charts после production QA: доменный smoke-check, backend window endpoint и coverage matrix выполнены.
 - [x] Сформировать production universe v1 на основе coverage matrix.
 - [ ] Провести provider inventory для расширения universe за пределы BTC/ETH/SOL.
-- [ ] Провести отдельный regression pass Next.js 16.x или дождаться upstream patch, чтобы убрать остаточный `moderate` audit по bundled `postcss <8.5.10`.
+- [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
+- [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
 - [ ] Расширить CoinGlass data adapter до дополнительных provider-specific L/S потоков, если Binance global L/S будет недостаточно для MVP.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.

@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-14] - [CI/SECURITY] - Frontend audit gate для high/critical advisory
+- Проверен Next.js 16 regression path: актуальный stable `next@16.2.9` требует Node `>=20.9.0`, но всё ещё содержит bundled `postcss 8.4.31`, поэтому не закрывает остаточный `moderate` advisory `postcss <8.5.10`.
+- Fixed `postcss 8.5.10` найден только в `next@canary`; canary-версия не переводится в production/preview runtime без отдельного решения.
+- В `CI` добавлен frontend-шаг `npm audit --audit-level=high`, который блокирует high/critical advisory и при этом не ломает pipeline из-за текущего известного moderate внутри Next.
+- `README.md`, `PROJECT_PLAN.md` и `BACKLOG.md` обновлены под новый security baseline и оставшийся upstream follow-up.
+
 ## [2026-06-14] - [FRONTEND/SECURITY] - Next.js обновлён до 15.5.19
 - Frontend dependency `next` обновлена с `14.1.0` до `15.5.19`, чтобы закрыть critical/high advisory из старой версии.
 - App Router страницы `/assets`, `/charts`, `/funding` и `/perp-dex` мигрированы на async `searchParams`, который требуется Next.js 15 при production build.

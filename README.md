@@ -143,7 +143,7 @@ Release policy описана в [RELEASES.md](RELEASES.md). Базовая сх
 
 GitHub Actions:
 
-- `CI` запускает backend tests, `compileall` и frontend build на `preview`, `main` и pull requests;
+- `CI` запускает backend tests, `compileall`, frontend `npm audit --audit-level=high` и frontend build на `preview`, `main` и pull requests;
 - `Deploy Preview` деплоит `preview`, если в GitHub настроены `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY`, `PREVIEW_APP_DIR`;
 - `Deploy Production` деплоит `main`, если настроены `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`.
 

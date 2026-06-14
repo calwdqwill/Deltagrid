@@ -44,7 +44,9 @@
 - [x] P1: Задеплоить sparse liquidation freshness fix: для `liquidations` различать отсутствие свежих событий и свежесть `coinglass/liquidations` sync-run.
 - [x] P1: Задеплоить отдельный backend window endpoint для OHLCV и убрать client-side pagination из основного `/charts` path.
 - [x] P1: Обновить `next` до `15.5.19` и мигрировать App Router `searchParams`; critical/high advisory для `next@14.1.0` закрыты, production build проходит.
-- [ ] P1: Отдельным regression pass решить переход на Next.js 16.x или другой upstream patch, чтобы убрать остаточный `moderate` audit по bundled `postcss <8.5.10` внутри Next.
+- [x] P1: Проверить Next.js 16 stable для остаточного PostCSS advisory: `next@16.2.9` всё ещё использует bundled `postcss 8.4.31`, поэтому production-safe апгрейд не закрывает `moderate`.
+- [x] P1: Добавить CI audit gate `npm audit --audit-level=high`, чтобы high/critical frontend advisory снова не прошли в `preview/main`.
+- [ ] P1: Дождаться stable Next.js с bundled `postcss >=8.5.10` или другого upstream patch; `next@canary` не использовать в production path без отдельного решения.
 - [ ] P2: Подготовить настоящий backtest engine после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
 
 ## Production Ops — 2026-06-05
@@ -377,7 +379,8 @@
 - [ ] Пересмотреть `Float` в market data там, где значения начнут использоваться для финансово-критичных расчётов.
 - [ ] Подготовить отдельный one-off export/import, если потребуется перенос исторических данных из старого SQLite `.db`.
 - [x] Обновить Next.js до `15.5.19`: critical/high advisory для `next@14.1.0` закрыты, frontend production build проходит.
-- [ ] Отдельно проверить Next.js 16.x для полного снятия остаточного `moderate` audit по bundled `postcss <8.5.10`.
+- [x] Проверить Next.js 16.x для полного снятия остаточного `moderate` audit: stable `16.2.9` всё ещё содержит bundled `postcss 8.4.31`, fixed `8.5.10` пока только в canary.
+- [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Перевести оставшиеся `datetime.utcnow()` на timezone-aware UTC timestamps.
 - [ ] Перевести Pydantic class-based `Config` на `ConfigDict`, чтобы убрать deprecation warnings перед Pydantic v3.
 - [ ] Разобраться с локальными permission warning для `.pytest_cache` в OneDrive workspace.
