@@ -152,7 +152,7 @@ GitHub Actions:
 Рекомендуемая схема стендов на VPS:
 
 - production: `/opt/deltagrid`, branch `main`, env `.env.production`, Compose project `deltagrid`, ports `8000/3001`, домен `https://deltagrid.pro`;
-- preview: `/opt/deltagrid-preview`, branch `preview`, env `.env.preview`, Compose project `deltagrid-preview`, ports `8001/3002`, будущий домен `https://preview.deltagrid.pro`.
+- preview: `/opt/deltagrid-preview`, branch `preview`, env `.env.preview`, Compose project `deltagrid-preview`, ports `8011/3012`, будущий домен `https://preview.deltagrid.pro`.
 
 Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview.
 

@@ -60,7 +60,7 @@ Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/ohl
 
 GitHub branch boundary после baseline `v1.3.0`: `preview` используется как dev/staging ветка для проверяемых итераций, `main` — как production ветка для кода, соответствующего `deltagrid.pro`. CI запускает backend tests, `compileall app` и frontend build для `preview`, `main` и pull requests. Deploy workflows запускаются только после успешного CI и выполняют SSH-deploy соответствующей ветки, если в GitHub настроены secrets `PREVIEW_*` или `PROD_*`; без secrets deploy безопасно пропускается.
 
-Dev/prod разделение не требует отдельной архитектуры приложения: оба стенда используют один `docker-compose.prod.yml`, но разные директории, env-файлы, host ports и Compose project names. Production использует `/opt/deltagrid`, `.env.production`, project `deltagrid`, ports `8000/3001`; preview использует `/opt/deltagrid-preview`, `.env.preview`, project `deltagrid-preview`, ports `8001/3002`. Это разделяет контейнеры, PostgreSQL volumes и deploy cadence без изменения backend/frontend контрактов.
+Dev/prod разделение не требует отдельной архитектуры приложения: оба стенда используют один `docker-compose.prod.yml`, но разные директории, env-файлы, host ports и Compose project names. Production использует `/opt/deltagrid`, `.env.production`, project `deltagrid`, ports `8000/3001`; preview использует `/opt/deltagrid-preview`, `.env.preview`, project `deltagrid-preview`, ports `8011/3012`. Это разделяет контейнеры, PostgreSQL volumes и deploy cadence без изменения backend/frontend контрактов.
 
 ## Миграции
 

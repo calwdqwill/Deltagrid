@@ -78,7 +78,7 @@ GitHub Actions:
 | Стенд | Директория | Ветка | Env | Compose project | Backend | Frontend |
 |-------|------------|-------|-----|-----------------|---------|----------|
 | production | `/opt/deltagrid` | `main` | `.env.production` | `deltagrid` | `127.0.0.1:8000` | `127.0.0.1:3001` |
-| preview | `/opt/deltagrid-preview` | `preview` | `.env.preview` | `deltagrid-preview` | `127.0.0.1:8001` | `127.0.0.1:3002` |
+| preview | `/opt/deltagrid-preview` | `preview` | `.env.preview` | `deltagrid-preview` | `127.0.0.1:8011` | `127.0.0.1:3012` |
 
 Для ручного deploy любого стенда используйте общий скрипт:
 
@@ -111,7 +111,7 @@ cp .env.production.example .env.production
 cp .env.preview.example .env.preview
 ```
 
-Минимальные отличия preview от production: `PUBLIC_APP_URL=https://preview.deltagrid.pro`, `CORS_ORIGINS=https://preview.deltagrid.pro`, `BACKEND_HOST_PORT=8001`, `FRONTEND_HOST_PORT=3002`, отдельные `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` и `DATABASE_URL`.
+Минимальные отличия preview от production: `PUBLIC_APP_URL=https://preview.deltagrid.pro`, `CORS_ORIGINS=https://preview.deltagrid.pro`, `BACKEND_HOST_PORT=8011`, `FRONTEND_HOST_PORT=3012`, отдельные `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` и `DATABASE_URL`.
 
 Обязательные переменные:
 

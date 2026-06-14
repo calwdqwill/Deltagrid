@@ -12,7 +12,7 @@
 - Branch policy: `preview` — dev/staging, `main` — production.
 - Deploy workflows используют SSH secrets и безопасно пропускают deploy, если secrets ещё не настроены.
 - Production `/opt/deltagrid` переведён на clean `main`.
-- Подготовлен preview stack contract: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, ports `8001/3002`.
+- Подготовлен preview stack contract: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, ports `8011/3012`.
 
 ## Обновление 2026-06-14 — Production universe v1
 

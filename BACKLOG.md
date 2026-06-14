@@ -5,7 +5,7 @@
 - [x] Добавить `VERSION` и `RELEASES.md`.
 - [x] Добавить GitHub Actions CI для backend tests, `compileall` и frontend build.
 - [x] Добавить GitHub Actions deploy workflows для `preview` и `main`.
-- [x] Подготовить отдельный preview stack contract: `.env.preview.example`, Compose project `deltagrid-preview`, ports `8001/3002`.
+- [x] Подготовить отдельный preview stack contract: `.env.preview.example`, Compose project `deltagrid-preview`, ports `8011/3012`.
 - [x] Добавить общий `scripts/deploy-compose-stack.sh` для ручного и GitHub deploy production/preview.
 - [ ] Настроить GitHub repository secrets для deploy: `PREVIEW_*` и `PROD_*`.
 - [ ] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.

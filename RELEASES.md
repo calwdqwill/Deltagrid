@@ -8,7 +8,7 @@
 
 Рекомендуемая инфраструктура стендов:
 
-- preview stack: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, local ports `8001/3002`;
+- preview stack: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, local ports `8011/3012`;
 - production stack: `/opt/deltagrid`, `.env.production`, Compose project `deltagrid`, local ports `8000/3001`.
 
 ## Версионирование

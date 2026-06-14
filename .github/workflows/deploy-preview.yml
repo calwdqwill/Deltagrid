@@ -46,7 +46,7 @@ jobs:
             BRANCH=preview \
               ENV_FILE='${APP_ENV_FILE:-.env.preview}' \
               COMPOSE_PROJECT_NAME='${COMPOSE_PROJECT_NAME:-deltagrid-preview}' \
-              BASE_URL='${SMOKE_BASE_URL:-http://127.0.0.1:8001}' \
-              FRONTEND_URL='${SMOKE_FRONTEND_URL:-http://127.0.0.1:3002}' \
+              BASE_URL='${SMOKE_BASE_URL:-http://127.0.0.1:8011}' \
+              FRONTEND_URL='${SMOKE_FRONTEND_URL:-http://127.0.0.1:3012}' \
               sh scripts/deploy-compose-stack.sh
           "
