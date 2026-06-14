@@ -11,7 +11,9 @@
 - [x] Создать dedicated SSH deploy key и добавить public key на VPS для GitHub Actions.
 - [x] Перенести актуальные deploy workflows и ops runbooks в `main`, чтобы default-branch GitHub Actions использовал корректный preview/prod deploy path.
 - [x] Проверить preview deploy workflow probe: workflow запускается после CI, но безопасно пропускает deploy без GitHub secrets.
-- [ ] Настроить GitHub repository secrets для deploy: `PREVIEW_*` и `PROD_*`.
+- [x] Настроить и проверить GitHub repository secrets `PREVIEW_*` для preview auto-deploy.
+- [x] Проверить preview auto-deploy end-to-end через GitHub Actions: deploy key fingerprint, SSH login, `/opt/deltagrid-preview`, deploy step и server smoke.
+- [ ] Настроить и проверить GitHub repository secrets `PROD_*` для production auto-deploy отдельной безопасной итерацией.
 - [x] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
 - [x] Подготовить DNS/Nginx/SSL runbook и template для `preview.deltagrid.pro`.
 - [ ] Настроить DNS/Nginx для `preview.deltagrid.pro` после локального smoke preview stack.

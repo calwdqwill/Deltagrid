@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-14] - [OPS] - Preview auto-deploy через GitHub Actions
+- GitHub repository secrets `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY` и `PREVIEW_APP_DIR` доведены до рабочего состояния для preview deploy.
+- Workflow `Deploy Preview` прошёл end-to-end: readiness обязательных secrets, fingerprint deploy key, SSH port/login, проверка `/opt/deltagrid-preview` и сам deploy step.
+- Preview VPS `/opt/deltagrid-preview` обновлён до `1e1371c`; backend/frontend/PostgreSQL в Compose project `deltagrid-preview` находятся в состоянии `healthy`.
+- Проверка после auto-deploy: `BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/server-smoke.sh` прошёл.
+- Production deploy в этой итерации не менялся; следующий ops-шаг — DNS/Nginx/SSL для `preview.deltagrid.pro` и отдельная проверка `PROD_*` secrets.
+
 ## [2026-06-14] - [RELEASE/OPS] - Preview domain и deploy runbooks
 - Восстановлен `AGENTS.md` как проектный файл правил для Codex/AI-агентов; локально файла не было, хотя workflow проекта его требует.
 - Добавлен preview Nginx template `deploy/nginx/deltagrid-preview.conf.example`: frontend `127.0.0.1:3012`, backend/API/WebSocket `127.0.0.1:8011`, домен `preview.deltagrid.pro`.
