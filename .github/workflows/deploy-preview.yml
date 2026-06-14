@@ -35,6 +35,38 @@ jobs:
             fi
           done
 
+      - name: Preview secret SSH_HOST configured
+        if: ${{ env.SSH_HOST != '' }}
+        run: echo "SSH_HOST configured"
+
+      - name: Preview secret SSH_HOST missing
+        if: ${{ env.SSH_HOST == '' }}
+        run: echo "SSH_HOST missing"
+
+      - name: Preview secret SSH_USER configured
+        if: ${{ env.SSH_USER != '' }}
+        run: echo "SSH_USER configured"
+
+      - name: Preview secret SSH_USER missing
+        if: ${{ env.SSH_USER == '' }}
+        run: echo "SSH_USER missing"
+
+      - name: Preview secret SSH_KEY configured
+        if: ${{ env.SSH_KEY != '' }}
+        run: echo "SSH_KEY configured"
+
+      - name: Preview secret SSH_KEY missing
+        if: ${{ env.SSH_KEY == '' }}
+        run: echo "SSH_KEY missing"
+
+      - name: Preview secret APP_DIR configured
+        if: ${{ env.APP_DIR != '' }}
+        run: echo "APP_DIR configured"
+
+      - name: Preview secret APP_DIR missing
+        if: ${{ env.APP_DIR == '' }}
+        run: echo "APP_DIR missing"
+
       - name: Skip when preview secrets are not configured
         if: ${{ env.SSH_HOST == '' || env.SSH_USER == '' || env.SSH_KEY == '' || env.APP_DIR == '' }}
         run: echo "Preview deploy skipped because SSH secrets are not configured."
