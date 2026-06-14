@@ -1,11 +1,43 @@
 # Backlog — DeltaGrid
 
+## Release / CI-CD — 2026-06-14
+- [x] Зафиксировать текущую production-ready версию как `v1.3.0`.
+- [x] Добавить `VERSION` и `RELEASES.md`.
+- [x] Добавить GitHub Actions CI для backend tests, `compileall` и frontend build.
+- [x] Добавить GitHub Actions deploy workflows для `preview` и `main`.
+- [ ] Настроить GitHub repository secrets для deploy: `PREVIEW_*` и `PROD_*`.
+- [ ] Поднять отдельный dev/staging стенд или DNS `dev.deltagrid.pro`/`preview.deltagrid.pro`.
+- [ ] Перевести production `/opt/deltagrid` на чистый `main` checkout после push baseline.
+
+## MVP1 — Data Quality Gate / Provider Reliability — 2026-06-13
+- [x] P0: Устранить production-блокер Binance Futures API `451` на текущем VPS: primary CEX perp provider выбран как OKX USDT Swap без прокси/VPN.
+- [x] P0: Добавить `OkxAdapter` для OHLCV, funding history, OI snapshots и long/short account ratio.
+- [x] P0: Переключить terminal frontend read-side с `binance` на `okx` для primary persisted streams.
+- [x] P0: Задеплоить OKX primary flow на `deltagrid.pro` и выполнить ручной sync `BTC,ETH,SOL` за 24 часа.
+- [x] P0: Проверить, что `/api/v1/data/health` показывает provider `okx`, свежие `provider_sync_runs` и что `/data/ohlcv?exchange=okx` отдаёт актуальные BTC/ETH/SOL candles.
+- [x] P0: Перевести CoinGlass liquidation и snapshot-запросы на `exchange_list=OKX` при OKX primary, чтобы enrichment-слой не оставался скрыто привязанным к Binance.
+- [x] P0: Выполнить контрольный 24h backfill BTC/ETH/SOL по `1m/5m/1h` через OKX и проверить `gaps=0`.
+- [x] P0: Добавить freshness SLA в `/api/v1/data/health`: latest timestamp, age minutes, expected cadence и статус `fresh/stale/degraded` по `symbol + exchange + stream + interval`.
+- [x] P0: Разделить health по `sync_type`, чтобы `/data/health` показывал состояние OHLCV, funding, OI, long/short, liquidations и basis отдельно, а не только последний sync провайдера.
+- [x] P0: Добавить cron/data-sync diagnostics для `/data-health`: последний запуск, последний успешный запуск, records fetched/inserted, error class (`451`, rate limit, circuit breaker, empty response).
+- [x] P0: Задеплоить data quality gate на `deltagrid.pro` и проверить production `/api/v1/data/health`, `/data-health` и cron-path после деплоя.
+- [x] P1: Расширить backfill BTC/ETH/SOL до 72h/7d и проверить gaps по `1m/5m/1h` перед interactive charts.
+- [x] P1: Провести инвентаризацию coverage matrix по BTC/ETH/SOL: OHLCV, funding, OI, long/short, liquidations, basis, spot/perp price.
+- [x] P1: Сформировать production universe v1 для текущего MVP universe: readiness статусы `complete_history/core_perp_ready/partial_history/not_ready` поверх coverage/freshness.
+- [x] P1: Реализовать локальный interactive charts v0 на `lightweight-charts` после прохождения data freshness gate.
+- [x] P1: Задеплоить charts v0 на `deltagrid.pro` и проверить `/charts?symbol=BTC&interval=1m&range=7d` через домен.
+- [x] P1: Задеплоить sparse liquidation freshness fix: для `liquidations` различать отсутствие свежих событий и свежесть `coinglass/liquidations` sync-run.
+- [x] P1: Задеплоить отдельный backend window endpoint для OHLCV и убрать client-side pagination из основного `/charts` path.
+- [ ] P1: Обновить `next` до patched версии после отдельного regression pass, так как `npm audit` показывает critical advisory для текущего `next@14.1.0`.
+- [ ] P2: Подготовить настоящий backtest engine после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
+
 ## Production Ops — 2026-06-05
 - [x] Развернуть `deltagrid.pro` на сервере `2.25.143.143` с PostgreSQL, backend, frontend, Nginx и Let's Encrypt SSL.
 - [x] Проверить HTTPS smoke-check, основные frontend pages и API routes.
 - [x] В Cloudflare включить proxy + SSL mode `Full (strict)` и проверить frontend/API/WebSocket.
 - [x] Добавить ручной production sync market data из Binance USD-M в PostgreSQL.
 - [x] Выполнить первый production sync market data и проверить `/api/v1/data/health` через домен.
+- [x] Задеплоить демо-доводку live UI на `deltagrid.pro`: графики со шкалами, price-first heatmap и переключение BTC/ETH/SOL в `Assets`.
 - [x] Добавить CoinGecko/CoinGlass provider API keys в server `.env.production`.
 - [x] Перевести CoinGlass client на v4 endpoint/header для production health и funding enrichments.
 - [x] Расширить production sync до CoinGlass funding/OI snapshots и CoinGecko-derived basis snapshots.
@@ -17,6 +49,15 @@
 - [ ] Настроить минимальный внешний uptime/health monitoring для `https://deltagrid.pro/api/v1/health/readiness`.
 - [ ] Ввести регулярный backup PostgreSQL volume перед миграциями и деплоем.
 - [ ] Если для стратегии потребуется точность выше MVP, подключить отдельный per-order liquidation tape вместо агрегированных CoinGlass USD-снимков.
+
+## Data Coverage / Next Iteration — 2026-06-05
+- [x] Реализовать первый interactive historical charts layer на `lightweight-charts`: crosshair tooltip, pan/zoom/scroll, выбор диапазона `2h/8h/24h/7d`, чтение проверенной OKX истории и честный empty-state для потоков без истории.
+- [x] Пройти production QA для charts layer: доменный smoke-check и Browser QA desktop/mobile.
+- [x] Довести charts layer после production QA: backend window endpoint добавлен, `/charts` проверен, coverage matrix подготовлена перед расширением universe.
+- [ ] Провести инвентаризацию perp-инструментов по CoinGlass, CoinGecko, OKX и legacy Binance: для каждого символа зафиксировать наличие OHLCV, funding, OI, long/short, liquidations, basis и цену spot/perp.
+- [ ] Сформировать production universe для дашборда: топ-30 crypto assets плюс RWA-кандидаты, отдельно пометить активы с полной историей и активы только со spot/market данными.
+- [ ] Расширить `SymbolMapper` и sync-конфигурацию только после coverage-матрицы, чтобы не показывать в UI активы без честных backend data streams.
+- [ ] Подготовить RWA coverage map: tokenized commodities, treasuries, equities/stock-like assets, доступные источники CoinGecko/CoinGlass/прочие provider'ы и ограничения по истории.
 
 ## Frontend MVP Terminal — 2026-06-04
 - [x] Перевести основной frontend shell на тёмный terminal layout: left sidebar, top workspace tabs, search и compact controls.
@@ -31,7 +72,7 @@
 - [x] Реализовать Strategy Lab / Backtest на mock data.
 - [x] Добавить Charts placeholder без новых зависимостей.
 - [x] Добавить Arbitrage Scanner route как non-funding scanner.
-- [ ] Реализовать полноценный Charts screen на `lightweight-charts`: price candles, volume, OI, basis и Funding Chart как временной ряд без превращения Charts в funding strategy module.
+- [x] Реализовать Charts v0 на `lightweight-charts`: price candles, volume, OI, basis и Funding/long-short панели без превращения Charts в funding strategy module.
 - [x] Подключить Funding frontend screen к persisted backend/data-layer endpoint'ам для `funding_rates` и data health.
 - [x] Подключить `/data-health` frontend screen к `GET /api/v1/data/health` вместо placeholder/mock-состояния.
 - [x] Сделать nested tabs в `Funding` и `Perp DEX` кликабельными через стабильный `view` query-param.
@@ -39,6 +80,13 @@
 - [x] Подключить `Assets` к live SOL spot/funding/OHLCV и убрать fake order book/liquidations из production UI.
 - [x] Открыть read-only endpoint'ы для `open_interest`, `long_short_ratio`, `basis_premium` и `liquidations`.
 - [x] Подключить Charts, Market Matrix и Arbitrage Scanner к live persisted data streams.
+- [x] Демо-доводка графиков: добавить `Last`/`Range`, числовые оси, price-first heatmap, логотипы CoinGecko и переключение BTC/ETH/SOL в `Assets`.
+- [x] Быстрая демо-доводка Market Overview и графиков: убрать stablecoin-like активы из heatmap, расширить видимый historical slice до 240 точек и добавить hover-title для line/bar/candle charts.
+- [x] Быстрая демо-доводка `Perp DEX`: показать live readiness по BTC/ETH/SOL perp inputs, coverage таблиц, provider health и research candidates без fake DEX volume/OI.
+- [x] Быстрая демо-доводка `Assets`: убрать hardcoded `SOLUSDT`, привести workspace tab к `Assets` и рассчитывать liquidation bars от реальных long/short totals.
+- [x] Финальный демо-polish `Funding`, `Arbitrage Scanner` и `Market Matrix`: source-плашки, time labels, readable candidate rows и coverage/status columns.
+- [x] Быстрая демо-доводка `Strategy Lab`: заменить пустой output chart на честный `Backtest Output Boundary`, отформатировать input charts и убрать `Backtest #1` tab label.
+- [x] Presentation safety sweep: убрать грубые `mock/fake/coming soon` формулировки из видимых демо-экранов и заменить `/backtests` на readiness-state.
 - [x] Убрать fake backtest results из Strategy Lab и заменить их на live input readiness.
 - [ ] Реализовать live Perp DEX venue adapter для Hyperliquid/dYdX/GMX, прежде чем показывать DEX volume/OI/liquidity как реальные данные.
 - [ ] Добавить live order book endpoint для ключевых CEX pairs, начиная с Binance `BTCUSDT`, `ETHUSDT`, `SOLUSDT`.

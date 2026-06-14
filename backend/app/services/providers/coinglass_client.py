@@ -64,10 +64,14 @@ class CoinGlassClient:
             return payload.get("data")
         return None
 
-    async def get_funding_rates(self, symbol: Optional[str] = None) -> Optional[list[dict]]:
+    async def get_funding_rates(
+        self,
+        symbol: Optional[str] = None,
+        exchange_list: str = "Binance",
+    ) -> Optional[list[dict]]:
         """Fetch funding rates. Returns list of funding rate entries."""
         params = {
-            "exchange_list": "Binance",
+            "exchange_list": exchange_list,
             "per_page": 100,
             "page": 1,
         }
@@ -79,10 +83,14 @@ class CoinGlassClient:
             return rows
         return None
 
-    async def get_open_interest(self, symbol: Optional[str] = None) -> Optional[list[dict]]:
+    async def get_open_interest(
+        self,
+        symbol: Optional[str] = None,
+        exchange_list: str = "Binance",
+    ) -> Optional[list[dict]]:
         """Fetch open interest."""
         params = {
-            "exchange_list": "Binance",
+            "exchange_list": exchange_list,
             "per_page": 100,
             "page": 1,
         }

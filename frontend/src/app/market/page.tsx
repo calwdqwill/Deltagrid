@@ -35,9 +35,13 @@ export default async function MarketPage() {
       {index + 1}
     </span>,
     <div key="asset" className="flex items-center gap-2">
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-300/80 to-indigo-500/80 text-[10px] font-bold text-white">
-        {asset.symbol[0]}
-      </span>
+      {asset.image ? (
+        <img src={asset.image} alt="" className="h-6 w-6 rounded-full" />
+      ) : (
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-300/80 to-indigo-500/80 text-[10px] font-bold text-white">
+          {asset.symbol[0]}
+        </span>
+      )}
       <div>
         <div className="font-medium text-slate-100">{asset.name}</div>
         <div className="font-mono text-[11px] text-slate-500">{asset.symbol}</div>
@@ -81,7 +85,7 @@ export default async function MarketPage() {
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge label={live.statusLabel} tone={live.statusTone} />
-            <StatusBadge label="No mock fallback" tone="neutral" />
+            <StatusBadge label="Live data only" tone="neutral" />
           </div>
         </div>
 
@@ -137,12 +141,21 @@ export default async function MarketPage() {
           {[data.btcOverview, data.ethOverview].map((snapshot) => (
             <TerminalPanel key={snapshot.symbol} title={`${snapshot.symbol} Overview`}>
               <div className="flex items-start justify-between">
-                <div>
-                  <div className="font-mono text-3xl font-semibold text-white">
-                    ${formatNumber(snapshot.price)}
-                  </div>
-                  <div className={toneText(snapshot.change24h >= 0 ? "positive" : "negative")}>
-                    {formatSigned(snapshot.change24h)}
+                <div className="flex items-start gap-3">
+                  {snapshot.image ? (
+                    <img src={snapshot.image} alt="" className="mt-1 h-9 w-9 rounded-full" />
+                  ) : (
+                    <span className="mt-1 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white">
+                      {snapshot.symbol[0]}
+                    </span>
+                  )}
+                  <div>
+                    <div className="font-mono text-3xl font-semibold text-white">
+                      ${formatNumber(snapshot.price)}
+                    </div>
+                    <div className={toneText(snapshot.change24h >= 0 ? "positive" : "negative")}>
+                      {formatSigned(snapshot.change24h)}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right text-xs text-slate-500">
@@ -155,6 +168,7 @@ export default async function MarketPage() {
                   data={snapshot.sparkline.map((value, index) => ({ label: String(index), value }))}
                   color={snapshot.change24h >= 0 ? "#10B981" : "#F43F5E"}
                   height={140}
+                  valueFormatter={(value) => `$${formatNumber(value)}`}
                 />
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs">

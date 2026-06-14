@@ -1,6 +1,7 @@
 import { Shell } from "@/components/layout/Shell";
 import {
-  BarChart,
+  formatNumber,
+  formatSigned,
   KpiStrip,
   LineChart,
   SelectPill,
@@ -13,6 +14,10 @@ import { getLiveStrategyReadiness } from "@/lib/terminal/live-streams";
 
 export const dynamic = "force-dynamic";
 
+function formatPriceAxis(value: number): string {
+  return value >= 100 ? `$${formatNumber(value)}` : `$${value.toFixed(4)}`;
+}
+
 export default async function StrategyLabPage() {
   const live = await getLiveStrategyReadiness();
   const readinessRows = live.readinessRows.map(([input, rows, status]) => [
@@ -24,6 +29,18 @@ export default async function StrategyLabPage() {
       {status}
     </span>,
   ]);
+  const outputRows = [
+    ["PnL / Equity Curve", "Pending engine", "Only real computed results from PostgreSQL inputs"],
+    ["Drawdown / Sharpe", "Pending engine", "Real performance metrics only"],
+    ["Trade Log", "Pending engine", "Requires deterministic strategy execution"],
+    ["Execution", "Disabled", "Research-only demo state"],
+  ].map(([output, status, rule]) => [
+    output,
+    <span key="status" className={toneText(status === "Disabled" ? "warning" : "neutral")}>
+      {status}
+    </span>,
+    rule,
+  ]);
 
   return (
     <Shell>
@@ -34,7 +51,7 @@ export default async function StrategyLabPage() {
               <h1 className="text-xl font-semibold text-white">Strategy Lab</h1>
               <StatusBadge label={live.statusLabel} tone={live.statusTone} />
             </div>
-            <div className="mt-1 text-xs text-slate-500">Live inputs are checked; fake backtest results are not shown.</div>
+            <div className="mt-1 text-xs text-slate-500">Live inputs are checked; synthetic backtest results are hidden.</div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -55,20 +72,32 @@ export default async function StrategyLabPage() {
             <SelectPill label="Universe" value="BTC / ETH / SOL" />
             <SelectPill label="Price Input" value="Binance OHLCV" />
             <SelectPill label="Funding Input" value="Binance / CoinGlass" />
-            <SelectPill label="Execution" value="Disabled" />
+            <SelectPill label="Output Policy" value="Real PnL only" />
           </div>
         </TerminalPanel>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <TerminalPanel title="BTC Price Input" caption="Live candles available for future backtest engine">
             <div className="h-72">
-              <LineChart data={live.priceSeries} color="#06B6D4" height={260} />
+              <LineChart
+                data={live.priceSeries}
+                color="#06B6D4"
+                height={260}
+                valueFormatter={formatPriceAxis}
+                tooltipFormatter={(point) => `BTC price ${point.label}: ${formatPriceAxis(point.value)}`}
+              />
             </div>
           </TerminalPanel>
 
           <TerminalPanel title="BTC Funding Input" caption="Live funding history available for future strategy rules">
             <div className="h-72">
-              <LineChart data={live.fundingSeries} color="#10B981" height={260} />
+              <LineChart
+                data={live.fundingSeries}
+                color="#10B981"
+                height={260}
+                valueFormatter={(value) => formatSigned(value)}
+                tooltipFormatter={(point) => `BTC funding ${point.label}: ${formatSigned(point.value)}`}
+              />
             </div>
           </TerminalPanel>
         </div>
@@ -78,11 +107,11 @@ export default async function StrategyLabPage() {
             <TerminalTable columns={["Input", "Rows", "Status"]} rows={readinessRows} />
           </TerminalPanel>
 
-          <TerminalPanel title="Backtest Output" caption="Blocked until the engine is implemented">
-            <BarChart data={[]} colors={["#3B82F6", "#7C3AED", "#EC4899", "#F43F5E"]} />
+          <TerminalPanel title="Backtest Output Boundary" caption="Blocked until the real engine is implemented">
+            <TerminalTable columns={["Output", "Status", "Rule"]} rows={outputRows} />
             <div className="mt-4 rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm leading-6 text-slate-400">
-              PnL, drawdown, trade log and Sharpe should only appear after a real backtest engine writes or computes
-              results from PostgreSQL inputs.
+              Live inputs are ready for research. PnL, drawdown, trade log and Sharpe stay hidden until a real
+              backtest engine computes them from PostgreSQL inputs.
             </div>
           </TerminalPanel>
         </div>

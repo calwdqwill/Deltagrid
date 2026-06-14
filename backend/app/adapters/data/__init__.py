@@ -18,6 +18,7 @@ from .data_models import (
     OpenInterest,
     ProviderHealthStatus,
 )
+from .okx_adapter import OkxAdapter
 from .rate_limiter import CircuitBreaker, GlobalRateLimiter, RetryPolicy, TokenBucket
 from .symbol_mapper import Instrument, InstrumentAlias, SymbolMapper
 
@@ -26,6 +27,7 @@ __all__ = [
     "DataAdapterRegistry",
     "FallbackChain",
     "BinanceAdapter",
+    "OkxAdapter",
     "BackfillResult",
     "FundingRate",
     "Liquidation",

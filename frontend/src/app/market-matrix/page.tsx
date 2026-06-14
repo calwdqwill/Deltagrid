@@ -31,7 +31,18 @@ function percentTone(value: number | null) {
   return "neutral";
 }
 
+function rowCoverage(row: LiveMatrixRow): { label: string; tone: "positive" | "warning" | "negative" } {
+  const fields = [row.spotPrice, row.perpPrice, row.basisPct, row.fundingPct, row.openInterestUsd, row.longAccountRatio];
+  const liveFields = fields.filter((value) => value !== null).length;
+
+  if (liveFields >= 5) return { label: "Live", tone: "positive" };
+  if (liveFields >= 2) return { label: "Partial", tone: "warning" };
+  return { label: "Missing", tone: "negative" };
+}
+
 function rowCells(row: LiveMatrixRow) {
+  const coverage = rowCoverage(row);
+
   return [
     <span key="asset" className="font-semibold text-white">
       {row.asset}
@@ -54,12 +65,21 @@ function rowCells(row: LiveMatrixRow) {
     <span key="long" className={toneText(row.longAccountRatio === null ? "warning" : row.longAccountRatio >= 50 ? "positive" : "negative")}>
       {formatMaybePercent(row.longAccountRatio, 2)}
     </span>,
+    <span key="coverage" className={toneText(coverage.tone)}>
+      {coverage.label}
+    </span>,
   ];
 }
 
 export default async function MarketMatrixPage() {
   const live = await getLiveMarketMatrix();
-  const sourceRows = live.sourceRows.map(([stream, source]) => [stream, source]);
+  const sourceRows = live.sourceRows.map(([stream, source]) => [
+    stream,
+    source,
+    <span key="status" className={toneText("positive")}>
+      Connected
+    </span>,
+  ]);
 
   return (
     <Shell>
@@ -78,7 +98,7 @@ export default async function MarketMatrixPage() {
             <SelectPill label="Price" value="CoinGecko + Binance" />
             <SelectPill label="Derivatives" value="Funding / OI / L/S" />
             <SelectPill label="Basis" value="Spot vs Perp" />
-            <SelectPill label="Storage" value="PostgreSQL" />
+            <SelectPill label="Coverage" value={`${live.rows.filter((row) => rowCoverage(row).label === "Live").length}/${live.rows.length} live`} />
           </div>
         </TerminalPanel>
 
@@ -86,13 +106,13 @@ export default async function MarketMatrixPage() {
 
         <TerminalPanel title="Live Stream Matrix" caption="Rows are assets, columns are persisted data streams">
           <TerminalTable
-            columns={["Asset", "Spot", "Perp Close", "Basis", "Funding", "Open Interest", "Long Accounts"]}
+            columns={["Asset", "Spot", "Perp Close", "Basis", "Funding", "Open Interest", "Long Accounts", "Coverage"]}
             rows={live.rows.map(rowCells)}
           />
         </TerminalPanel>
 
         <TerminalPanel title="Matrix Sources">
-          <TerminalTable columns={["Stream", "Source"]} rows={sourceRows} />
+          <TerminalTable columns={["Stream", "Source", "Status"]} rows={sourceRows} />
         </TerminalPanel>
       </div>
     </Shell>

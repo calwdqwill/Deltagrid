@@ -12,13 +12,26 @@ import {
   toneText,
 } from "@/components/terminal/terminal-ui";
 import { getLiveAssetDeepDive } from "@/lib/terminal/live-market";
+import { TRACKED_SYMBOLS } from "@/lib/terminal/live-streams";
 import { Candle } from "@/types/terminal";
 
 export const dynamic = "force-dynamic";
 
+function normalizeSymbol(value?: string): string {
+  const normalized = value?.toUpperCase();
+  return TRACKED_SYMBOLS.includes(normalized as (typeof TRACKED_SYMBOLS)[number]) ? normalized ?? "SOL" : "SOL";
+}
+
+function formatAssetPrice(value: number): string {
+  return value >= 100 ? `$${formatNumber(value)}` : `$${value.toFixed(4)}`;
+}
+
 function CandleChart({ candles }: { candles: Candle[] }) {
   const width = 860;
   const height = 300;
+  const padding = { top: 18, right: 74, bottom: 34, left: 10 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
 
   if (!candles.length) {
     return (
@@ -31,54 +44,105 @@ function CandleChart({ candles }: { candles: Candle[] }) {
   const min = Math.min(...candles.map((candle) => candle.low));
   const max = Math.max(...candles.map((candle) => candle.high));
   const span = max - min || 1;
-  const step = width / candles.length;
+  const step = plotWidth / candles.length;
   const maxVolume = Math.max(...candles.map((candle) => candle.volume ?? 0), 1);
+  const latest = candles[candles.length - 1];
+  const axisTicks = [max, min + span * 0.66, min + span * 0.33, min];
+  const xTicks = [
+    candles[0],
+    candles[Math.floor(candles.length / 2)],
+    candles[candles.length - 1],
+  ].filter(Boolean);
+
+  const yForPrice = (price: number) => padding.top + plotHeight - ((price - min) / span) * plotHeight;
+  const labelForTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return Number.isNaN(date.getTime()) ? String(timestamp) : date.toISOString().slice(11, 16);
+  };
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" role="img">
-      {[0, 1, 2, 3].map((line) => (
-        <line
-          key={line}
-          x1="0"
-          x2={width}
-          y1={24 + line * 58}
-          y2={24 + line * 58}
-          stroke="rgba(148,163,184,0.12)"
-        />
-      ))}
-      {candles.map((candle, index) => {
-        const x = index * step + step / 2;
-        const high = height - ((candle.high - min) / span) * 225 - 44;
-        const low = height - ((candle.low - min) / span) * 225 - 44;
-        const open = height - ((candle.open - min) / span) * 225 - 44;
-        const close = height - ((candle.close - min) / span) * 225 - 44;
-        const positive = candle.close >= candle.open;
-        const y = Math.min(open, close);
-        const bodyHeight = Math.max(Math.abs(close - open), 3);
-        const volumeHeight = ((candle.volume ?? 0) / maxVolume) * 38;
+    <div className="flex h-full min-h-[300px] flex-col">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="font-mono text-slate-300">Last {formatAssetPrice(latest.close)}</span>
+        <span className="font-mono text-slate-500">
+          Range {formatAssetPrice(min)} - {formatAssetPrice(max)}
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="min-h-0 w-full flex-1" role="img">
+        {axisTicks.map((tick, index) => {
+          const y = yForPrice(tick);
+          return (
+            <g key={`${tick}-${index}`}>
+              <line x1={padding.left} x2={padding.left + plotWidth} y1={y} y2={y} stroke="rgba(148,163,184,0.12)" />
+              <text x={width - 6} y={y + 4} textAnchor="end" className="fill-slate-500 text-[10px]">
+                {formatAssetPrice(tick)}
+              </text>
+            </g>
+          );
+        })}
+        {candles.map((candle, index) => {
+          const x = padding.left + index * step + step / 2;
+          const bodyWidth = Math.max(Math.min(step * 0.62, 8), 2);
+          const high = yForPrice(candle.high);
+          const low = yForPrice(candle.low);
+          const open = yForPrice(candle.open);
+          const close = yForPrice(candle.close);
+          const positive = candle.close >= candle.open;
+          const y = Math.min(open, close);
+          const bodyHeight = Math.max(Math.abs(close - open), 3);
+          const volumeHeight = ((candle.volume ?? 0) / maxVolume) * 34;
+          const tooltip = [
+            `${labelForTime(candle.time)}`,
+            `Open ${formatAssetPrice(candle.open)}`,
+            `High ${formatAssetPrice(candle.high)}`,
+            `Low ${formatAssetPrice(candle.low)}`,
+            `Close ${formatAssetPrice(candle.close)}`,
+            `Volume ${formatCompactCurrency(candle.volume ?? 0)}`,
+          ].join(" | ");
 
-        return (
-          <g key={candle.time}>
-            <line x1={x} x2={x} y1={high} y2={low} stroke={positive ? "#10B981" : "#F43F5E"} strokeWidth="1.5" />
-            <rect
-              x={x - Math.max(step * 0.28, 3)}
-              y={y}
-              width={Math.max(step * 0.56, 5)}
-              height={bodyHeight}
-              rx="2"
-              fill={positive ? "#10B981" : "#F43F5E"}
-            />
-            <rect
-              x={x - Math.max(step * 0.28, 3)}
-              y={height - 34 - volumeHeight}
-              width={Math.max(step * 0.56, 5)}
-              height={volumeHeight}
-              fill={positive ? "rgba(16,185,129,0.25)" : "rgba(244,63,94,0.25)"}
-            />
-          </g>
-        );
-      })}
-    </svg>
+          return (
+            <g key={candle.time}>
+              <title>{tooltip}</title>
+              <line x1={x} x2={x} y1={high} y2={low} stroke={positive ? "#10B981" : "#F43F5E"} strokeWidth="1.5" />
+              <rect
+                x={x - bodyWidth / 2}
+                y={y}
+                width={bodyWidth}
+                height={bodyHeight}
+                rx="2"
+                fill={positive ? "#10B981" : "#F43F5E"}
+              />
+              <rect
+                x={x - bodyWidth / 2}
+                y={height - 34 - volumeHeight}
+                width={bodyWidth}
+                height={volumeHeight}
+                fill={positive ? "rgba(16,185,129,0.25)" : "rgba(244,63,94,0.25)"}
+              />
+              <rect
+                x={x - step / 2}
+                y={padding.top}
+                width={Math.max(step, 1)}
+                height={plotHeight}
+                fill="transparent"
+                pointerEvents="all"
+              >
+                <title>{tooltip}</title>
+              </rect>
+            </g>
+          );
+        })}
+        {xTicks.map((tick) => {
+          const index = candles.indexOf(tick);
+          const x = padding.left + index * step + step / 2;
+          return (
+            <text key={`${tick.time}-${index}`} x={x} y={height - 8} textAnchor={index === 0 ? "start" : index === candles.length - 1 ? "end" : "middle"} className="fill-slate-500 text-[10px]">
+              {labelForTime(tick.time)}
+            </text>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
@@ -90,8 +154,9 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-export default async function AssetsPage() {
-  const live = await getLiveAssetDeepDive("SOL");
+export default async function AssetsPage({ searchParams }: { searchParams?: { symbol?: string } }) {
+  const symbol = normalizeSymbol(searchParams?.symbol);
+  const live = await getLiveAssetDeepDive(symbol);
   const data = live.data;
   const asset = data.asset;
 
@@ -124,6 +189,10 @@ export default async function AssetsPage() {
   ]);
 
   const sourceRows = live.sourceRows.map(([source, status]) => [source, status]);
+  const liquidationTotal = data.liquidations.longUsd + data.liquidations.shortUsd;
+  const longLiquidationWidth = liquidationTotal > 0 ? (data.liquidations.longUsd / liquidationTotal) * 100 : 0;
+  const shortLiquidationWidth = liquidationTotal > 0 ? (data.liquidations.shortUsd / liquidationTotal) * 100 : 0;
+  const okxPair = `${asset.symbol}-USDT-SWAP`;
 
   return (
     <Shell>
@@ -131,9 +200,13 @@ export default async function AssetsPage() {
         <TerminalPanel className="overflow-hidden">
           <div className="grid gap-4 xl:grid-cols-[1fr_1.4fr]">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 via-cyan-400 to-indigo-600 text-2xl font-bold text-white">
-                {asset.symbol[0] ?? "?"}
-              </div>
+              {asset.image ? (
+                <img src={asset.image} alt="" className="h-16 w-16 rounded-2xl" />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 via-cyan-400 to-indigo-600 text-2xl font-bold text-white">
+                  {asset.symbol[0] ?? "?"}
+                </div>
+              )}
               <div>
                 <div className="text-sm text-slate-500">Asset Deep Dive</div>
                 <div className="text-3xl font-semibold text-white">{asset.name}</div>
@@ -163,15 +236,18 @@ export default async function AssetsPage() {
         </TerminalPanel>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <SegmentedControl items={["Overview", "Derivatives", "Venues", "Liquidity", "Correlations", "Related Opportunities"]} active="Overview" />
+          <SegmentedControl
+            items={TRACKED_SYMBOLS.map((item) => ({ label: item, href: `/assets?symbol=${item}` }))}
+            active={asset.symbol}
+          />
           <div className="flex items-center gap-2">
             <StatusBadge label={live.statusLabel} tone={live.statusTone} />
-            <LinkButton href="/strategy-lab">Backtest SOL</LinkButton>
+            <LinkButton href="/strategy-lab">Backtest {asset.symbol}</LinkButton>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_0.65fr]">
-          <TerminalPanel title="SOL / USD Chart" caption={data.candles.length ? "Binance 1m candles from PostgreSQL" : "No SOL OHLCV rows in PostgreSQL yet"}>
+          <TerminalPanel title={`${asset.symbol} / USD Chart`} caption={data.candles.length ? "OKX 1m candles from PostgreSQL" : `No ${asset.symbol} OHLCV rows in PostgreSQL yet`}>
             <div className="h-[360px]">
               <CandleChart candles={data.candles} />
             </div>
@@ -212,14 +288,14 @@ export default async function AssetsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.95fr_1fr]">
-          <TerminalPanel title="Order Book (Binance / SOLUSDT)">
+          <TerminalPanel title={`Order Book (OKX / ${okxPair})`}>
             {bidRows.length || askRows.length ? (
               <div className="grid grid-cols-2 gap-3">
                 <TerminalTable columns={["Bid", "Size"]} rows={bidRows} />
                 <TerminalTable columns={["Ask", "Size"]} rows={askRows} />
               </div>
             ) : (
-              <EmptyState label="Live order book endpoint is not connected yet" />
+              <EmptyState label={`Live order book endpoint for ${okxPair} is not connected yet`} />
             )}
           </TerminalPanel>
 
@@ -232,7 +308,7 @@ export default async function AssetsPage() {
                     <span>{formatCompactCurrency(data.liquidations.longUsd)}</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/[0.06]">
-                    <div className="h-full rounded-full bg-emerald-400" style={{ width: "31.2%" }} />
+                    <div className="h-full rounded-full bg-emerald-400" style={{ width: `${longLiquidationWidth}%` }} />
                   </div>
                 </div>
                 <div>
@@ -241,7 +317,7 @@ export default async function AssetsPage() {
                     <span>{formatCompactCurrency(data.liquidations.shortUsd)}</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/[0.06]">
-                    <div className="h-full rounded-full bg-rose-400" style={{ width: "84%" }} />
+                    <div className="h-full rounded-full bg-rose-400" style={{ width: `${shortLiquidationWidth}%` }} />
                   </div>
                 </div>
                 <DonutChart data={data.liquidations.byVenue} center={<div className="font-mono text-sm text-white">24h</div>} />

@@ -52,6 +52,47 @@ interface MarketFundingRate {
   data_status?: string;
 }
 
+const STABLE_SYMBOLS = new Set([
+  "USDT",
+  "USDC",
+  "USDE",
+  "USDS",
+  "USDH",
+  "DAI",
+  "FDUSD",
+  "TUSD",
+  "USDD",
+  "PYUSD",
+  "USDP",
+  "GUSD",
+  "LUSD",
+  "FRAX",
+  "SUSD",
+  "USD1",
+]);
+
+const STABLE_IDS = new Set([
+  "tether",
+  "usd-coin",
+  "ethena-usde",
+  "usds",
+  "usdh",
+  "dai",
+  "first-digital-usd",
+  "true-usd",
+  "usdd",
+  "paypal-usd",
+  "paxos-standard",
+  "gemini-dollar",
+  "liquity-usd",
+  "frax",
+  "nusd",
+  "susd",
+  "usual-usd",
+  "usde",
+  "usd1",
+]);
+
 interface OhlcvRow {
   timestamp: number;
   symbol: string;
@@ -74,6 +115,9 @@ interface LiquidationRow {
   price?: number | null;
   value_usd?: number | null;
 }
+
+const DEFAULT_PERP_EXCHANGE = "okx";
+const DEFAULT_PERP_EXCHANGE_LABEL = "OKX";
 
 export interface LiveMarketOverview {
   data: MarketOverviewData;
@@ -117,6 +161,20 @@ function simpleSparkline(currentValue: number, changePercent: number, points = 1
   });
 }
 
+function ohlcvSparkline(rows: OhlcvRow[], fallback: number[]): number[] {
+  const prices = rows
+    .slice(-96)
+    .map((row) => toNumber(row.close))
+    .filter((value) => value > 0);
+
+  return prices.length > 1 ? prices : fallback;
+}
+
+function recentOhlcvPath(symbol: string, lookbackHours = 8): string {
+  const start = Date.now() - lookbackHours * 60 * 60 * 1000;
+  return `/data/ohlcv?symbol=${symbol}&exchange=${DEFAULT_PERP_EXCHANGE}&interval=1m&start=${start}`;
+}
+
 type KpiTone = NonNullable<KpiMetric["tone"]>;
 type AssetMetricTone = NonNullable<AssetDeepDiveData["keyMetrics"][number]["tone"]>;
 type DerivativeTone = NonNullable<AssetDeepDiveData["derivatives"][number]["tone"]>;
@@ -143,7 +201,24 @@ function coinSymbol(coin: MarketCoin): string {
   return (coin.symbol || coin.id || "").toUpperCase();
 }
 
-function mapCoinToAsset(coin: MarketCoin, fundingBySymbol: Map<string, MarketFundingRate>): Asset {
+function isStableLikeCoin(coin: MarketCoin): boolean {
+  const symbol = coinSymbol(coin);
+  const id = coin.id.toLowerCase();
+  const name = coin.name.toLowerCase();
+
+  if (STABLE_SYMBOLS.has(symbol) || STABLE_IDS.has(id)) return true;
+  if (symbol.includes("USD") && symbol !== "XRP") return true;
+  if (name.includes("stablecoin") || name.includes("usd coin") || name.includes("dollar")) return true;
+  if (name.includes("tether") || name.includes("usde")) return true;
+
+  return false;
+}
+
+function mapCoinToAsset(
+  coin: MarketCoin,
+  fundingBySymbol: Map<string, MarketFundingRate>,
+  historyBySymbol: Map<string, number[]> = new Map()
+): Asset {
   const symbol = coinSymbol(coin);
   const price = toNumber(coin.current_price);
   const marketCap = toNumber(coin.market_cap);
@@ -156,6 +231,7 @@ function mapCoinToAsset(coin: MarketCoin, fundingBySymbol: Map<string, MarketFun
     id: coin.id,
     symbol,
     name: coin.name,
+    image: coin.image,
     price,
     change24h,
     change7d,
@@ -164,15 +240,20 @@ function mapCoinToAsset(coin: MarketCoin, fundingBySymbol: Map<string, MarketFun
     volumeToMarketCap: marketCap > 0 ? (volume24h / marketCap) * 100 : 0,
     openInterest: toNumber(funding?.open_interest_usd),
     perpVolume: 0,
-    sparkline: simpleSparkline(price, change24h),
+    sparkline: historyBySymbol.get(symbol) ?? simpleSparkline(price, change24h),
   };
 }
 
-function mapCoinToSnapshot(coin: MarketCoin | undefined, dominance?: number): AssetSnapshot {
+function mapCoinToSnapshot(
+  coin: MarketCoin | undefined,
+  dominance?: number,
+  historyBySymbol: Map<string, number[]> = new Map()
+): AssetSnapshot {
   if (!coin) {
     return {
       symbol: "-",
       name: "No data",
+      image: null,
       price: 0,
       change24h: 0,
       marketCap: 0,
@@ -188,12 +269,13 @@ function mapCoinToSnapshot(coin: MarketCoin | undefined, dominance?: number): As
   return {
     symbol: coinSymbol(coin),
     name: coin.name,
+    image: coin.image,
     price,
     change24h,
     marketCap: toNumber(coin.market_cap),
     volume24h: toNumber(coin.total_volume),
     dominance,
-    sparkline: simpleSparkline(price, change24h),
+    sparkline: historyBySymbol.get(coinSymbol(coin)) ?? simpleSparkline(price, change24h),
   };
 }
 
@@ -243,6 +325,8 @@ function heatmapItems(coins: MarketCoin[]): MarketHeatmapItem[] {
   return coins.slice(0, 12).map((coin) => ({
     symbol: coinSymbol(coin),
     name: coin.name,
+    image: coin.image,
+    price: toNumber(coin.current_price),
     value: toNumber(coin.market_cap),
     change24h: toNumber(coin.price_change_percentage_24h),
     marketCap: toNumber(coin.market_cap),
@@ -323,20 +407,44 @@ function emptyMarketData(): MarketOverviewData {
 }
 
 export async function getLiveMarketOverview(): Promise<LiveMarketOverview> {
-  const [marketsResponse, globalResponse, fearGreedResponse, fundingResponse, healthResponse] = await Promise.all([
-    fetchServerApi<MarketCoin[]>("/market/markets?limit=30"),
+  const [
+    marketsResponse,
+    globalResponse,
+    fearGreedResponse,
+    fundingResponse,
+    healthResponse,
+    btcOhlcvResponse,
+    ethOhlcvResponse,
+    solOhlcvResponse,
+  ] = await Promise.all([
+    fetchServerApi<MarketCoin[]>("/market/markets?limit=80"),
     fetchServerApi<GlobalMarketPayload>("/market/global"),
     fetchServerApi<FearGreedPoint[]>("/market/fear-greed"),
     fetchServerApi<MarketFundingRate[]>("/market/funding-rates"),
     fetchServerApi<DataHealthPayload>("/data/health"),
+    fetchServerApi<OhlcvRow[]>(recentOhlcvPath("BTC")),
+    fetchServerApi<OhlcvRow[]>(recentOhlcvPath("ETH")),
+    fetchServerApi<OhlcvRow[]>(recentOhlcvPath("SOL")),
   ]);
 
-  const markets = marketsResponse?.success ? marketsResponse.data : [];
+  const rawMarkets = marketsResponse?.success ? marketsResponse.data : [];
+  const markets = rawMarkets.filter((coin) => !isStableLikeCoin(coin)).slice(0, 30);
   const global = globalResponse?.success ? globalResponse.data : null;
   const fearGreed = fearGreedResponse?.success ? fearGreedResponse.data : [];
   const fundingRates = fundingResponse?.success ? fundingResponse.data : [];
   const health = healthResponse?.success ? healthResponse.data : null;
   const fundingBySymbol = new Map(fundingRates.map((item) => [item.symbol.toUpperCase(), item]));
+  const historyBySymbol = new Map<string, number[]>();
+
+  if (btcOhlcvResponse?.success) {
+    historyBySymbol.set("BTC", ohlcvSparkline(btcOhlcvResponse.data, []));
+  }
+  if (ethOhlcvResponse?.success) {
+    historyBySymbol.set("ETH", ohlcvSparkline(ethOhlcvResponse.data, []));
+  }
+  if (solOhlcvResponse?.success) {
+    historyBySymbol.set("SOL", ohlcvSparkline(solOhlcvResponse.data, []));
+  }
 
   if (!markets.length) {
     return {
@@ -354,12 +462,12 @@ export async function getLiveMarketOverview(): Promise<LiveMarketOverview> {
     data: {
       kpis: buildKpis(global, markets, fearGreed, fundingRates, health),
       heatmap: heatmapItems(markets),
-      btcOverview: mapCoinToSnapshot(btc, global?.btc_dominance),
-      ethOverview: mapCoinToSnapshot(eth, global?.eth_dominance),
+      btcOverview: mapCoinToSnapshot(btc, global?.btc_dominance, historyBySymbol),
+      ethOverview: mapCoinToSnapshot(eth, global?.eth_dominance, historyBySymbol),
       marketBreadth: marketBreadth(markets),
       topGainers: mapRankedMoves(markets, true),
       topLosers: mapRankedMoves(markets, false),
-      topAssets: markets.map((coin) => mapCoinToAsset(coin, fundingBySymbol)),
+      topAssets: markets.map((coin) => mapCoinToAsset(coin, fundingBySymbol, historyBySymbol)),
     },
     fearGreed,
     statusLabel: "Live market API",
@@ -368,13 +476,13 @@ export async function getLiveMarketOverview(): Promise<LiveMarketOverview> {
 }
 
 function mapOhlcv(rows: OhlcvRow[]): Candle[] {
-  return rows.slice(-120).map((row) => ({
+  return rows.slice(-240).map((row) => ({
     time: row.timestamp,
     open: row.open,
     high: row.high,
     low: row.low,
     close: row.close,
-    volume: row.volume ?? row.quote_volume ?? undefined,
+    volume: row.quote_volume ?? row.volume ?? undefined,
   }));
 }
 
@@ -412,8 +520,8 @@ export async function getLiveAssetDeepDive(symbol: string): Promise<LiveAssetDee
   const [marketsResponse, fundingResponse, ohlcvResponse, liquidationsResponse, healthResponse] = await Promise.all([
     fetchServerApi<MarketCoin[]>("/market/markets?limit=50"),
     fetchServerApi<MarketFundingRate[]>("/market/funding-rates"),
-    fetchServerApi<OhlcvRow[]>(`/data/ohlcv?symbol=${normalizedSymbol}&exchange=binance&interval=1m`),
-    fetchServerApi<LiquidationRow[]>(`/data/liquidations?symbol=${normalizedSymbol}&exchange=binance`),
+    fetchServerApi<OhlcvRow[]>(recentOhlcvPath(normalizedSymbol)),
+    fetchServerApi<LiquidationRow[]>(`/data/liquidations?symbol=${normalizedSymbol}&exchange=${DEFAULT_PERP_EXCHANGE}`),
     fetchServerApi<DataHealthPayload>("/data/health"),
   ]);
 
@@ -467,8 +575,8 @@ export async function getLiveAssetDeepDive(symbol: string): Promise<LiveAssetDee
     sourceRows: [
       ["Spot market", market ? "CoinGecko /markets" : "No data"],
       ["Funding/OI", funding ? `${funding.exchange} live` : "No data"],
-      ["OHLCV", candles.length ? `${candles.length} Binance candles` : "No data"],
-      ["Liquidations", liquidations.byVenue.length ? "Binance live" : "No rows"],
+      ["OHLCV", candles.length ? `${candles.length} ${DEFAULT_PERP_EXCHANGE_LABEL} candles` : "No data"],
+      ["Liquidations", liquidations.byVenue.length ? `${DEFAULT_PERP_EXCHANGE_LABEL} live` : "No rows"],
     ],
   };
 }

@@ -4,6 +4,7 @@ import {
   KpiStrip,
   LineChart,
   SegmentedControl,
+  SelectPill,
   StatusBadge,
   TerminalPanel,
   TerminalTable,
@@ -29,13 +30,19 @@ function normalizeView(value?: string): FundingView {
   return fundingViews.some((item) => item.view === value) ? (value as FundingView) : "overview";
 }
 
+function pointLabel(timestamp: number): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return String(timestamp);
+  return date.toISOString().slice(11, 16);
+}
+
 export default async function FundingPage({ searchParams }: { searchParams?: { view?: string } }) {
   const activeView = normalizeView(searchParams?.view);
   const activeTab = fundingViews.find((item) => item.view === activeView) ?? fundingViews[0];
   const live = await getLiveFundingOverview();
   const data = live.data;
 
-  const fundingSeries = data.history.map((point, index) => ({ label: String(index), value: point.rate }));
+  const fundingSeries = data.history.map((point) => ({ label: pointLabel(point.time), value: point.rate }));
   const showMatrix = activeView === "overview" || activeView === "matrix" || activeView === "perp-dex";
   const showHistory = activeView === "overview" || activeView === "history";
   const showArbitrage = activeView === "overview" || activeView === "arbitrage";
@@ -95,6 +102,16 @@ export default async function FundingPage({ searchParams }: { searchParams?: { v
 
         <KpiStrip metrics={data.kpis} />
 
+        <TerminalPanel>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+            <SelectPill label="Assets" value={data.assets.length ? data.assets.join(" / ") : "No rows"} />
+            <SelectPill label="Providers" value={data.venues.length ? data.venues.join(" / ") : "No rows"} />
+            <SelectPill label="Storage" value="PostgreSQL" />
+            <SelectPill label="Mode" value="Funding / legs / arb" />
+            <SelectPill label="Prediction" value="Current baseline" />
+          </div>
+        </TerminalPanel>
+
         {(showMatrix || showHistory) && (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_0.95fr]">
             {showMatrix && (
@@ -130,7 +147,11 @@ export default async function FundingPage({ searchParams }: { searchParams?: { v
                                 <td
                                   key={`${cell.asset}-${cell.venue}`}
                                   className={`border-b border-white/[0.06] px-3 py-2.5 font-mono ${
-                                    positive ? "bg-emerald-500/16 text-emerald-200" : "bg-rose-500/18 text-rose-200"
+                                    !hasRate
+                                      ? "bg-white/[0.025] text-slate-500"
+                                      : positive
+                                        ? "bg-emerald-500/16 text-emerald-200"
+                                        : "bg-rose-500/18 text-rose-200"
                                   }`}
                                 >
                                   {hasRate ? formatSigned(cell.rate) : "No data"}
@@ -154,7 +175,13 @@ export default async function FundingPage({ searchParams }: { searchParams?: { v
               <TerminalPanel title="Funding History" caption={live.historyLabel}>
                 <div className="h-[310px]">
                   {fundingSeries.length > 1 ? (
-                    <LineChart data={fundingSeries} color="#10B981" height={280} />
+                    <LineChart
+                      data={fundingSeries}
+                      color="#10B981"
+                      height={280}
+                      valueFormatter={(value) => formatSigned(value)}
+                      tooltipFormatter={(point) => `${live.historyLabel} ${point.label}: ${formatSigned(point.value)}`}
+                    />
                   ) : (
                     <div className="flex h-full items-center justify-center rounded-md border border-white/10 bg-white/[0.035] text-sm text-slate-400">
                       No funding history in PostgreSQL yet.
@@ -175,7 +202,7 @@ export default async function FundingPage({ searchParams }: { searchParams?: { v
               >
                 {arbitrageRows.length > 0 ? (
                   <TerminalTable
-                    columns={["Asset", "Long Leg", "Short Leg", "Funding Edge", "Net APR", "Liquidity", "Risk"]}
+                    columns={["Asset", "Long Leg", "Short Leg", "Funding Edge", "Net APR", "Liquidity Score", "Risk Score"]}
                     rows={arbitrageRows}
                   />
                 ) : (

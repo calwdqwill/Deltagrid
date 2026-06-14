@@ -9,6 +9,7 @@ import {
   toneText,
 } from "@/components/terminal/terminal-ui";
 import { getLiveArbitrageScanner } from "@/lib/terminal/live-streams";
+import { LiveArbitrageOpportunity } from "@/lib/terminal/live-streams";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +19,29 @@ function formatPercent(value: number | null): string {
   return `${sign}${value.toFixed(3)}%`;
 }
 
+function typeLabel(type: LiveArbitrageOpportunity["type"]): string {
+  if (type === "basis") return "Basis";
+  return "Funding Bias";
+}
+
+function candidateLabel(opportunity: LiveArbitrageOpportunity): string {
+  return `${opportunity.asset} ${typeLabel(opportunity.type)}`;
+}
+
+function sourceLabel(source: string): string {
+  if (source.includes("basis_premium")) return "Basis + funding DB";
+  return source;
+}
+
 export default async function ArbitrageScannerPage() {
   const live = await getLiveArbitrageScanner();
   const rows = live.opportunities.map((opportunity) => [
-    <span key="id" className="font-mono text-slate-500">
-      {opportunity.id}
+    <span key="candidate" className="font-semibold text-white">
+      {candidateLabel(opportunity)}
     </span>,
-    opportunity.type.replaceAll("_", " "),
+    <span key="type" className="text-slate-300">
+      {typeLabel(opportunity.type)}
+    </span>,
     <span key="asset" className="font-semibold text-slate-100">
       {opportunity.asset}
     </span>,
@@ -39,7 +56,7 @@ export default async function ArbitrageScannerPage() {
     <span key="oi" className="font-mono text-slate-100">
       {opportunity.openInterestUsd === null ? "No data" : formatCompactCurrency(opportunity.openInterestUsd)}
     </span>,
-    opportunity.source,
+    sourceLabel(opportunity.source),
     <span key="risk" className={toneText(opportunity.riskNote === "Data-backed" ? "positive" : "warning")}>
       {opportunity.riskNote}
     </span>,
@@ -62,7 +79,7 @@ export default async function ArbitrageScannerPage() {
             <SelectPill label="Assets" value="BTC / ETH / SOL" />
             <SelectPill label="Spot Source" value="CoinGecko" />
             <SelectPill label="Perp Source" value="Binance" />
-            <SelectPill label="Execution" value="Not priced" />
+            <SelectPill label="Risk" value="Read-only research" />
           </div>
         </TerminalPanel>
 
@@ -74,7 +91,7 @@ export default async function ArbitrageScannerPage() {
         >
           <TerminalTable
             columns={[
-              "Opportunity",
+              "Candidate",
               "Type",
               "Asset",
               "Long Leg",
@@ -82,7 +99,7 @@ export default async function ArbitrageScannerPage() {
               "Basis Edge",
               "Funding",
               "Open Interest",
-              "Source",
+              "Evidence",
               "Risk Note",
             ]}
             rows={rows}

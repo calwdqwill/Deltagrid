@@ -2,13 +2,13 @@
 
 Production-ready crypto research terminal для анализа spot/perp рынков CEX и DEX, RWA, treasury, funding, market matrix и strategy research workflows.
 
-**Текущая версия**: `v1.2.0`
+**Текущая версия**: `v1.3.0`
 
 ## Архитектура
 
-- **Frontend**: Next.js 14 + React + TypeScript + Tailwind CSS + Zustand + TanStack Query
+- **Frontend**: Next.js 14 + React + TypeScript + Tailwind CSS + Zustand + TanStack Query + lightweight-charts
 - **Backend**: FastAPI + Python 3.11 + SQLAlchemy + PostgreSQL
-- **Data**: CoinGecko API (primary), CoinGlass, GeckoTerminal, alternative.me
+- **Data**: OKX public market data (primary perp), CoinGecko API, CoinGlass, GeckoTerminal, alternative.me
 - **Cache**: In-memory LRU with TTL (Redis-ready interface)
 - **Persistence**: PostgreSQL через `DATABASE_URL` и Alembic migrations
 - **Auth**: JWT tokens, bcrypt hashing, optional auth middleware, dual-token refresh
@@ -88,9 +88,11 @@ Frontend runs at `http://127.0.0.1:3000`
 
 > **Windows note**: Use `http://127.0.0.1:3000` instead of `localhost` to avoid IPv6 timeout.
 
-Текущий frontend открывается как тёмный terminal MVP с разделами Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts placeholder и Strategy Lab.
+Текущий frontend открывается как тёмный terminal MVP с разделами Market Overview, Perp DEX, Assets, Funding, Arbitrage Scanner, Market Matrix, Charts и Strategy Lab.
 
-`Market Overview`, `Assets`, `Funding`, `Charts`, `Market Matrix`, `Arbitrage Scanner` и `/data-health` уже читают live backend/PostgreSQL data-layer через backend API. `Market Overview` использует CoinGecko global/markets, alternative.me Fear & Greed и CoinGlass funding. `Assets` показывает live spot/funding/OHLCV и CoinGlass aggregated liquidations для SOL, когда в таблице `liquidations` есть строки; fake order book/liquidations не подмешиваются.
+`Charts` имеет interactive v0 на `lightweight-charts`: OKX USDT Swap свечи, volume histogram, crosshair OHLC/volume, pan/zoom/scroll и контролы `BTC/ETH/SOL`, `1m/5m/1h`, `2h/8h/24h/7d`. Production deploy проверен через `/charts?symbol=BTC&interval=1m&range=7d` и мобильный сценарий `/charts?symbol=ETH&interval=5m&range=24h`.
+
+`Market Overview`, `Assets`, `Funding`, `Charts`, `Market Matrix`, `Arbitrage Scanner` и `/data-health` уже читают live backend/PostgreSQL data-layer через backend API. `Market Overview` использует CoinGecko global/markets, alternative.me Fear & Greed, CoinGlass funding, price-first heatmap и логотипы CoinGecko. `Assets` поддерживает `BTC`, `ETH` и `SOL`, показывает live spot/funding/OHLCV и CoinGlass aggregated liquidations, когда в таблице `liquidations` есть строки; fake order book/liquidations не подмешиваются.
 
 `Perp DEX` пока показывает статус `DEX data pending`, потому что live DEX venue adapter ещё не подключён; mock DEX volume/OI/liquidity не выдаются за production-данные. `Strategy Lab` показывает readiness live inputs, но не показывает fake PnL/trades до появления реального backtest engine. Order book и per-order liquidation tape остаются отдельными provider задачами.
 
@@ -122,13 +124,30 @@ curl https://deltagrid.pro/api/v1/data/health
 
 Минимальный серверный сценарий для `deltagrid.pro` описан в [DEPLOYMENT.md](DEPLOYMENT.md): `.env.production`, `docker-compose.prod.yml`, reverse proxy, SSL, readiness checks, backup и rollback.
 
-Текущее production-состояние от 2026-06-05:
+Текущее production-состояние от 2026-06-14:
 
 - домен `https://deltagrid.pro` активен через Cloudflare DNS и указывает на сервер `2.25.143.143`;
-- приложение развёрнуто на Ubuntu 22.04 в `/opt/deltagrid` из ветки `preview`;
+- приложение развёрнуто на Ubuntu 22.04 в `/opt/deltagrid`; production branch для новых релизов — `main`, dev/staging branch — `preview`;
 - PostgreSQL, backend и frontend запущены через `docker-compose.prod.yml`;
 - внешний доступ идёт через Nginx и Let's Encrypt SSL;
 - локальные server ports: backend `127.0.0.1:8000`, frontend `127.0.0.1:3001`, PostgreSQL наружу не опубликован.
+- primary CEX perp data path переведён на OKX USDT Swap; Binance оставлен как legacy/diagnostic provider, потому что direct Binance FAPI на текущем VPS возвращает HTTP `451`.
+
+### GitHub CI/CD и релизы
+
+Release policy описана в [RELEASES.md](RELEASES.md). Базовая схема веток:
+
+- `preview` — dev/staging ветка;
+- `main` — production ветка;
+- feature-ветки — короткие рабочие ветки для отдельных задач.
+
+GitHub Actions:
+
+- `CI` запускает backend tests, `compileall` и frontend build на `preview`, `main` и pull requests;
+- `Deploy Preview` деплоит `preview`, если в GitHub настроены `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY`, `PREVIEW_APP_DIR`;
+- `Deploy Production` деплоит `main`, если настроены `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`.
+
+Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
 
 Для ручной загрузки свежих market data в production PostgreSQL:
 
@@ -138,7 +157,7 @@ sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv
 curl https://deltagrid.pro/api/v1/data/health
 ```
 
-Sync пишет Binance OHLCV/funding/OI/L/S, CoinGlass v4 funding/OI snapshots, CoinGlass aggregated liquidation history и CoinGecko-derived basis snapshots. Для регулярного запуска на сервере:
+Sync по умолчанию пишет OKX USDT Swap OHLCV/funding/OI/L/S, CoinGlass v4 funding/OI snapshots с `exchange_list=OKX`, CoinGlass aggregated liquidation history с `exchange_list=OKX` и CoinGecko-derived basis snapshots. Binance можно проверить вручную через `--primary-perp-provider binance`, но на текущем production VPS direct Binance API возвращает HTTP `451`, поэтому он не является primary data path. Для регулярного запуска на сервере:
 
 ```bash
 cd /opt/deltagrid
@@ -267,9 +286,15 @@ tail -100 /var/log/deltagrid-market-sync.log
 ### Data Layer Endpoints
 | Endpoint | Описание |
 |----------|----------|
-| `GET /api/v1/data/ohlcv?symbol=BTC&exchange=binance&start=...&end=...` | Чтение OHLCV из PostgreSQL, максимум 1000 строк; `start`/`end` — Unix timestamp в миллисекундах. |
-| `GET /api/v1/data/funding?symbol=BTC&exchange=binance&start=...&end=...` | Чтение истории funding rate из PostgreSQL, максимум 1000 строк. |
-| `GET /api/v1/data/health` | Health snapshot data-layer: статусы провайдеров, последние sync, row counts и data quality score. |
+| `GET /api/v1/data/ohlcv?symbol=BTC&exchange=okx&start=...&end=...` | Чтение OHLCV из PostgreSQL, максимум 1000 строк; `start`/`end` — Unix timestamp в миллисекундах. |
+| `GET /api/v1/data/ohlcv/window?symbol=BTC&exchange=okx&interval=1m&range=7d` | Чтение bounded OHLCV окна для interactive charts одним запросом; поддерживает `1m/5m/1h`, `2h/8h/24h/7d`, максимум 20000 строк. |
+| `GET /api/v1/data/funding?symbol=BTC&exchange=okx&start=...&end=...` | Чтение истории funding rate из PostgreSQL, максимум 1000 строк. |
+| `GET /api/v1/data/coverage?symbols=BTC,ETH,SOL&exchange=okx&range=7d` | Coverage matrix по историческим потокам: rows/expected, coverage %, latest timestamp и reason для OHLCV/funding/OI/long-short/liquidations/basis/spot-perp price. |
+| `GET /api/v1/data/universe?symbols=BTC,ETH,SOL&exchange=okx` | Production universe readiness поверх coverage/freshness: `complete_history`, `core_perp_ready`, `partial_history`, `not_ready`, `ui_universe` и `deferred_symbols`. |
+| `GET /api/v1/data/health` | Health snapshot data-layer: статусы провайдеров, последние sync, row counts, data quality score, freshness SLA, coverage matrix, universe readiness, health по `sync_type` и cron/data-sync diagnostics. |
+
+Для sparse event streams вроде `liquidations` `/data/health` различает возраст последнего события и свежесть sync-run: отсутствие новых событий не считается stale, если `coinglass/liquidations` sync свежий и успешный.
+`/data/coverage` и блок `coverage` внутри `/data/health` используют ту же семантику для sparse streams: свежий успешный sync-run подтверждает provider coverage даже при отсутствии новых liquidation events.
 
 ## Roadmap
 

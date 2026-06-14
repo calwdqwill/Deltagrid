@@ -1,0 +1,47 @@
+name: Deploy Preview
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - preview
+    types:
+      - completed
+
+jobs:
+  deploy:
+    name: Deploy preview branch
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    env:
+      SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+      SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+      SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+      APP_DIR: ${{ secrets.PREVIEW_APP_DIR }}
+
+    steps:
+      - name: Skip when preview secrets are not configured
+        if: ${{ env.SSH_HOST == '' || env.SSH_USER == '' || env.SSH_KEY == '' || env.APP_DIR == '' }}
+        run: echo "Preview deploy skipped because SSH secrets are not configured."
+
+      - name: Configure SSH
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deltagrid_preview_key
+          chmod 600 ~/.ssh/deltagrid_preview_key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy preview
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          ssh -i ~/.ssh/deltagrid_preview_key "$SSH_USER@$SSH_HOST" "
+            set -e
+            cd '$APP_DIR'
+            git fetch origin preview
+            git checkout preview
+            git pull --ff-only origin preview
+            docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build backend frontend
+            sh scripts/server-smoke.sh
+          "

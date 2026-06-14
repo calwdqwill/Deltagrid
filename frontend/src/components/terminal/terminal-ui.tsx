@@ -26,6 +26,17 @@ export function formatSigned(value: number, suffix = "%"): string {
   return `${sign}${value.toFixed(Math.abs(value) < 1 ? 3 : 2)}${suffix}`;
 }
 
+function formatChartValue(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(2)}T`;
+  if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
+  if (abs >= 10) return value.toFixed(2);
+  if (abs >= 1) return value.toFixed(3);
+  return value.toFixed(4);
+}
+
 export function toneText(tone?: string) {
   if (tone === "positive") return "text-emerald-400";
   if (tone === "negative") return "text-rose-400";
@@ -171,13 +182,20 @@ export function LineChart({
   color = "#F43F5E",
   height = 210,
   fill = true,
+  valueFormatter = formatChartValue,
+  tooltipFormatter,
 }: {
   data: SeriesPoint[];
   color?: string;
   height?: number;
   fill?: boolean;
+  valueFormatter?: (value: number) => string;
+  tooltipFormatter?: (point: SeriesPoint) => string;
 }) {
-  const width = 640;
+  const width = 720;
+  const padding = { top: 18, right: 74, bottom: 30, left: 10 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
   if (!data.length) {
     return (
       <div className="flex h-full min-h-[180px] items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.02] text-xs text-slate-500">
@@ -190,41 +208,87 @@ export function LineChart({
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
+  const last = data[data.length - 1];
+  const axisTicks = [max, min + span * 0.66, min + span * 0.33, min];
+  const xTicks = [
+    data[0],
+    data[Math.floor(data.length / 2)],
+    data[data.length - 1],
+  ].filter(Boolean);
   const points = data.map((point, index) => {
-    const x = (index / Math.max(data.length - 1, 1)) * width;
-    const y = height - ((point.value - min) / span) * (height - 34) - 18;
+    const x = padding.left + (index / Math.max(data.length - 1, 1)) * plotWidth;
+    const y = padding.top + plotHeight - ((point.value - min) / span) * plotHeight;
     return { x, y };
   });
   const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const area = `0,${height} ${polyline} ${width},${height}`;
+  const area = `${padding.left},${padding.top + plotHeight} ${polyline} ${padding.left + plotWidth},${padding.top + plotHeight}`;
+  const lastPoint = points[points.length - 1];
 
   return (
-    <div className="h-full min-h-[180px] w-full">
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" role="img">
+    <div className="flex h-full min-h-[180px] w-full flex-col">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="font-mono text-slate-300">Last {valueFormatter(last.value)}</span>
+        <span className="font-mono text-slate-500">
+          Range {valueFormatter(min)} - {valueFormatter(max)}
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="min-h-0 w-full flex-1" role="img">
         <defs>
           <linearGradient id={`area-${color.replace("#", "")}`} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.34" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
-        {[0, 1, 2, 3].map((line) => (
-          <line
-            key={line}
-            x1="0"
-            x2={width}
-            y1={(line / 3) * (height - 34) + 18}
-            y2={(line / 3) * (height - 34) + 18}
-            stroke="rgba(148,163,184,0.12)"
-          />
-        ))}
+        {axisTicks.map((tick, index) => {
+          const y = padding.top + plotHeight - ((tick - min) / span) * plotHeight;
+          return (
+            <g key={`${tick}-${index}`}>
+              <line x1={padding.left} x2={padding.left + plotWidth} y1={y} y2={y} stroke="rgba(148,163,184,0.12)" />
+              <text x={width - 6} y={y + 4} textAnchor="end" className="fill-slate-500 text-[10px]">
+                {valueFormatter(tick)}
+              </text>
+            </g>
+          );
+        })}
         {fill && <polygon points={area} fill={`url(#area-${color.replace("#", "")})`} />}
         <polyline fill="none" stroke={color} strokeWidth="2.5" points={polyline} strokeLinecap="round" />
+        {points.map((point, index) => (
+          <circle key={`${data[index].label}-${index}-hit`} cx={point.x} cy={point.y} r="9" fill="transparent" pointerEvents="all">
+            <title>{tooltipFormatter ? tooltipFormatter(data[index]) : `${data[index].label}: ${valueFormatter(data[index].value)}`}</title>
+          </circle>
+        ))}
+        {lastPoint && (
+          <g>
+            <circle cx={lastPoint.x} cy={lastPoint.y} r="4" fill={color} />
+            <line x1={lastPoint.x} x2={padding.left + plotWidth} y1={lastPoint.y} y2={lastPoint.y} stroke={color} strokeOpacity="0.24" />
+            <text x={padding.left + plotWidth + 6} y={lastPoint.y - 7} className="fill-slate-200 text-[10px]">
+              {valueFormatter(last.value)}
+            </text>
+          </g>
+        )}
+        {xTicks.map((tick) => {
+          const index = data.indexOf(tick);
+          const x = padding.left + (index / Math.max(data.length - 1, 1)) * plotWidth;
+          return (
+            <text key={`${tick.label}-${index}`} x={x} y={height - 8} textAnchor={index === 0 ? "start" : index === data.length - 1 ? "end" : "middle"} className="fill-slate-500 text-[10px]">
+              {tick.label}
+            </text>
+          );
+        })}
       </svg>
     </div>
   );
 }
 
-export function BarChart({ data, colors = chartColors }: { data: SeriesPoint[]; colors?: string[] }) {
+export function BarChart({
+  data,
+  colors = chartColors,
+  valueFormatter = formatChartValue,
+}: {
+  data: SeriesPoint[];
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+}) {
   if (!data.length) {
     return (
       <div className="flex h-56 items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.02] text-xs text-slate-500">
@@ -234,20 +298,33 @@ export function BarChart({ data, colors = chartColors }: { data: SeriesPoint[]; 
   }
 
   const max = Math.max(...data.map((point) => point.value), 1);
+  const min = Math.min(...data.map((point) => point.value), 0);
+  const labelStep = data.length > 90 ? 12 : data.length > 48 ? 6 : 1;
   return (
-    <div className="flex h-56 items-end gap-1.5">
-      {data.map((point, index) => (
-        <div key={point.label} className="flex flex-1 flex-col items-center gap-2">
-          <div
-            className="w-full rounded-t-sm"
-            style={{
-              height: `${Math.max((point.value / max) * 100, 4)}%`,
-              background: `linear-gradient(180deg, ${colors[index % colors.length]}, rgba(59,130,246,0.25))`,
-            }}
-          />
-          <span className="text-[10px] text-slate-500">{point.label}</span>
-        </div>
-      ))}
+    <div className="flex h-56 flex-col">
+      <div className="mb-2 flex justify-between text-xs">
+        <span className="font-mono text-slate-300">Max {valueFormatter(max)}</span>
+        <span className="font-mono text-slate-500">
+          Range {valueFormatter(min)} - {valueFormatter(max)}
+        </span>
+      </div>
+      <div className="flex min-h-0 flex-1 items-end gap-1.5">
+        {data.map((point, index) => {
+          const showLabel = index === 0 || index === data.length - 1 || index % labelStep === 0;
+          return (
+          <div key={point.label} className="flex h-full flex-1 flex-col items-center justify-end gap-2" title={`${point.label}: ${valueFormatter(point.value)}`}>
+            <div
+              className="w-full rounded-t-sm"
+              style={{
+                height: `${Math.max((point.value / max) * 100, 4)}%`,
+                background: `linear-gradient(180deg, ${colors[index % colors.length]}, rgba(59,130,246,0.25))`,
+              }}
+            />
+            <span className="h-3 text-[10px] text-slate-500">{showLabel ? point.label : ""}</span>
+          </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -316,7 +393,7 @@ export function Heatmap({ items }: { items: MarketHeatmapItem[] }) {
   }
 
   return (
-    <div className="grid h-[270px] grid-cols-6 grid-rows-4 gap-1">
+    <div className="grid auto-rows-[92px] grid-cols-2 gap-1 md:grid-cols-4 xl:grid-cols-6">
       {items.map((item, index) => {
         const isBig = index === 0 || index === 1;
         const isNegative = item.change24h < 0;
@@ -324,18 +401,32 @@ export function Heatmap({ items }: { items: MarketHeatmapItem[] }) {
           <div
             key={item.symbol}
             className={cn(
-              "flex min-h-16 flex-col justify-center overflow-hidden rounded-md border border-white/[0.08] p-3",
+              "flex min-w-0 flex-col justify-center overflow-hidden rounded-md border border-white/[0.08] p-3",
               isBig ? "col-span-2 row-span-2" : "col-span-1 row-span-1",
               isNegative
                 ? "bg-gradient-to-br from-rose-500/42 to-rose-950/42"
                 : "bg-gradient-to-br from-emerald-500/36 to-emerald-950/36"
             )}
           >
-            <div className={cn("font-semibold text-white", isBig ? "text-3xl" : "text-sm")}>{item.symbol}</div>
-            <div className={cn("mt-1 font-mono", isNegative ? "text-rose-300" : "text-emerald-300")}>
+            <div className="flex items-center gap-2">
+              {item.image ? (
+                <img src={item.image} alt="" className={cn("rounded-full", isBig ? "h-8 w-8" : "h-5 w-5")} />
+              ) : (
+                <span className={cn("flex items-center justify-center rounded-full bg-white/12 font-bold text-white", isBig ? "h-8 w-8 text-sm" : "h-5 w-5 text-[9px]")}>
+                  {item.symbol[0]}
+                </span>
+              )}
+              <div className={cn("min-w-0 truncate font-semibold text-white", isBig ? "text-3xl" : "text-xs")}>
+                {item.symbol}
+              </div>
+            </div>
+            <div className={cn("mt-2 truncate font-mono font-semibold text-white", isBig ? "text-2xl" : "text-xs")}>
+              {item.price >= 100 ? `$${formatNumber(item.price)}` : `$${item.price.toFixed(4)}`}
+            </div>
+            <div className={cn("mt-1 truncate font-mono", isBig ? "text-sm" : "text-xs", isNegative ? "text-rose-300" : "text-emerald-300")}>
               {formatSigned(item.change24h)}
             </div>
-            {isBig && <div className="mt-1 text-xs text-slate-300">{formatCompactCurrency(item.marketCap)}</div>}
+            {isBig && <div className="mt-1 truncate text-xs text-slate-300">{formatCompactCurrency(item.marketCap)}</div>}
           </div>
         );
       })}

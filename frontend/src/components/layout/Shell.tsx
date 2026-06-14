@@ -11,7 +11,7 @@ interface ShellProps {
 export function Shell({ children }: ShellProps) {
   return (
     <div className="flex h-screen bg-[#070A12] text-slate-100">
-      <Suspense fallback={<div className="h-screen w-64 border-r border-white/10 bg-[#070A12]" />}>
+      <Suspense fallback={<div className="hidden h-screen w-64 border-r border-white/10 bg-[#070A12] md:block" />}>
         <Sidebar />
       </Suspense>
       <div className="flex-1 flex flex-col min-w-0">

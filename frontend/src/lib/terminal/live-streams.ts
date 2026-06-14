@@ -3,7 +3,16 @@ import { KpiMetric, SeriesPoint } from "@/types/terminal";
 import { DataHealthPayload } from "./live-data";
 
 const TRACKED_SYMBOLS = ["BTC", "ETH", "SOL"] as const;
-const DEFAULT_EXCHANGE = "binance";
+const DEFAULT_EXCHANGE = "okx";
+const DEFAULT_EXCHANGE_LABEL = "OKX";
+const CHART_INTERVALS = ["1m", "5m", "1h"] as const;
+const CHART_RANGES = ["2h", "8h", "24h", "7d"] as const;
+
+export { TRACKED_SYMBOLS, CHART_INTERVALS, CHART_RANGES };
+
+export type TrackedSymbol = (typeof TRACKED_SYMBOLS)[number];
+export type ChartInterval = (typeof CHART_INTERVALS)[number];
+export type ChartRange = (typeof CHART_RANGES)[number];
 
 type StatusTone = "positive" | "warning";
 
@@ -69,11 +78,31 @@ interface LiquidationRow {
   value_usd?: number | null;
 }
 
+export interface InteractiveCandle {
+  timestamp: number;
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number | null;
+  quoteVolume: number | null;
+}
+
 export interface LiveChartsWorkspace {
   symbol: string;
+  exchange: string;
+  exchangeLabel: string;
+  interval: ChartInterval;
+  range: ChartRange;
+  rangeLabel: string;
   statusLabel: string;
   statusTone: StatusTone;
+  freshnessLabel: string;
+  freshnessTone: StatusTone;
+  latestCandleIso: string;
   kpis: KpiMetric[];
+  candles: InteractiveCandle[];
   priceSeries: SeriesPoint[];
   volumeSeries: SeriesPoint[];
   openInterestSeries: SeriesPoint[];
@@ -170,10 +199,41 @@ function pointLabel(timestamp: number): string {
   return date.toISOString().slice(11, 16);
 }
 
+function intervalMs(interval: ChartInterval): number {
+  if (interval === "5m") return 5 * 60 * 1000;
+  if (interval === "1h") return 60 * 60 * 1000;
+  return 60 * 1000;
+}
+
+function rangeMs(range: ChartRange): number {
+  if (range === "2h") return 2 * 60 * 60 * 1000;
+  if (range === "8h") return 8 * 60 * 60 * 1000;
+  if (range === "7d") return 7 * 24 * 60 * 60 * 1000;
+  return 24 * 60 * 60 * 1000;
+}
+
+function rangeLabel(range: ChartRange): string {
+  if (range === "2h") return "2 hours";
+  if (range === "8h") return "8 hours";
+  if (range === "7d") return "7 days";
+  return "24 hours";
+}
+
+function timestampIso(timestamp?: number | null): string {
+  if (!timestamp) return "No candle";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "Invalid timestamp";
+  return date.toISOString().replace(".000Z", "Z");
+}
+
+function freshnessTone(status?: string): StatusTone {
+  return status === "fresh" ? "positive" : "warning";
+}
+
 function rowsToSeries<T extends { timestamp: number }>(
   rows: T[],
   valueSelector: (row: T) => number | null,
-  maxPoints = 96
+  maxPoints = 240
 ): SeriesPoint[] {
   return rows
     .slice(-maxPoints)
@@ -198,11 +258,86 @@ async function fetchRows<T>(path: string): Promise<T[]> {
   return response?.success ? response.data : [];
 }
 
-async function symbolStreams(symbol: string) {
+async function fetchOhlcvWindowByPages(symbol: string, interval: ChartInterval, range: ChartRange): Promise<OhlcvRow[]> {
+  const latestRows = await fetchRows<OhlcvRow>(`/data/ohlcv?symbol=${symbol}&exchange=${DEFAULT_EXCHANGE}&interval=${interval}`);
+  const latestRow = latest(latestRows);
+  if (!latestRow) return [];
+
+  const stepMs = intervalMs(interval);
+  const endMs = latestRow.timestamp;
+  const startMs = Math.max(0, endMs - rangeMs(range) + stepMs);
+  const pageSpanMs = stepMs * 999;
+  const pageRanges: Array<{ start: number; end: number }> = [];
+  const rowsByKey = new Map<number, OhlcvRow>();
+
+  for (const row of latestRows) {
+    if (row.timestamp >= startMs && row.timestamp <= endMs) {
+      rowsByKey.set(row.timestamp, row);
+    }
+  }
+
+  for (let cursor = startMs; cursor <= endMs; cursor += pageSpanMs + stepMs) {
+    const pageEnd = Math.min(cursor + pageSpanMs, endMs);
+    pageRanges.push({ start: Math.floor(cursor), end: Math.floor(pageEnd) });
+  }
+
+  for (let index = 0; index < pageRanges.length; index += 4) {
+    const batch = pageRanges.slice(index, index + 4);
+    const pages = await Promise.all(
+      batch.map((page) =>
+        fetchRows<OhlcvRow>(
+          `/data/ohlcv?symbol=${symbol}&exchange=${DEFAULT_EXCHANGE}&interval=${interval}&start=${page.start}&end=${page.end}`
+        )
+      )
+    );
+
+    for (const pageRows of pages) {
+      for (const row of pageRows) {
+        rowsByKey.set(row.timestamp, row);
+      }
+    }
+  }
+
+  return Array.from(rowsByKey.values()).sort((a, b) => a.timestamp - b.timestamp);
+}
+
+async function fetchOhlcvWindow(symbol: string, interval: ChartInterval, range: ChartRange): Promise<OhlcvRow[]> {
+  const response = await fetchServerApi<OhlcvRow[]>(
+    `/data/ohlcv/window?symbol=${symbol}&exchange=${DEFAULT_EXCHANGE}&interval=${interval}&range=${range}`
+  );
+  if (response?.success) return response.data;
+
+  return fetchOhlcvWindowByPages(symbol, interval, range);
+}
+
+function rowsToCandles(rows: OhlcvRow[]): InteractiveCandle[] {
+  return rows
+    .map((row) => {
+      const open = toNumber(row.open);
+      const high = toNumber(row.high);
+      const low = toNumber(row.low);
+      const close = toNumber(row.close);
+      if (open === null || high === null || low === null || close === null) return null;
+
+      return {
+        timestamp: row.timestamp,
+        time: Math.floor(row.timestamp / 1000),
+        open,
+        high,
+        low,
+        close,
+        volume: toNumber(row.volume),
+        quoteVolume: toNumber(row.quote_volume),
+      };
+    })
+    .filter((row): row is InteractiveCandle => row !== null);
+}
+
+async function symbolStreams(symbol: string, interval: ChartInterval = "1m", range: ChartRange = "24h") {
   const normalizedSymbol = symbol.toUpperCase();
-  const ohlcv = await fetchRows<OhlcvRow>(`/data/ohlcv?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}&interval=1m`);
+  const ohlcv = await fetchOhlcvWindow(normalizedSymbol, interval, range);
   const funding = await fetchRows<FundingRow>(`/data/funding?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
-  const oiBinance = await fetchRows<OpenInterestRow>(`/data/open-interest?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
+  const oiPrimary = await fetchRows<OpenInterestRow>(`/data/open-interest?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
   const oiCoinGlass = await fetchRows<OpenInterestRow>(`/data/open-interest?symbol=${normalizedSymbol}&exchange=coinglass`);
   const basis = await fetchRows<BasisPremiumRow>(`/data/basis-premium?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
   const longShort = await fetchRows<LongShortRow>(`/data/long-short-ratio?symbol=${normalizedSymbol}&exchange=${DEFAULT_EXCHANGE}`);
@@ -212,18 +347,29 @@ async function symbolStreams(symbol: string) {
     symbol: normalizedSymbol,
     ohlcv,
     funding,
-    openInterest: oiCoinGlass.length ? oiCoinGlass : oiBinance,
+    openInterest: oiPrimary.length ? oiPrimary : oiCoinGlass,
     basis,
     longShort,
     liquidations,
   };
 }
 
-export async function getLiveChartsWorkspace(symbol = "BTC"): Promise<LiveChartsWorkspace> {
-  const streams = await symbolStreams(symbol);
+export async function getLiveChartsWorkspace(
+  symbol = "BTC",
+  interval: ChartInterval = "1m",
+  range: ChartRange = "24h"
+): Promise<LiveChartsWorkspace> {
+  const streams = await symbolStreams(symbol, interval, range);
   const healthResponse = await fetchServerApi<DataHealthPayload>("/data/health");
   const health = healthResponse?.success ? healthResponse.data : null;
   const latestCandle = latest(streams.ohlcv);
+  const selectedFreshness = health?.freshness.streams.find(
+    (stream) =>
+      stream.symbol === streams.symbol &&
+      stream.exchange === DEFAULT_EXCHANGE &&
+      stream.stream === "ohlcv" &&
+      stream.interval === interval
+  );
   const latestFunding = latest(streams.funding);
   const latestOi = latest(streams.openInterest);
   const latestBasis = latest(streams.basis);
@@ -233,19 +379,26 @@ export async function getLiveChartsWorkspace(symbol = "BTC"): Promise<LiveCharts
   const oiUsd = toNumber(latestOi?.oi_usd);
   const basisPct = toNumber(latestBasis?.basis_pct);
   const longPct = longAccountPercent(latestLongShort);
-  const rowCounts = health?.row_counts ?? {};
+  const candles = rowsToCandles(streams.ohlcv);
+  const selectedRangeLabel = rangeLabel(range);
 
   const kpis: KpiMetric[] = [
     {
       label: "Last Price",
       value: price === null ? "No data" : `$${price.toLocaleString("en-US", { maximumFractionDigits: 2 })}`,
-      caption: `${streams.symbol} Binance 1m`,
+      caption: `${streams.symbol} ${DEFAULT_EXCHANGE_LABEL} ${interval}`,
       tone: price !== null ? "positive" : "warning",
+    },
+    {
+      label: "Visible Candles",
+      value: formatRows(candles.length),
+      caption: `${selectedRangeLabel} ${interval}`,
+      tone: candles.length > 0 ? "positive" : "warning",
     },
     {
       label: "Funding",
       value: formatPercent(funding),
-      caption: "Binance history",
+      caption: `${DEFAULT_EXCHANGE_LABEL} history`,
       tone: funding === null ? "warning" : funding >= 0 ? "positive" : "negative",
     },
     {
@@ -257,28 +410,33 @@ export async function getLiveChartsWorkspace(symbol = "BTC"): Promise<LiveCharts
     {
       label: "Basis",
       value: formatPercent(basisPct),
-      caption: "CoinGecko spot vs Binance perp",
+      caption: `CoinGecko spot vs ${DEFAULT_EXCHANGE_LABEL} perp`,
       tone: basisPct === null ? "warning" : basisPct >= 0 ? "positive" : "negative",
     },
     {
       label: "Long Accounts",
       value: formatPercent(longPct, 2),
-      caption: "Binance L/S",
+      caption: `${DEFAULT_EXCHANGE_LABEL} L/S`,
       tone: longPct === null ? "warning" : longPct >= 50 ? "positive" : "negative",
-    },
-    {
-      label: "Data Rows",
-      value: formatRows(rowCounts.ohlcv),
-      caption: "OHLCV in PostgreSQL",
-      tone: (rowCounts.ohlcv ?? 0) > 0 ? "positive" : "warning",
     },
   ];
 
   return {
     symbol: streams.symbol,
-    statusLabel: streams.ohlcv.length ? "Live PostgreSQL streams" : "No OHLCV rows",
+    exchange: DEFAULT_EXCHANGE,
+    exchangeLabel: DEFAULT_EXCHANGE_LABEL,
+    interval,
+    range,
+    rangeLabel: selectedRangeLabel,
+    statusLabel: streams.ohlcv.length ? "Interactive OKX candles" : "No OHLCV rows",
     statusTone: streams.ohlcv.length ? "positive" : "warning",
+    freshnessLabel: selectedFreshness
+      ? `${selectedFreshness.status} - ${selectedFreshness.age_minutes?.toFixed(1) ?? "?"}m`
+      : "freshness unknown",
+    freshnessTone: freshnessTone(selectedFreshness?.status),
+    latestCandleIso: timestampIso(latestCandle?.timestamp),
     kpis,
+    candles,
     priceSeries: rowsToSeries(streams.ohlcv, (row) => toNumber(row.close)),
     volumeSeries: rowsToSeries(streams.ohlcv, (row) => toNumber(row.quote_volume) ?? toNumber(row.volume)),
     openInterestSeries: rowsToSeries(streams.openInterest, (row) => toNumber(row.oi_usd)),
@@ -286,11 +444,11 @@ export async function getLiveChartsWorkspace(symbol = "BTC"): Promise<LiveCharts
     fundingSeries: rowsToSeries(streams.funding, fundingPercent),
     longRatioSeries: rowsToSeries(streams.longShort, (row) => longAccountPercent(row)),
     sourceRows: [
-      ["OHLCV", `${streams.ohlcv.length} rows`, "Binance 1m"],
-      ["Funding", `${streams.funding.length} rows`, "Binance"],
-      ["Open Interest", `${streams.openInterest.length} rows`, latestOi?.exchange ?? "binance/coinglass"],
-      ["Basis", `${streams.basis.length} rows`, "CoinGecko + Binance"],
-      ["Long/Short", `${streams.longShort.length} rows`, "Binance"],
+      ["OHLCV", `${streams.ohlcv.length} rows`, `${DEFAULT_EXCHANGE_LABEL} ${interval} / ${selectedRangeLabel}`],
+      ["Funding", `${streams.funding.length} rows`, DEFAULT_EXCHANGE_LABEL],
+      ["Open Interest", `${streams.openInterest.length} rows`, latestOi?.exchange ?? "okx/coinglass"],
+      ["Basis", `${streams.basis.length} rows`, `CoinGecko + ${DEFAULT_EXCHANGE_LABEL}`],
+      ["Long/Short", `${streams.longShort.length} rows`, DEFAULT_EXCHANGE_LABEL],
       ["Liquidations", `${streams.liquidations.length} rows`, "Pending ingestion when 0"],
     ],
   };
@@ -378,11 +536,11 @@ export async function getLiveMarketMatrix(): Promise<LiveMarketMatrix> {
       },
     ],
     sourceRows: [
-      ["Price", "CoinGecko spot + latest Binance 1m perp close"],
-      ["Funding", "Binance funding history"],
-      ["Open Interest", "CoinGlass snapshot preferred, Binance fallback"],
-      ["Basis", "CoinGecko spot vs Binance perp approximate snapshot"],
-      ["Long/Short", "Binance account ratio"],
+      ["Price", `CoinGecko spot + latest ${DEFAULT_EXCHANGE_LABEL} 1m perp close`],
+      ["Funding", `${DEFAULT_EXCHANGE_LABEL} funding history`],
+      ["Open Interest", `${DEFAULT_EXCHANGE_LABEL} snapshot preferred, CoinGlass fallback`],
+      ["Basis", `CoinGecko spot vs ${DEFAULT_EXCHANGE_LABEL} perp approximate snapshot`],
+      ["Long/Short", `${DEFAULT_EXCHANGE_LABEL} account ratio`],
     ],
   };
 }
@@ -402,8 +560,8 @@ export async function getLiveArbitrageScanner(): Promise<LiveArbitrageScanner> {
         id: `basis-${row.asset.toLowerCase()}`,
         type,
         asset: row.asset,
-        longLeg: shortPerp ? "CoinGecko spot proxy" : "Binance perp",
-        shortLeg: shortPerp ? "Binance perp" : "CoinGecko spot proxy",
+        longLeg: shortPerp ? "CoinGecko spot proxy" : `${DEFAULT_EXCHANGE_LABEL} perp`,
+        shortLeg: shortPerp ? `${DEFAULT_EXCHANGE_LABEL} perp` : "CoinGecko spot proxy",
         edgePct: edge,
         fundingPct: row.fundingPct,
         openInterestUsd: row.openInterestUsd,
@@ -453,7 +611,7 @@ export async function getLiveStrategyReadiness(): Promise<LiveStrategyReadiness>
       {
         label: "Backtest Engine",
         value: "Pending",
-        caption: "No fake run result",
+        caption: "Real output only",
         tone: "warning",
       },
       {
@@ -497,5 +655,3 @@ export async function getLiveStrategyReadiness(): Promise<LiveStrategyReadiness>
     ],
   };
 }
-
-export { TRACKED_SYMBOLS };

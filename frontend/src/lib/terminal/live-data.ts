@@ -3,7 +3,7 @@ import { FundingData, FundingRate, KpiMetric } from "@/types/terminal";
 
 type StatusTone = "positive" | "negative" | "warning" | "neutral";
 
-type FundingExchange = "binance" | "coinglass";
+type FundingExchange = "okx" | "coinglass";
 
 interface DataFundingRow {
   timestamp: number;
@@ -27,6 +27,175 @@ export interface ProviderSnapshot {
   last_sync: Record<string, unknown> | null;
 }
 
+export interface FreshnessStreamSnapshot {
+  symbol: string;
+  exchange: string;
+  stream: string;
+  interval: string;
+  latest_timestamp: number | null;
+  latest_timestamp_iso: string | null;
+  age_minutes: number | null;
+  expected_cadence_minutes: number;
+  stale_after_minutes: number;
+  degraded_after_minutes: number;
+  status: "fresh" | "stale" | "degraded";
+  reason: string;
+  freshness_mode?: "event" | "sparse_event";
+  event_age_minutes?: number | null;
+  sync_provider?: string;
+  sync_type?: string;
+  latest_sync_status?: string | null;
+  latest_sync_at?: string | null;
+  latest_successful_sync_at?: string | null;
+  sync_age_minutes?: number | null;
+  sync_stale_after_minutes?: number;
+  sync_degraded_after_minutes?: number;
+}
+
+export interface FreshnessReport {
+  scope: {
+    symbols: string[];
+    primary_exchange: string;
+    streams: string[];
+  };
+  summary: {
+    fresh: number;
+    stale: number;
+    degraded: number;
+    total: number;
+    worst_status: "fresh" | "stale" | "degraded" | "unknown";
+  };
+  by_stream: Record<string, Record<"fresh" | "stale" | "degraded", number>>;
+  streams: FreshnessStreamSnapshot[];
+}
+
+export interface CoverageRowSnapshot {
+  symbol: string;
+  exchange: string;
+  stream: string;
+  interval: string;
+  status: "covered" | "partial" | "missing";
+  rows: number;
+  expected_rows: number | null;
+  coverage_pct: number | null;
+  window_start: number | null;
+  window_end: number | null;
+  window_start_iso: string | null;
+  window_end_iso: string | null;
+  latest_timestamp: number | null;
+  latest_timestamp_iso: string | null;
+  window_source: "latest_available" | "wall_clock";
+  reason: string;
+  coverage_mode: "regular" | "sparse_event";
+  sync_provider?: string;
+  sync_type?: string;
+  latest_successful_sync_at?: string | null;
+  sync_age_minutes?: number | null;
+}
+
+export interface CoverageReport {
+  scope: {
+    symbols: string[];
+    exchange: string;
+    range: string;
+    streams: string[];
+  };
+  summary: {
+    covered: number;
+    partial: number;
+    missing: number;
+    total: number;
+    coverage_pct: number;
+    worst_status: "covered" | "partial" | "missing" | "unknown";
+  };
+  by_symbol: Record<string, Record<"covered" | "partial" | "missing", number>>;
+  by_stream: Record<string, Record<"covered" | "partial" | "missing", number>>;
+  rows: CoverageRowSnapshot[];
+}
+
+export interface UniverseSymbolSnapshot {
+  symbol: string;
+  exchange: string;
+  status: "complete_history" | "core_perp_ready" | "partial_history" | "not_ready";
+  chart_ready: boolean;
+  complete_history: boolean;
+  ui_visible: boolean;
+  coverage: Record<string, CoverageReport["summary"]>;
+  freshness: FreshnessReport["summary"] & { fresh_pct: number };
+  covered_streams_7d: string[];
+  partial_streams_7d: string[];
+  missing_streams_7d: string[];
+  reason: string;
+}
+
+export interface UniverseReport {
+  scope: {
+    symbols: string[];
+    exchange: string;
+    ranges: string[];
+    primary_range: string;
+  };
+  summary: {
+    complete_history: number;
+    core_perp_ready: number;
+    partial_history: number;
+    not_ready: number;
+    chart_ready: number;
+    total: number;
+  };
+  policy: {
+    ui_universe: string[];
+    deferred_symbols: string[];
+    rule: string;
+  };
+  symbols: UniverseSymbolSnapshot[];
+}
+
+export interface SyncRunSnapshot {
+  provider_name: string;
+  sync_type: string;
+  status: string;
+  last_sync_at: string | null;
+  start_time: number | null;
+  end_time: number | null;
+  records_fetched: number;
+  records_inserted: number;
+  error_message: string | null;
+  error_class: string | null;
+  source_table: string;
+}
+
+export interface SyncTypeHealth {
+  provider_name: string;
+  sync_type: string;
+  status: "healthy" | "stale" | "degraded" | "unknown";
+  healthy: boolean;
+  reason: string;
+  last_run_age_minutes: number | null;
+  expected_cron_interval_minutes: number;
+  last_run: SyncRunSnapshot | null;
+  last_successful_run: SyncRunSnapshot | null;
+  last_problem_run: SyncRunSnapshot | null;
+  recent_window_hours: number;
+  recent_status_counts: Record<string, number>;
+  recent_error_classes: Record<string, number>;
+}
+
+export interface SyncDiagnostics {
+  cron: {
+    status: "healthy" | "stale" | "degraded" | "unknown";
+    reason: string;
+    expected_interval_minutes: number;
+    last_run_age_minutes: number | null;
+    last_run: SyncRunSnapshot | null;
+    last_successful_run: SyncRunSnapshot | null;
+  };
+  recent_window_hours: number;
+  recent_runs: number;
+  recent_status_counts: Record<string, number>;
+  recent_error_classes: Record<string, number>;
+}
+
 export interface DataHealthPayload {
   providers: Record<string, ProviderSnapshot>;
   last_sync: Record<string, Record<string, unknown> | null>;
@@ -37,6 +206,11 @@ export interface DataHealthPayload {
     severity_counts: Record<string, number>;
     method: string;
   };
+  freshness: FreshnessReport;
+  coverage: CoverageReport;
+  universe: UniverseReport;
+  sync_health_by_type: Record<string, Record<string, SyncTypeHealth>>;
+  sync_diagnostics: SyncDiagnostics;
 }
 
 export interface LiveFundingOverview {
@@ -48,7 +222,7 @@ export interface LiveFundingOverview {
 }
 
 const WATCHED_SYMBOLS = ["BTC", "ETH", "SOL"];
-const FUNDING_EXCHANGES: FundingExchange[] = ["coinglass", "binance"];
+const FUNDING_EXCHANGES: FundingExchange[] = ["okx", "coinglass"];
 
 function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -71,6 +245,7 @@ function formatRows(value: number): string {
 function venueLabel(exchange: string): string {
   const normalized = exchange.toLowerCase();
   if (normalized === "coinglass") return "CoinGlass";
+  if (normalized === "okx") return "OKX";
   if (normalized === "binance") return "Binance";
   return exchange;
 }
@@ -172,7 +347,7 @@ function buildFundingData(rows: DataFundingRow[], health: DataHealthPayload | nu
     : rows.filter((row) => row.symbol.toUpperCase() === "BTC");
   const selectedHistoryRows = fallbackHistoryRows.length ? fallbackHistoryRows : rows;
   const history = fundingHistory(selectedHistoryRows);
-  const historyLabel = history[0] ? `${history[0].asset} · ${history[0].venue}` : "No funding history";
+  const historyLabel = history[0] ? `${history[0].asset} / ${history[0].venue}` : "No funding history";
 
   const sortedByAbsoluteRate = current.slice().sort((a, b) => Math.abs(b.rate) - Math.abs(a.rate));
   const arbitrage = sortedByAbsoluteRate.slice(0, 5).map((row) => {
@@ -217,13 +392,13 @@ function buildFundingData(rows: DataFundingRow[], health: DataHealthPayload | nu
     {
       label: "Top Positive",
       value: topPositive ? formatPercent(topPositive.rate) : "No data",
-      caption: topPositive ? `${topPositive.symbol} · ${topPositive.venue}` : undefined,
+      caption: topPositive ? `${topPositive.symbol} / ${topPositive.venue}` : undefined,
       tone: topPositive && topPositive.rate > 0 ? "positive" : "neutral",
     },
     {
       label: "Top Negative",
       value: topNegative ? formatPercent(topNegative.rate) : "No data",
-      caption: topNegative ? `${topNegative.symbol} · ${topNegative.venue}` : undefined,
+      caption: topNegative ? `${topNegative.symbol} / ${topNegative.venue}` : undefined,
       tone: topNegative && topNegative.rate < 0 ? "negative" : "neutral",
     },
     {
@@ -262,7 +437,7 @@ function buildFundingData(rows: DataFundingRow[], health: DataHealthPayload | nu
       data,
       statusLabel: "Live PostgreSQL data",
       statusTone: "positive",
-      sourceCaption: "Funding rates are read from persisted provider sync rows.",
+      sourceCaption: "Persisted OKX and CoinGlass funding rows from PostgreSQL.",
       historyLabel,
     };
   }

@@ -6,6 +6,7 @@ export interface Asset {
   id: string;
   symbol: string;
   name: string;
+  image?: string | null;
   price: number;
   change24h: number;
   change7d: number;
@@ -53,6 +54,8 @@ export interface KpiMetric {
 export interface MarketHeatmapItem {
   symbol: string;
   name: string;
+  image?: string | null;
+  price: number;
   value: number;
   change24h: number;
   marketCap: number;
@@ -84,6 +87,7 @@ export interface RankedAssetMove {
 export interface AssetSnapshot {
   symbol: string;
   name: string;
+  image?: string | null;
   price: number;
   change24h: number;
   marketCap: number;

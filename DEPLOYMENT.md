@@ -42,10 +42,31 @@ DOMAIN=deltagrid.pro sh scripts/server-preflight.sh
 
 ## Получение кода на сервере
 
+Для production используйте ветку `main`. Ветка `preview` остаётся dev/staging веткой и не должна автоматически считаться production release без merge/tag.
+
 ```bash
-git clone -b preview https://github.com/calwdqwill/Deltagrid.git
+git clone -b main https://github.com/calwdqwill/Deltagrid.git
 cd Deltagrid
 ```
+
+Для staging/dev стенда используйте отдельную директорию, отдельный домен или порт и ветку `preview`.
+
+## GitHub CI/CD
+
+Baseline `v1.3.0` фиксирует модель релизов:
+
+- `preview` — dev/staging ветка для рабочих итераций после локальной проверки;
+- `main` — production ветка для `https://deltagrid.pro`;
+- `VERSION`, `frontend/package.json` и `CHANGELOG.md` фиксируют текущую версию и историю изменений;
+- правила релизов описаны в `RELEASES.md`.
+
+GitHub Actions:
+
+- `CI` запускает backend tests, `compileall app` и frontend build на `preview`, `main` и pull requests;
+- `Deploy Preview` деплоит `preview`, если настроены `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY`, `PREVIEW_APP_DIR`;
+- `Deploy Production` деплоит `main`, если настроены `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`.
+
+Если SSH secrets ещё не заведены, deploy workflow завершится успешным skip и не будет ломать CI.
 
 ## Подготовка env
 
@@ -157,19 +178,20 @@ sh scripts/sync-market-data.sh --symbols BTC,ETH,SOL --lookback-hours 24 --ohlcv
 
 Источники текущего MVP sync:
 
-- Binance USD-M: OHLCV, funding history, open interest history, long/short ratio.
-- CoinGlass v4: funding/OI snapshots с provider name `coinglass`.
-- CoinGecko: spot price для расчёта approximate `basis_premium` против последнего Binance perp close.
+- OKX USDT Swap: OHLCV, funding history, open interest snapshots, long/short account ratio.
+- CoinGlass v4: funding/OI snapshots и aggregated liquidation history с `exchange_list=OKX`.
+- CoinGecko: spot price для расчёта approximate `basis_premium` против последнего OKX perp close.
+- Binance USD-M сохранён как legacy/diagnostic provider; на текущем production VPS direct Binance Futures API возвращает HTTP `451`, поэтому он не является primary data path.
 
 Проверка после синка:
 
 ```bash
 curl http://127.0.0.1:8000/api/v1/data/health
-curl "http://127.0.0.1:8000/api/v1/data/ohlcv?symbol=BTC&exchange=binance&interval=1m"
+curl "http://127.0.0.1:8000/api/v1/data/ohlcv?symbol=BTC&exchange=okx&interval=1m"
 curl https://deltagrid.pro/api/v1/data/health
 ```
 
-Ожидаемо: `row_counts.ohlcv`, `row_counts.open_interest`, `row_counts.funding_rates` и `row_counts.basis_premium` больше `0`, у `providers.binance`, `providers.coinglass` и `providers.coingecko` появляется последний `last_sync`, а `data_quality.score` перестаёт быть `0` при наличии market rows.
+Ожидаемо: `row_counts.ohlcv`, `row_counts.open_interest`, `row_counts.funding_rates`, `row_counts.liquidations` и `row_counts.basis_premium` больше `0`, у `providers.okx`, `providers.coinglass` и `providers.coingecko` появляется последний `last_sync`, а `/api/v1/data/health` показывает freshness/coverage/universe для `BTC/ETH/SOL` на `okx`. `providers.binance` может оставаться `degraded` как legacy/diagnostic provider.
 
 Ручной вариант без wrapper-скрипта:
 
@@ -302,18 +324,19 @@ sh scripts/server-smoke.sh
 BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh
 ```
 
-Фактический production rollout от 2026-06-05:
+Фактический production rollout от 2026-06-05, обновлённый baseline от 2026-06-14:
 
 - DNS Cloudflare активен: `deltagrid.pro` и `www.deltagrid.pro` указывают на `2.25.143.143`.
-- `/opt/deltagrid` развёрнут из ветки `preview`.
+- `/opt/deltagrid` развёрнут как production checkout; после baseline `v1.3.0` production release должен идти из ветки `main`, dev/staging — из `preview`.
 - Docker Compose stack запущен: PostgreSQL, backend и frontend healthy.
 - Frontend опубликован локально как `127.0.0.1:3001`, backend как `127.0.0.1:8000`.
 - Nginx reverse proxy обслуживает `https://deltagrid.pro` и `https://www.deltagrid.pro`.
 - Let's Encrypt сертификат выпущен для `deltagrid.pro` и `www.deltagrid.pro`; автообновление `certbot renew --dry-run` прошло успешно.
 - `BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh` прошёл успешно.
 - Cloudflare proxy включён, SSL mode установлен в `Full (strict)`, API и WebSocket `/api/v1/stream/ws` проверены через Cloudflare edge.
-- Первый ручной `scripts/sync-market-data.sh` выполнен: Binance public market data записаны в PostgreSQL, `/api/v1/data/health` через домен показывает `binance healthy` и ненулевые `row_counts`.
-- Multi-provider sync расширен до CoinGlass v4 и CoinGecko-derived basis snapshots; `/etc/cron.d/deltagrid-market-sync` установлен и cron service активен.
+- Primary CEX perp provider переключён на OKX USDT Swap из-за Binance HTTP `451` на VPS; CoinGlass запросы идут с `exchange_list=OKX`.
+- 72h/7d backfill BTC/ETH/SOL по `1m/5m/1h` выполнен без gaps; `/api/v1/data/coverage` и `/api/v1/data/universe` доступны для production readiness.
+- Multi-provider sync включает OKX, CoinGlass v4 и CoinGecko-derived basis snapshots; `/etc/cron.d/deltagrid-market-sync` установлен и cron service активен.
 
 Для Windows/PowerShell:
 

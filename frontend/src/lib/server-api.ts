@@ -23,6 +23,9 @@ export async function fetchServerApi<T>(path: string): Promise<ApiResponse<T> | 
   try {
     const response = await fetch(`${apiBaseUrl()}${requestPath}`, {
       cache: "no-store",
+      headers: {
+        "User-Agent": "DeltaGridFrontend/1.0",
+      },
       signal: controller.signal,
     });
     if (!response.ok) return null;

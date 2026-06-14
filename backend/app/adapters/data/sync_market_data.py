@@ -1,7 +1,8 @@
 """Production-safe market data sync command.
 
-Fetches recent Binance USD-M public market data and writes it to the configured
-database. This is intentionally a small CLI command, not a background scheduler.
+Fetches recent public market data from the configured primary perp provider and
+writes it to the configured database. This is intentionally a small CLI command,
+not a background scheduler.
 """
 
 import argparse
@@ -16,9 +17,11 @@ from sqlalchemy import text
 
 from app.adapters.coingecko_adapter import CoinGeckoAdapter
 from app.adapters.data.backfill_orchestrator import BackfillJob, BackfillOrchestrator
+from app.adapters.data.base_adapter import BaseDataAdapter
 from app.adapters.data.binance_adapter import BinanceAdapter
 from app.adapters.data.data_models import FundingRate, Liquidation, OpenInterest
 from app.adapters.data.data_writer import DataWriter
+from app.adapters.data.okx_adapter import OKX_MAX_CANDLES, OkxAdapter
 from app.adapters.data.rate_limiter import GlobalRateLimiter
 from app.adapters.data.symbol_mapper import SymbolMapper
 from app.services.providers.coinglass_client import CoinGlassClient
@@ -74,8 +77,9 @@ def _record_sync_run(
 
 
 async def _sync_ohlcv(
-    adapter: BinanceAdapter,
+    adapter: BaseDataAdapter,
     writer: DataWriter,
+    exchange: str,
     symbols: Iterable[str],
     intervals: Iterable[str],
     start_ms: int,
@@ -91,7 +95,7 @@ async def _sync_ohlcv(
         for interval in intervals:
             job = BackfillJob(
                 symbol=symbol,
-                exchange="binance",
+                exchange=exchange,
                 data_type="ohlcv",
                 interval=interval,
                 start_ms=start_ms,
@@ -260,16 +264,17 @@ async def _sync_coinglass_snapshots(
     writer: DataWriter,
     symbols: Iterable[str],
     timestamp_ms: int,
+    exchange_list: str,
 ) -> tuple[int, int, list[str]]:
     symbol_set = {symbol.upper() for symbol in symbols}
     client = CoinGlassClient()
     try:
-        rows = await client.get_funding_rates()
+        rows = await client.get_funding_rates(exchange_list=exchange_list)
     finally:
         await client.close()
 
     if not rows:
-        return 0, 0, ["coinglass snapshots: no data returned"]
+        return 0, 0, [f"coinglass snapshots {exchange_list}: no data returned"]
 
     filtered = [
         row
@@ -311,7 +316,7 @@ async def _sync_coinglass_snapshots(
     inserted = writer.upsert_funding(funding_rows)
     inserted += writer.upsert_oi(oi_rows)
     fetched = len(filtered) * 2
-    logger.info("coinglass snapshots fetched=%s inserted=%s", fetched, inserted)
+    logger.info("coinglass snapshots %s fetched=%s inserted=%s", exchange_list, fetched, inserted)
     return fetched, inserted, []
 
 
@@ -319,6 +324,7 @@ async def _sync_coingecko_basis(
     writer: DataWriter,
     symbols: Iterable[str],
     timestamp_ms: int,
+    perp_exchange: str,
 ) -> tuple[int, int, list[str]]:
     mapper = SymbolMapper()
     cg_ids_by_symbol: dict[str, str] = {}
@@ -352,7 +358,7 @@ async def _sync_coingecko_basis(
 
     for symbol, cg_id in cg_ids_by_symbol.items():
         spot_price = spot_by_cg_id.get(cg_id)
-        perp_price = writer.get_latest_ohlcv_close(symbol, "binance", "1m")
+        perp_price = writer.get_latest_ohlcv_close(symbol, perp_exchange, "1m")
         if not spot_price or not perp_price:
             errors.append(f"coingecko basis {symbol}: missing spot or perp price")
             continue
@@ -360,7 +366,7 @@ async def _sync_coingecko_basis(
         basis_rows.append(
             {
                 "symbol": symbol,
-                "exchange": "binance",
+                "exchange": perp_exchange,
                 "spot_price": float(spot_price),
                 "perp_price": float(perp_price),
                 "basis_pct": basis_pct,
@@ -375,7 +381,7 @@ async def _sync_coingecko_basis(
 
 
 async def _sync_funding(
-    adapter: BinanceAdapter,
+    adapter: BaseDataAdapter,
     writer: DataWriter,
     symbols: Iterable[str],
     start_ms: int,
@@ -400,7 +406,7 @@ async def _sync_funding(
 
 
 async def _sync_oi(
-    adapter: BinanceAdapter,
+    adapter: BaseDataAdapter,
     writer: DataWriter,
     symbols: Iterable[str],
     interval: str,
@@ -424,7 +430,7 @@ async def _sync_oi(
 
 
 async def _sync_long_short(
-    adapter: BinanceAdapter,
+    adapter: BaseDataAdapter,
     writer: DataWriter,
     symbols: Iterable[str],
     interval: str,
@@ -455,6 +461,8 @@ async def _sync_liquidations(
     start_ms: int,
     end_ms: int,
     interval: str,
+    exchange: str,
+    exchange_list: str,
 ) -> tuple[int, int, list[str]]:
     fetched = 0
     inserted = 0
@@ -472,7 +480,7 @@ async def _sync_liquidations(
             try:
                 rows = await client.get_liquidation_aggregated_history(
                     symbol=provider_symbol,
-                    exchange_list="Binance",
+                    exchange_list=exchange_list,
                     interval=interval,
                     start_time=start_ms,
                     end_time=end_ms,
@@ -483,7 +491,7 @@ async def _sync_liquidations(
                     logger.warning(message)
                     continue
 
-                liquidations = _normalize_coinglass_liquidations(symbol, rows, exchange="binance")
+                liquidations = _normalize_coinglass_liquidations(symbol, rows, exchange=exchange)
                 fetched += len(rows)
                 inserted += writer.upsert_liquidations(liquidations)
                 logger.info(
@@ -503,14 +511,42 @@ async def _sync_liquidations(
     return fetched, inserted, errors
 
 
+def _create_primary_adapter(provider: str, rate_limiter: GlobalRateLimiter, use_mock: bool) -> BaseDataAdapter:
+    normalized = provider.strip().lower()
+    if normalized == "binance":
+        return BinanceAdapter(rate_limiter=rate_limiter, use_mock=use_mock)
+    if normalized == "okx":
+        if use_mock:
+            logger.warning("--use-mock is only supported by BinanceAdapter; using live OKX public API")
+        return OkxAdapter(rate_limiter=rate_limiter)
+    raise ValueError(f"Unsupported primary perp provider: {provider}")
+
+
+def _coinglass_exchange_list(provider: str) -> str:
+    mapping = {
+        "binance": "Binance",
+        "okx": "OKX",
+    }
+    return mapping.get(provider.lower(), provider.upper())
+
+
 async def run(args: argparse.Namespace) -> int:
     symbols = _csv(args.symbols)
     intervals = _csv_lower(args.ohlcv_intervals)
     now_ms = int(time.time() * 1000)
     start_ms = now_ms - int(args.lookback_hours * 60 * 60 * 1000)
+    primary_provider = args.primary_perp_provider.strip().lower()
+    chunk_size = args.chunk_size
+    if primary_provider == "okx" and chunk_size > OKX_MAX_CANDLES:
+        logger.info("Reducing OKX OHLCV chunk size from %s to %s", chunk_size, OKX_MAX_CANDLES)
+        chunk_size = OKX_MAX_CANDLES
 
     writer = DataWriter()
-    adapter = BinanceAdapter(rate_limiter=GlobalRateLimiter(), use_mock=args.use_mock)
+    adapter = _create_primary_adapter(
+        primary_provider,
+        rate_limiter=GlobalRateLimiter(),
+        use_mock=args.use_mock,
+    )
 
     try:
         total_fetched = 0
@@ -520,18 +556,19 @@ async def run(args: argparse.Namespace) -> int:
         fetched, inserted, errors = await _sync_ohlcv(
             adapter,
             writer,
+            primary_provider,
             symbols,
             intervals,
             start_ms,
             now_ms,
-            args.chunk_size,
+            chunk_size,
         )
         total_fetched += fetched
         total_inserted += inserted
         all_errors.extend(errors)
         _record_sync_run(
             writer,
-            "binance",
+            primary_provider,
             "ohlcv",
             "completed" if not errors else "partial",
             start_ms,
@@ -548,7 +585,7 @@ async def run(args: argparse.Namespace) -> int:
             all_errors.extend(errors)
             _record_sync_run(
                 writer,
-                "binance",
+                primary_provider,
                 "funding_rates",
                 "completed" if not errors else "partial",
                 start_ms,
@@ -565,7 +602,7 @@ async def run(args: argparse.Namespace) -> int:
             all_errors.extend(errors)
             _record_sync_run(
                 writer,
-                "binance",
+                primary_provider,
                 "open_interest",
                 "completed" if not errors else "partial",
                 start_ms,
@@ -589,7 +626,7 @@ async def run(args: argparse.Namespace) -> int:
             all_errors.extend(errors)
             _record_sync_run(
                 writer,
-                "binance",
+                primary_provider,
                 "long_short_ratio",
                 "completed" if not errors else "partial",
                 start_ms,
@@ -606,6 +643,8 @@ async def run(args: argparse.Namespace) -> int:
                 start_ms,
                 now_ms,
                 args.liquidation_interval,
+                primary_provider,
+                _coinglass_exchange_list(primary_provider),
             )
             total_fetched += fetched
             total_inserted += inserted
@@ -623,7 +662,12 @@ async def run(args: argparse.Namespace) -> int:
             )
 
         if args.include_coinglass:
-            fetched, inserted, errors = await _sync_coinglass_snapshots(writer, symbols, now_ms)
+            fetched, inserted, errors = await _sync_coinglass_snapshots(
+                writer,
+                symbols,
+                now_ms,
+                _coinglass_exchange_list(primary_provider),
+            )
             total_fetched += fetched
             total_inserted += inserted
             all_errors.extend(errors)
@@ -640,7 +684,12 @@ async def run(args: argparse.Namespace) -> int:
             )
 
         if args.include_coingecko_basis:
-            fetched, inserted, errors = await _sync_coingecko_basis(writer, symbols, now_ms)
+            fetched, inserted, errors = await _sync_coingecko_basis(
+                writer,
+                symbols,
+                now_ms,
+                primary_provider,
+            )
             total_fetched += fetched
             total_inserted += inserted
             all_errors.extend(errors)
@@ -669,14 +718,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lookback-hours", type=float, default=24.0, help="Historical window to fetch.")
     parser.add_argument("--chunk-size", type=int, default=1000, help="OHLCV candles per request.")
     parser.add_argument("--derived-interval", default="1h", help="Interval for OI and long/short endpoints.")
+    parser.add_argument(
+        "--primary-perp-provider",
+        choices=("okx", "binance"),
+        default="okx",
+        help="Primary CEX perp provider for OHLCV, funding, OI, long/short and basis.",
+    )
     parser.add_argument("--include-funding", action="store_true", help="Fetch funding-rate history.")
     parser.add_argument("--include-open-interest", action="store_true", help="Fetch open-interest history.")
     parser.add_argument("--include-long-short", action="store_true", help="Fetch long/short account ratio.")
     parser.add_argument("--include-liquidations", action="store_true", help="Fetch CoinGlass aggregated liquidation history.")
     parser.add_argument("--liquidation-interval", default="1h", help="Interval for CoinGlass liquidation history.")
     parser.add_argument("--include-coinglass", action="store_true", help="Fetch CoinGlass v4 funding/OI snapshots.")
-    parser.add_argument("--include-coingecko-basis", action="store_true", help="Write CoinGecko spot vs Binance perp basis snapshots.")
-    parser.add_argument("--use-mock", action="store_true", help="Use deterministic mock OHLCV instead of Binance.")
+    parser.add_argument("--include-coingecko-basis", action="store_true", help="Write CoinGecko spot vs primary perp basis snapshots.")
+    parser.add_argument("--use-mock", action="store_true", help="Use deterministic mock OHLCV for Binance diagnostic runs.")
     return parser.parse_args()
 
 

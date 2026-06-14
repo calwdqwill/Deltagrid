@@ -20,7 +20,7 @@ const routeTabs: Array<{ match: (path: string) => boolean; tab: WorkspaceTab }> 
   },
   {
     match: (path) => path.startsWith("/assets"),
-    tab: { id: "asset-sol", label: "SOL", href: "/assets", context: "Asset Deep Dive" },
+    tab: { id: "assets", label: "Assets", href: "/assets", context: "Deep Dive" },
   },
   {
     match: (path) => path.startsWith("/funding"),
@@ -36,11 +36,11 @@ const routeTabs: Array<{ match: (path: string) => boolean; tab: WorkspaceTab }> 
   },
   {
     match: (path) => path.startsWith("/charts"),
-    tab: { id: "charts", label: "Charts", href: "/charts", context: "Placeholder" },
+    tab: { id: "charts", label: "Charts", href: "/charts", context: "Live Streams" },
   },
   {
     match: (path) => path.startsWith("/strategy-lab"),
-    tab: { id: "strategy-backtest-1", label: "Backtest #1", href: "/strategy-lab", context: "Strategy Lab" },
+    tab: { id: "strategy-lab", label: "Strategy Lab", href: "/strategy-lab", context: "Readiness" },
   },
 ];
 

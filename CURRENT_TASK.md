@@ -1,8 +1,99 @@
 # Current Task — DeltaGrid
 
-**Phase**: Production-ready MVP hardening ✅ PostgreSQL runtime READY
-**Status**: Backend persistence переведён на PostgreSQL через `DATABASE_URL`, Alembic и Docker Compose. Production deploy на `deltagrid.pro` выполнен, Cloudflare proxy работает в `Full (strict)`. Market data sync расширен до Binance, CoinGlass v4, CoinGlass aggregated liquidation history и CoinGecko-derived basis snapshots. Frontend Market Overview, Assets, Funding, Charts, Market Matrix, Arbitrage Scanner и Data Health подключены к live backend/data-layer; Strategy Lab показывает live input readiness без fake backtest results.
-**Last Updated**: 2026-06-05
+**Phase**: MVP1 — Data Quality Gate и provider reliability
+**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Текущая ops-задача — зафиксировать working production baseline `v1.3.0` в GitHub, разделить `preview`/`main` и подготовить CI/CD.
+**Last Updated**: 2026-06-14
+
+## Обновление 2026-06-14 — Release baseline и CI/CD
+
+- Добавлены `VERSION=1.3.0` и `RELEASES.md`.
+- Frontend package version поднят до `1.3.0`.
+- Добавлены GitHub Actions workflows: `CI`, `Deploy Preview`, `Deploy Production`.
+- Branch policy: `preview` — dev/staging, `main` — production.
+- Deploy workflows используют SSH secrets и безопасно пропускают deploy, если secrets ещё не настроены.
+
+## Обновление 2026-06-14 — Production universe v1
+
+- Добавлен `GET /api/v1/data/universe`: derived read-only policy view поверх coverage/freshness.
+- `/api/v1/data/health` теперь возвращает блок `universe`, а `/data-health` показывает таблицу `Production Universe`.
+- Статусы universe: `complete_history`, `core_perp_ready`, `partial_history`, `not_ready`.
+- MVP1 policy: symbol попадает в primary UI universe только если chart-critical streams покрыты, freshness зелёный и нет missing tracked streams.
+- Fix задеплоен на `deltagrid.pro`; production показывает `core_perp_ready=3`, `chart_ready=3`, `ui_universe=BTC/ETH/SOL`, `deferred_symbols=[]`.
+- Partial enrichment streams для всех трёх symbols: `open_interest:1h`, `basis_premium:snapshot`, `spot_perp_price:snapshot`; missing streams нет.
+- Локальная проверка: backend `pytest` — `26 passed`; frontend `npm run build` проходит.
+
+## Обновление 2026-06-14 — Coverage matrix
+
+- Добавлен `GET /api/v1/data/coverage` для read-only инвентаризации покрытия истории по `symbol + exchange + stream + interval`.
+- `/api/v1/data/health` теперь возвращает поле `coverage`, а `/data-health` показывает KPI `Coverage` и таблицу `Coverage Matrix`.
+- Матрица считает OHLCV, funding, OI, long/short, liquidations, basis и `spot_perp_price`; для sparse `liquidations` учитывается свежий `coinglass/liquidations` sync-run.
+- Fix задеплоен на `deltagrid.pro`; production `24h` coverage показывает `27/27`, `7d` coverage показывает `18 covered / 9 partial / 0 missing`.
+- Partial `7d` coverage сейчас у `open_interest` и `basis/spot_perp_price`, поэтому production universe v1 нужно формировать с явным разделением complete-history и partial-history активов/потоков.
+- Локальная проверка: backend `pytest` — `25 passed`; `compileall app` проходит; frontend `npm run build` проходит.
+
+## Обновление 2026-06-14 — Sparse liquidation freshness
+
+- После ночи production health показал `freshness.summary={fresh:23, stale:1, degraded:0}`; stale был только `SOL / okx / liquidations / 1h`.
+- Диагностика показала, что `coinglass/liquidations` sync свежий и `healthy`, а stale возник из-за отсутствия свежих SOL liquidation events, то есть это sparse event stream, а не сбой ingestion.
+- Локально реализована правка: `liquidations` freshness учитывает свежесть последнего `coinglass/liquidations` sync-run; `/data-health` показывает `event age / sync age`.
+- Fix задеплоен на `deltagrid.pro`; production `/api/v1/data/health` снова даёт `fresh=24/stale=0/degraded=0`, если sync свежий.
+
+## Обновление 2026-06-14 — OHLCV window endpoint
+
+- Добавлен и задеплоен `GET /api/v1/data/ohlcv/window` для Charts v0: один backend-запрос возвращает окно `2h/8h/24h/7d` по `1m/5m/1h`, anchored от последней доступной свечи.
+- `/charts` переключён на новый endpoint, а старая постраничная сборка через `/data/ohlcv` оставлена fallback path.
+- Production проверка: `/api/v1/data/ohlcv/window?...range=7d` отдаёт `10080/10080` строк, `/charts?symbol=BTC&interval=1m&range=7d` рендерит canvas и показывает `10,080` свечей.
+
+## Обновление 2026-06-13 — Interactive Charts v0
+
+- Локально реализован первый слой `/charts` на `lightweight-charts`: свечи OKX USDT Swap, volume histogram, crosshair OHLC/volume панель, pan/zoom/scroll, выбор символа, интервала и диапазона.
+- Для `7d`/`1m` окно собирается постранично через существующий `/api/v1/data/ohlcv` без изменения backend API. Окно строится от последней доступной свечи в PostgreSQL.
+- Browser QA через SSH tunnel к production backend подтвердил desktop `BTC 1m 7d` (`10,080` свечей) и mobile `ETH 5m 24h` (`288` свечей); мобильная ширина исправлена скрытием sidebar на малых viewport.
+- Charts v0 задеплоен на `deltagrid.pro`; domain smoke и Browser QA прошли для desktop `BTC 1m 7d` и mobile `ETH 5m 24h`.
+- Следующий безопасный шаг: решить, нужен ли отдельный backend window endpoint для более чистой пагинации, и отдельно спланировать upgrade `next` до patched версии.
+
+## Обзор 2026-06-13
+
+- Public smoke-check зелёный: `https://deltagrid.pro`, `/api/v1/health`, `/api/v1/health/readiness`, `/api/v1/data/health` и frontend отвечают.
+- Серверные контейнеры healthy: backend, frontend и PostgreSQL работают через production compose stack.
+- Host-level cron активен: `/etc/cron.d/deltagrid-market-sync` запускает `scripts/sync-market-data.sh` каждые 15 минут с `--lookback-hours 2`.
+- Data-layer rows на момент аудита: `ohlcv=41000`, `funding_rates=2340`, `open_interest=4260`, `liquidations=1193`, `long_short_ratio=564`, `basis_premium=2271`, `provider_sync_runs=5260`.
+- Свежие потоки: CoinGlass snapshots и CoinGecko basis обновлялись примерно за 12 минут до аудита; CoinGlass liquidations — примерно за 1 час.
+- Stale потоки: Binance OHLCV/funding/OI/L/S по BTC/ETH/SOL застряли примерно на `2026-06-11 16:00–21:14 UTC`.
+- Причина по логам cron: `https://fapi.binance.com` возвращает HTTP `451`, после чего circuit breaker открывается и остальные Binance-запросы завершаются partial.
+- Локальная проверка текущего дерева: backend tests `19 passed`, `compileall app` проходит, frontend `npm run build` проходит с `BACKEND_INTERNAL_URL=https://deltagrid.pro`.
+- Принятое решение: не ставить VPN/proxy на сервер; использовать OKX как primary CEX perp provider, CoinGlass/CoinGecko оставить enrichment/cross-check слоями, Binance оставить legacy/diagnostic.
+- Реализация OKX primary локально: backend tests `19 passed`, frontend build проходит, local OKX sync smoke записал BTC 1m candles/OI/L/S без ошибок.
+- Production deploy OKX primary выполнен: backend/frontend пересобраны на `deltagrid.pro`, контейнеры healthy, backup изменяемых файлов сохранён на сервере в `/tmp/deltagrid-okx-predeploy-20260612_233017.tgz`.
+- Ручной OKX sync `BTC,ETH,SOL` за 24 часа завершился `fetched=5421`, `inserted=5439`, `errors=0`; cron-path без явного provider flag тоже завершился `errors=0` и пишет OKX endpoints, CoinGlass liquidations `OKX` и CoinGlass snapshots `OKX` в `/var/log/deltagrid-market-sync.log`.
+- `/api/v1/data/health` после деплоя показывает `okx healthy`; production row counts: `ohlcv=46277`, `funding_rates=2373`, `open_interest=4299`, `liquidations=1288`, `long_short_ratio=636`, `basis_premium=2295`, `provider_sync_runs=5316`.
+- `/api/v1/data/health` расширен полями `freshness`, `sync_health_by_type` и `sync_diagnostics`; `/data-health` показывает freshness SLA, cron-path и error classes без изменения старых полей ответа.
+- Production deploy data quality gate выполнен на `deltagrid.pro`; backend/frontend пересобраны, контейнеры healthy, локальный и доменный `server-smoke.sh` проходят.
+- Production `/api/v1/data/health` после backfill показывает `freshness.summary={fresh:24, stale:0, degraded:0, total:24}`, cron-path `healthy`, OKX/CoinGlass/CoinGecko `healthy`, Binance `degraded` только как legacy/diagnostic из-за HTTP `451`.
+- Первый host-level cron после деплоя и 7d backfill сработал в `2026-06-13 00:15 UTC` и завершился `fetched=465`, `inserted=460`, `errors=0`; финальный health после cron показывает `row_counts.ohlcv=77819` и `provider_sync_runs=5351`.
+- 72h backfill BTC/ETH/SOL через OKX завершён `fetched=16239`, `inserted=16308`, `errors=0`; независимая SQL-проверка показала `4320/864/72` строк по `1m/5m/1h` на каждый символ и `gaps=0`.
+- 7d backfill BTC/ETH/SOL через OKX завершён `fetched=37875`, `inserted=38103`, `errors=0`; независимая SQL-проверка показала `10080/2016/168` строк по `1m/5m/1h` на каждый символ и `gaps=0`.
+
+## MVP1 — ближайший рабочий план
+
+- [x] P0: решить production path для CEX candles/funding/OI/L/S после Binance `451`: выбран OKX primary.
+- [x] P0: добавить `OkxAdapter` и переключить sync/frontend defaults на `okx`.
+- [x] P0: задеплоить OKX primary flow на `deltagrid.pro` и выполнить ручной sync `BTC,ETH,SOL`.
+- [x] P0: выполнить контрольный 24h backfill BTC/ETH/SOL по `1m/5m/1h` через OKX и проверить `gaps=0` в sync-логах.
+- [x] P0: добавить freshness SLA в `/api/v1/data/health` по потокам, символам и интервалам.
+- [x] P0: разделить provider health по `sync_type`, чтобы отдельно видеть OHLCV, funding, OI, long/short, liquidations и basis.
+- [x] P0: добавить cron/data-sync diagnostics в backend/API и `/data-health`.
+- [x] P0: задеплоить data quality gate на production и проверить `/api/v1/data/health` через `deltagrid.pro`.
+- [x] P1: расширить backfill до 72h/7d и проверить gaps перед interactive charts.
+- [x] P1: после data quality gate перейти к `lightweight-charts` и собрать локальный Charts v0.
+- [x] P1: задеплоить Charts v0 на production и проверить `/charts` через домен.
+- [x] P1: оценить backend OHLCV window endpoint вместо клиентской постраничной сборки 7d/1m.
+- [x] P1: задеплоить sparse liquidation freshness fix и проверить `/data-health`.
+- [x] P1: задеплоить OHLCV window endpoint и переключение `/charts`.
+- [x] P1: добавить coverage matrix для BTC/ETH/SOL по OHLCV/funding/OI/long-short/liquidations/basis/spot-perp.
+- [x] P1: сформировать production universe v1 на основе coverage matrix.
+- [ ] P1: провести provider inventory для расширения universe за пределы BTC/ETH/SOL.
+- [ ] P2: backtest engine и scheduler делать только после стабилизации исторических рядов.
 
 ## PostgreSQL MVP Summary — 2026-06-05
 
@@ -93,7 +184,8 @@
 
 ## Следующая frontend-итерация
 
-- [ ] Подключить `lightweight-charts` и реализовать полноценный Charts screen.
+- [x] Подключить `lightweight-charts` и реализовать первый production-oriented Charts v0.
+- [x] Задеплоить Charts v0 на `deltagrid.pro` и пройти visual/smoke QA.
 - [x] Подключить Funding/Data Health к backend/data-layer endpoint'ам.
 - [x] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам или честным pending/readiness states.
 - [ ] Реализовать live Perp DEX venue adapter.
