@@ -79,6 +79,22 @@ jobs:
           chmod 600 ~/.ssh/deltagrid_preview_key
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
+      - name: Test preview SSH login
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          ssh -i ~/.ssh/deltagrid_preview_key -o BatchMode=yes "$SSH_USER@$SSH_HOST" "echo preview ssh ok"
+
+      - name: Check preview app directory
+        if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
+        run: |
+          ssh -i ~/.ssh/deltagrid_preview_key -o BatchMode=yes "$SSH_USER@$SSH_HOST" "
+            set -e
+            test -d '$APP_DIR'
+            cd '$APP_DIR'
+            test -f scripts/deploy-compose-stack.sh
+            git status --short --branch
+          "
+
       - name: Deploy preview
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
