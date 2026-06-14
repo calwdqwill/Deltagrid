@@ -25,6 +25,7 @@
 - Подготовлен чеклист GitHub Actions deploy secrets: `deploy/github-actions-secrets.md`; сами secrets ещё нужно добавить в GitHub.
 - Dedicated SSH deploy key создан локально в `outputs/deploy-keys/github-actions-deltagrid-deploy`; public key добавлен на VPS, non-interactive login проверен.
 - `main` и `preview` синхронизированы на ops commit `104502e`, чтобы default-branch GitHub Actions использовал актуальные deploy workflows. Production checkout `/opt/deltagrid` fast-forward обновлён без пересборки контейнеров; smoke-check прошёл.
+- CI/CD probe `fdb08ec` подтвердил: preview CI проходит, `Deploy Preview` workflow запускается, но deploy делает safe-skip на шаге `Skip when preview secrets are not configured`. Значит GitHub secrets `PREVIEW_*` ещё отсутствуют или заполнены не полностью.
 - Восстановлен отсутствующий `AGENTS.md` с проектными правилами для Codex/AI-агентов.
 
 ## Обновление 2026-06-14 — Production universe v1
