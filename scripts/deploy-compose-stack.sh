@@ -27,6 +27,34 @@ compose() {
   fi
 }
 
+wait_for_service() {
+  service="$1"
+  timeout_seconds="${2:-180}"
+  elapsed_seconds=0
+
+  printf 'Waiting for %s to become healthy ...\n' "$service"
+
+  while [ "$elapsed_seconds" -lt "$timeout_seconds" ]; do
+    container_id="$(compose ps -q "$service")"
+
+    if [ -n "$container_id" ]; then
+      status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container_id" 2>/dev/null || true)"
+
+      if [ "$status" = "healthy" ]; then
+        printf '%s ... healthy\n' "$service"
+        return 0
+      fi
+    fi
+
+    sleep 3
+    elapsed_seconds=$((elapsed_seconds + 3))
+  done
+
+  printf '%s did not become healthy within %s seconds.\n' "$service" "$timeout_seconds"
+  compose logs --tail=80 "$service" || true
+  exit 1
+}
+
 backend_port="${BACKEND_HOST_PORT:-$(read_env_value BACKEND_HOST_PORT)}"
 frontend_port="${FRONTEND_HOST_PORT:-$(read_env_value FRONTEND_HOST_PORT)}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${backend_port:-8000}}"
@@ -38,5 +66,9 @@ git pull --ff-only "$REMOTE" "$BRANCH"
 
 compose config >/dev/null
 compose up -d --build backend frontend
+
+wait_for_service postgres 120
+wait_for_service backend 180
+wait_for_service frontend 180
 
 BASE_URL="$BASE_URL" FRONTEND_URL="$FRONTEND_URL" sh scripts/server-smoke.sh

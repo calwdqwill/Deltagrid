@@ -4,6 +4,7 @@
 - Добавлен `.env.preview.example` для отдельного dev/staging стенда: `preview.deltagrid.pro`, ports `8011/3012`, отдельные PostgreSQL credentials и runtime tuning.
 - `.gitignore` дополнен `.env.preview`, чтобы реальные preview secrets не попадали в Git.
 - Добавлен общий `scripts/deploy-compose-stack.sh`, который делает `git pull --ff-only`, запускает нужный Compose project и прогоняет smoke-check для выбранного стенда.
+- `scripts/deploy-compose-stack.sh` ждёт healthcheck `postgres`, `backend` и `frontend` перед smoke-check, чтобы deploy не падал на race condition сразу после старта frontend.
 - `scripts/sync-market-data.sh` теперь поддерживает `COMPOSE_PROJECT_NAME`, чтобы market sync можно было запускать против preview stack без риска затронуть production containers/volume.
 - GitHub workflows `Deploy Preview` и `Deploy Production` переведены на общий deploy script и разные defaults: preview использует `.env.preview`/`deltagrid-preview`/`8011/3012`, production использует `.env.production`/`deltagrid`/`8000/3001`.
 - Документация обновлена под dev/prod разделение: `README.md`, `DEPLOYMENT.md`, `RELEASES.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `CURRENT_TASK.md`, `BACKLOG.md`.
