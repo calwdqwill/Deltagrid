@@ -21,6 +21,9 @@
 - Выполнен 7d OKX/CoinGlass/CoinGecko sync BTC/ETH/SOL в preview БД: `errors=0`, OHLCV gaps по логам `0`.
 - Preview `/api/v1/data/health`: OKX/CoinGlass/CoinGecko `healthy`, freshness `24/0/24`, `core_perp_ready=3`, `chart_ready=3`.
 - Preview пока не опубликован через DNS/Nginx; внешний доступ к `3012` не открыт.
+- Подготовлены preview publication assets: `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh`, `deploy/dns/preview.deltagrid.pro.md`.
+- Подготовлен чеклист GitHub Actions deploy secrets: `deploy/github-actions-secrets.md`; сами secrets ещё нужно добавить в GitHub.
+- Восстановлен отсутствующий `AGENTS.md` с проектными правилами для Codex/AI-агентов.
 
 ## Обновление 2026-06-14 — Production universe v1
 

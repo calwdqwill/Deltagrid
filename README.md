@@ -148,6 +148,7 @@ GitHub Actions:
 - `Deploy Production` деплоит `main`, если настроены `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`.
 
 Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
+Подробный чеклист secrets: [deploy/github-actions-secrets.md](deploy/github-actions-secrets.md).
 
 Рекомендуемая схема стендов на VPS:
 
@@ -156,7 +157,7 @@ GitHub Actions:
 
 Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview.
 
-Текущее preview-состояние от 2026-06-14: stack поднят локально на VPS, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Внешний DNS/Nginx для `preview.deltagrid.pro` ещё не настроен.
+Текущее preview-состояние от 2026-06-14: stack поднят локально на VPS, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Внешний DNS/Nginx для `preview.deltagrid.pro` ещё не настроен; подготовлены `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh` и DNS-чеклист [deploy/dns/preview.deltagrid.pro.md](deploy/dns/preview.deltagrid.pro.md).
 
 Для ручной загрузки свежих market data в production PostgreSQL:
 

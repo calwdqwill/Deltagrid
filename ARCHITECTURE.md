@@ -62,6 +62,8 @@ GitHub branch boundary после baseline `v1.3.0`: `preview` использу�
 
 Dev/prod разделение не требует отдельной архитектуры приложения: оба стенда используют один `docker-compose.prod.yml`, но разные директории, env-файлы, host ports и Compose project names. Production использует `/opt/deltagrid`, `.env.production`, project `deltagrid`, ports `8000/3001`; preview использует `/opt/deltagrid-preview`, `.env.preview`, project `deltagrid-preview`, ports `8011/3012`. Это разделяет контейнеры, PostgreSQL volumes и deploy cadence без изменения backend/frontend контрактов.
 
+Для публикации preview подготовлен отдельный Nginx template `deploy/nginx/deltagrid-preview.conf.example`: `preview.deltagrid.pro` проксирует frontend на `127.0.0.1:3012`, API и WebSocket на `127.0.0.1:8011`. Скрипт `scripts/configure-preview-nginx-ssl.sh` включает site `deltagrid-preview` и выпускает отдельный Let's Encrypt сертификат после DNS-precheck, не затрагивая production site `deltagrid`.
+
 ## Миграции
 
 Схема управляется через `backend/app/persistence/migrations`.

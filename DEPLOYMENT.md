@@ -67,6 +67,7 @@ GitHub Actions:
 - `Deploy Production` деплоит `main`, если настроены `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`.
 
 Если SSH secrets ещё не заведены, deploy workflow завершится успешным skip и не будет ломать CI.
+Подробный чеклист создания dedicated SSH key и заполнения repository secrets: `deploy/github-actions-secrets.md`.
 
 Опциональные secrets позволяют явно переопределить env-файл, Compose project и smoke URLs:
 
@@ -94,7 +95,7 @@ BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh s
 - Compose project `deltagrid-preview` поднял отдельные containers и PostgreSQL volume;
 - backend доступен только локально на `127.0.0.1:8011`, frontend — на `127.0.0.1:3012`;
 - 7d BTC/ETH/SOL sync в preview БД завершён без ошибок, local smoke-check проходит;
-- DNS/Nginx для `preview.deltagrid.pro` ещё не настроены.
+- DNS/Nginx для `preview.deltagrid.pro` ещё не настроены, но подготовлены `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh` и `deploy/dns/preview.deltagrid.pro.md`.
 
 ## Подготовка env
 
@@ -337,6 +338,23 @@ server {
     }
 }
 ```
+
+## Reverse proxy для preview
+
+Preview использует отдельные upstream-порты и отдельный Nginx site:
+
+- `https://preview.deltagrid.pro/` → `127.0.0.1:3012`
+- `https://preview.deltagrid.pro/api/` → `127.0.0.1:8011/api/`
+- `wss://preview.deltagrid.pro/api/v1/stream/ws` → `127.0.0.1:8011/api/v1/stream/ws`
+
+Перед выпуском SSL добавьте DNS-запись из `deploy/dns/preview.deltagrid.pro.md`. Когда `preview.deltagrid.pro` начал резолвиться, выполните на VPS:
+
+```bash
+cd /opt/deltagrid-preview
+sudo LETSENCRYPT_EMAIL=you@example.com sh scripts/configure-preview-nginx-ssl.sh
+```
+
+Скрипт делает DNS-precheck, включает site `deltagrid-preview`, выпускает сертификат только для `preview.deltagrid.pro` и не трогает production site `deltagrid`.
 
 Если используете ручную настройку Nginx, после неё выпустите SSL-сертификат через Certbot. `PUBLIC_APP_URL`/`CORS_ORIGINS` уже должны указывать на `https://deltagrid.pro`.
 

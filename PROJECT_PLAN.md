@@ -13,6 +13,7 @@
 - Deploy workflows используют SSH secrets и не выполняют deploy, если secrets ещё не настроены.
 - Подготовлено dev/prod разделение на уровне deployment: production `/opt/deltagrid` + `.env.production` + ports `8000/3001`, preview `/opt/deltagrid-preview` + `.env.preview` + ports `8011/3012`.
 - Preview/dev stack поднят на VPS локально: отдельный Compose project `deltagrid-preview`, отдельная PostgreSQL БД, smoke-check зелёный, 7d BTC/ETH/SOL data sync выполнен без ошибок.
+- Подготовлены runbook'и для следующего ops-шагa: `deploy/github-actions-secrets.md` для GitHub deploy secrets и `deploy/dns/preview.deltagrid.pro.md` для публикации preview-домена через Nginx/SSL.
 
 ## Что уже готово
 
@@ -166,6 +167,8 @@
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
 - [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
+- [ ] Добавить DNS-запись `preview.deltagrid.pro` и включить preview Nginx/SSL через `scripts/configure-preview-nginx-ssl.sh`.
+- [ ] Добавить GitHub repository secrets `PREVIEW_*` и `PROD_*`, чтобы deploy workflows перестали делать skip.
 - [x] Подключить Funding/Data Health frontend screens к backend/data-layer endpoint'ам.
 - [x] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам или честным pending/readiness states.
 - [x] Задеплоить live data SSR fix и проверить `/charts`, `/market-matrix`, `/arbitrage-scanner`, `/strategy-lab` через Cloudflare.

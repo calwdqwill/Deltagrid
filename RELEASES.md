@@ -11,6 +11,11 @@
 - preview stack: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, local ports `8011/3012`;
 - production stack: `/opt/deltagrid`, `.env.production`, Compose project `deltagrid`, local ports `8000/3001`.
 
+Операционные чеклисты:
+
+- `deploy/github-actions-secrets.md` — GitHub Actions secrets для auto-deploy;
+- `deploy/dns/preview.deltagrid.pro.md` — DNS/Nginx/SSL публикация preview-домена.
+
 ## Версионирование
 
 Используем SemVer:

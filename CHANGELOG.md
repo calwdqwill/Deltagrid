@@ -1,5 +1,14 @@
 # Changelog — DeltaGrid
 
+## [2026-06-14] - [RELEASE/OPS] - Preview domain и deploy runbooks
+- Восстановлен `AGENTS.md` как проектный файл правил для Codex/AI-агентов; локально файла не было, хотя workflow проекта его требует.
+- Добавлен preview Nginx template `deploy/nginx/deltagrid-preview.conf.example`: frontend `127.0.0.1:3012`, backend/API/WebSocket `127.0.0.1:8011`, домен `preview.deltagrid.pro`.
+- Добавлен `scripts/configure-preview-nginx-ssl.sh` для безопасной публикации preview-домена: DNS-precheck, отдельный site `deltagrid-preview`, отдельный Let's Encrypt сертификат, без изменения production site `deltagrid`.
+- Добавлен DNS-чеклист `deploy/dns/preview.deltagrid.pro.md` с Cloudflare/DNS записью, командами проверки и smoke-check после SSL.
+- Добавлен чеклист `deploy/github-actions-secrets.md` для repository secrets `PREVIEW_*` и `PROD_*`, включая создание dedicated SSH key и проверку первого auto-deploy.
+- Документация обновлена: `README.md`, `DEPLOYMENT.md`, `RELEASES.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `CURRENT_TASK.md`, `BACKLOG.md`.
+- Фактическая проверка перед правками: `preview.deltagrid.pro` ещё не резолвится; production и preview containers на VPS находятся в состоянии `healthy`.
+
 ## [2026-06-14] - [RELEASE/OPS] - Preview stack contract
 - Добавлен `.env.preview.example` для отдельного dev/staging стенда: `preview.deltagrid.pro`, ports `8011/3012`, отдельные PostgreSQL credentials и runtime tuning.
 - `.gitignore` дополнен `.env.preview`, чтобы реальные preview secrets не попадали в Git.
