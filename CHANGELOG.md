@@ -7,6 +7,9 @@
 - `scripts/deploy-compose-stack.sh` ждёт healthcheck `postgres`, `backend` и `frontend` перед smoke-check, чтобы deploy не падал на race condition сразу после старта frontend.
 - `scripts/sync-market-data.sh` теперь поддерживает `COMPOSE_PROJECT_NAME`, чтобы market sync можно было запускать против preview stack без риска затронуть production containers/volume.
 - GitHub workflows `Deploy Preview` и `Deploy Production` переведены на общий deploy script и разные defaults: preview использует `.env.preview`/`deltagrid-preview`/`8011/3012`, production использует `.env.production`/`deltagrid`/`8000/3001`.
+- Preview stack поднят на VPS в `/opt/deltagrid-preview`: backend `127.0.0.1:8011`, frontend `127.0.0.1:3012`, PostgreSQL volume `deltagrid-preview_postgres_data`.
+- Preview 7d sync BTC/ETH/SOL завершён с `errors=0`; `/api/v1/data/health` показывает OKX/CoinGlass/CoinGecko `healthy`, freshness `24/0/24`, `core_perp_ready=3`, `chart_ready=3`.
+- Production stack после preview rollout повторно проверен через local smoke; containers остаются healthy.
 - Документация обновлена под dev/prod разделение: `README.md`, `DEPLOYMENT.md`, `RELEASES.md`, `ARCHITECTURE.md`, `PROJECT_PLAN.md`, `CURRENT_TASK.md`, `BACKLOG.md`.
 
 ## [2026-06-14] - [RELEASE/OPS] - Baseline `v1.3.0` и GitHub CI/CD

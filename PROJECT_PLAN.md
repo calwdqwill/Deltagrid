@@ -12,6 +12,7 @@
 - Добавлены GitHub Actions workflows: `CI`, `Deploy Preview`, `Deploy Production`.
 - Deploy workflows используют SSH secrets и не выполняют deploy, если secrets ещё не настроены.
 - Подготовлено dev/prod разделение на уровне deployment: production `/opt/deltagrid` + `.env.production` + ports `8000/3001`, preview `/opt/deltagrid-preview` + `.env.preview` + ports `8011/3012`.
+- Preview/dev stack поднят на VPS локально: отдельный Compose project `deltagrid-preview`, отдельная PostgreSQL БД, smoke-check зелёный, 7d BTC/ETH/SOL data sync выполнен без ошибок.
 
 ## Что уже готово
 

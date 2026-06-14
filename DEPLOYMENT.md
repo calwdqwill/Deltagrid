@@ -87,6 +87,15 @@ BRANCH=main ENV_FILE=.env.production COMPOSE_PROJECT_NAME=deltagrid sh scripts/d
 BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh scripts/deploy-compose-stack.sh
 ```
 
+Фактический preview rollout от 2026-06-14:
+
+- `/opt/deltagrid-preview` развёрнут из ветки `preview`;
+- `.env.preview` создан отдельно от production env; реальные secrets не коммитятся;
+- Compose project `deltagrid-preview` поднял отдельные containers и PostgreSQL volume;
+- backend доступен только локально на `127.0.0.1:8011`, frontend — на `127.0.0.1:3012`;
+- 7d BTC/ETH/SOL sync в preview БД завершён без ошибок, local smoke-check проходит;
+- DNS/Nginx для `preview.deltagrid.pro` ещё не настроены.
+
 ## Подготовка env
 
 Автоматический вариант для сервера:

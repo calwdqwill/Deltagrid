@@ -8,7 +8,7 @@
 - [x] Подготовить отдельный preview stack contract: `.env.preview.example`, Compose project `deltagrid-preview`, ports `8011/3012`.
 - [x] Добавить общий `scripts/deploy-compose-stack.sh` для ручного и GitHub deploy production/preview.
 - [ ] Настроить GitHub repository secrets для deploy: `PREVIEW_*` и `PROD_*`.
-- [ ] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
+- [x] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
 - [ ] Настроить DNS/Nginx для `preview.deltagrid.pro` после локального smoke preview stack.
 - [x] Перевести production `/opt/deltagrid` на чистый `main` checkout после push baseline.
 

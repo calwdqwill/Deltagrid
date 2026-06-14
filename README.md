@@ -156,6 +156,8 @@ GitHub Actions:
 
 Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview.
 
+Текущее preview-состояние от 2026-06-14: stack поднят локально на VPS, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Внешний DNS/Nginx для `preview.deltagrid.pro` ещё не настроен.
+
 Для ручной загрузки свежих market data в production PostgreSQL:
 
 ```bash

@@ -14,6 +14,14 @@
 - Production `/opt/deltagrid` переведён на clean `main`.
 - Подготовлен preview stack contract: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, ports `8011/3012`.
 
+## Обновление 2026-06-14 — Preview/dev stand
+
+- На VPS поднят отдельный preview stack в `/opt/deltagrid-preview` из ветки `preview`.
+- Preview использует отдельный `.env.preview`, Compose project `deltagrid-preview`, PostgreSQL volume `deltagrid-preview_postgres_data`, backend `127.0.0.1:8011`, frontend `127.0.0.1:3012`.
+- Выполнен 7d OKX/CoinGlass/CoinGecko sync BTC/ETH/SOL в preview БД: `errors=0`, OHLCV gaps по логам `0`.
+- Preview `/api/v1/data/health`: OKX/CoinGlass/CoinGecko `healthy`, freshness `24/0/24`, `core_perp_ready=3`, `chart_ready=3`.
+- Preview пока не опубликован через DNS/Nginx; внешний доступ к `3012` не открыт.
+
 ## Обновление 2026-06-14 — Production universe v1
 
 - Добавлен `GET /api/v1/data/universe`: derived read-only policy view поверх coverage/freshness.
