@@ -148,7 +148,7 @@ GitHub Actions:
 - `Deploy Production` деплоит `main`, если настроены `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`.
 
 Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
-На 2026-06-14 `Deploy Preview` проверен end-to-end: GitHub Actions деплоит ветку `preview` в `/opt/deltagrid-preview`, контейнеры становятся `healthy`, server smoke проходит на ports `8011/3012`.
+На 2026-06-15 `Deploy Preview` проверен end-to-end: GitHub Actions деплоит ветку `preview` в `/opt/deltagrid-preview`, контейнеры становятся `healthy`, server smoke проходит на ports `8011/3012`. Для ручной проверки preview chart/asset candidates добавлен `scripts/preview-candidate-smoke.sh`; он проверяет `/charts`, `/assets`, OHLCV window endpoint для `HYPE/XRP/DOGE/ADA/LINK` и отсутствие candidate symbols на core-only страницах `Market Matrix`, `Arbitrage Scanner`, `Perp DEX`.
 Production auto-deploy пока не считается подтверждённым: hardening `Deploy Production` подготовлен в `preview`, перенос в `main` и проверка реального deploy в `/opt/deltagrid` остаются отдельной production-итерацией.
 Подробный чеклист secrets: [deploy/github-actions-secrets.md](deploy/github-actions-secrets.md).
 
@@ -303,7 +303,7 @@ tail -100 /var/log/deltagrid-market-sync.log
 | `GET /api/v1/data/funding?symbol=BTC&exchange=okx&start=...&end=...` | Чтение истории funding rate из PostgreSQL, максимум 1000 строк. |
 | `GET /api/v1/data/coverage?symbols=BTC,ETH,SOL&exchange=okx&range=7d` | Coverage matrix по историческим потокам: rows/expected, coverage %, latest timestamp и reason для OHLCV/funding/OI/long-short/liquidations/basis/spot-perp price. |
 | `GET /api/v1/data/universe?symbols=BTC,ETH,SOL&exchange=okx` | Production universe readiness поверх coverage/freshness: `complete_history`, `core_perp_ready`, `partial_history`, `not_ready`, `ui_universe` и `deferred_symbols`. |
-| `GET /api/v1/data/provider-inventory?symbols=BTC,ETH,SOL,HYPE&exchange=okx` | Read-only inventory кандидатов на расширение universe поверх persisted coverage/freshness: `promotion_candidate`, `next_action`, readiness status, 24h/7d summaries и `freshness_scope=requested_symbols` без внешних API-вызовов. |
+| `GET /api/v1/data/provider-inventory?symbols=BTC,ETH,SOL,HYPE&exchange=okx` | Read-only inventory кандидатов на расширение universe поверх persisted coverage/freshness: `promotion_candidate`, `chart_ready_candidates`, `next_action`, readiness status, 24h/7d summaries и `freshness_scope=requested_symbols` без внешних API-вызовов. |
 | `GET /api/v1/data/health` | Health snapshot data-layer: статусы провайдеров, последние sync, row counts, data quality score, freshness SLA, coverage matrix, universe readiness, health по `sync_type` и cron/data-sync diagnostics. |
 
 Для sparse event streams вроде `liquidations` `/data/health` различает возраст последнего события и свежесть sync-run: отсутствие новых событий не считается stale, если `coinglass/liquidations` sync свежий и успешный.

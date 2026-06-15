@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [DATA/OPS] - Candidate gate diagnostics batch
+- `GET /api/v1/data/provider-inventory` расширен additive-полями `summary.chart_ready_candidates` и `policy.chart_ready_candidates`, чтобы явно отделять активы, готовые для `/charts`/`/assets`, от `promotion_candidates` для full analytics universe.
+- Добавлен regression coverage для новых provider-inventory полей без изменения существующих `promotion_candidate` и `next_action`.
+- Во frontend добавлен компактный scope label выбранного актива: `/charts` показывает `Core` или `Preview Candidate`, `/assets` показывает такой же status badge.
+- Добавлен ручной smoke-скрипт `scripts/preview-candidate-smoke.sh`: проверяет candidate `/charts`, `/assets`, 7d OHLCV window rows и отсутствие candidate markers на core-only pages `/market-matrix`, `/arbitrage-scanner`, `/perp-dex`.
+- Скрипт проверен против текущего preview VPS через SSH: `HYPE/XRP/DOGE/ADA/LINK` charts/assets и 7d windows прошли, core-only pages остались без candidate markers.
+
 ## [2026-06-15] - [OPS] - Deploy SSH diagnostics made non-blocking
 - После успешного CI для docs commit `e8ddb1f` workflow `Deploy Preview` run `27533723576` упал на диагностическом шаге `Test preview SSH login`; deploy step не запускался, preview VPS при этом оставался healthy и локальный SSH к `root@2.25.143.143` работал.
 - В `deploy-preview.yml` и `deploy-production.yml` шаги `Test SSH login` и `Check app directory` переведены в warning-only diagnostics: они больше не останавливают workflow сами по себе.

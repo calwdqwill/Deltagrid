@@ -12,7 +12,7 @@ import {
   toneText,
 } from "@/components/terminal/terminal-ui";
 import { getLiveAssetDeepDive } from "@/lib/terminal/live-market";
-import { TRACKED_SYMBOLS } from "@/lib/terminal/live-streams";
+import { symbolScopeLabel, TRACKED_SYMBOLS } from "@/lib/terminal/live-streams";
 import { Candle } from "@/types/terminal";
 
 export const dynamic = "force-dynamic";
@@ -198,6 +198,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
   const longLiquidationWidth = liquidationTotal > 0 ? (data.liquidations.longUsd / liquidationTotal) * 100 : 0;
   const shortLiquidationWidth = liquidationTotal > 0 ? (data.liquidations.shortUsd / liquidationTotal) * 100 : 0;
   const okxPair = `${asset.symbol}-USDT-SWAP`;
+  const scopeLabel = symbolScopeLabel(asset.symbol);
 
   return (
     <Shell>
@@ -246,6 +247,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
             active={asset.symbol}
           />
           <div className="flex items-center gap-2">
+            <StatusBadge label={scopeLabel} tone={scopeLabel === "Core" ? "positive" : "warning"} />
             <StatusBadge label={live.statusLabel} tone={live.statusTone} />
             <LinkButton href="/strategy-lab">Backtest {asset.symbol}</LinkButton>
           </div>

@@ -500,6 +500,8 @@ def test_provider_inventory_defaults_to_expansion_candidates() -> None:
     assert data["scope"]["symbols"][:4] == ["BTC", "ETH", "SOL", "HYPE"]
     assert data["summary"]["total"] == len(data["scope"]["symbols"])
     assert "promotion_candidates" in data["policy"]
+    assert "chart_ready_candidates" in data["policy"]
+    assert "chart_ready_candidates" in data["summary"]
     assert all("next_action" in row for row in data["symbols"])
 
 
@@ -536,6 +538,8 @@ def test_provider_inventory_tracks_candidate_freshness_scope() -> None:
     assert hype["next_action"] == "history_completion_required"
     assert len(hype["partial_streams_7d"]) > 0
     assert hype["missing_streams_7d"] == []
+    assert isinstance(data["policy"]["chart_ready_candidates"], list)
+    assert data["summary"]["chart_ready_candidates"] >= 0
 
 
 def test_health_reports_freshness_and_sync_diagnostics() -> None:

@@ -18,6 +18,7 @@ import {
   ChartInterval,
   ChartRange,
   getLiveChartsWorkspace,
+  symbolScopeLabel,
   TRACKED_SYMBOLS,
 } from "@/lib/terminal/live-streams";
 
@@ -70,8 +71,9 @@ export default async function ChartsPage({ searchParams }: ChartsPageProps) {
         </div>
 
         <TerminalPanel>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
             <SelectPill label="Asset" value={live.symbol} />
+            <SelectPill label="Scope" value={symbolScopeLabel(live.symbol)} />
             <SelectPill label="Exchange" value={live.exchangeLabel} />
             <SelectPill label="Market" value="USDT Swap" />
             <SelectPill label="Interval" value={live.interval} />

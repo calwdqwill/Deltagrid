@@ -1274,6 +1274,7 @@ def _build_provider_inventory_report(
     summary = {
         "total": 0,
         "promotion_candidates": 0,
+        "chart_ready_candidates": 0,
         "ready_for_ui_review": 0,
         "backfill_required": 0,
         "freshness_tracking_required": 0,
@@ -1288,6 +1289,8 @@ def _build_provider_inventory_report(
         summary["total"] += 1
         if promotion_candidate:
             summary["promotion_candidates"] += 1
+        if symbol_row["chart_ready"]:
+            summary["chart_ready_candidates"] += 1
         summary[next_action] += 1
 
         inventory_rows.append(
@@ -1316,6 +1319,11 @@ def _build_provider_inventory_report(
                 row["symbol"]
                 for row in inventory_rows
                 if row["promotion_candidate"]
+            ],
+            "chart_ready_candidates": [
+                row["symbol"]
+                for row in inventory_rows
+                if row["chart_ready"]
             ],
             "deferred_symbols": [
                 row["symbol"]

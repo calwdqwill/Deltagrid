@@ -380,6 +380,13 @@ sh scripts/server-smoke.sh
 BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh
 ```
 
+Для ручной проверки preview chart/asset candidates на VPS:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 MIN_CANDIDATE_OHLCV_ROWS=1000 sh scripts/preview-candidate-smoke.sh
+```
+
 Фактический production rollout от 2026-06-05, обновлённый baseline от 2026-06-14:
 
 - DNS Cloudflare активен: `deltagrid.pro` и `www.deltagrid.pro` указывают на `2.25.143.143`.

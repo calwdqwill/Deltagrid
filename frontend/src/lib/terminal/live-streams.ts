@@ -6,6 +6,7 @@ const CORE_SYMBOLS = ["BTC", "ETH", "SOL"] as const;
 const CANDIDATE_SYMBOLS = ["HYPE", "XRP", "DOGE", "ADA", "LINK"] as const;
 const TRACKED_SYMBOLS = [...CORE_SYMBOLS, ...CANDIDATE_SYMBOLS] as const;
 const CORE_SYMBOLS_LABEL = CORE_SYMBOLS.join(" / ");
+const CANDIDATE_SYMBOLS_LABEL = CANDIDATE_SYMBOLS.join(" / ");
 const TRACKED_SYMBOLS_LABEL = TRACKED_SYMBOLS.join(" / ");
 const DEFAULT_EXCHANGE = "okx";
 const DEFAULT_EXCHANGE_LABEL = "OKX";
@@ -16,6 +17,7 @@ export {
   CORE_SYMBOLS,
   CORE_SYMBOLS_LABEL,
   CANDIDATE_SYMBOLS,
+  CANDIDATE_SYMBOLS_LABEL,
   TRACKED_SYMBOLS,
   TRACKED_SYMBOLS_LABEL,
   CHART_INTERVALS,
@@ -27,6 +29,10 @@ export type ChartInterval = (typeof CHART_INTERVALS)[number];
 export type ChartRange = (typeof CHART_RANGES)[number];
 
 type StatusTone = "positive" | "warning";
+
+export function symbolScopeLabel(symbol: string): "Core" | "Preview Candidate" {
+  return CORE_SYMBOLS.includes(symbol.toUpperCase() as (typeof CORE_SYMBOLS)[number]) ? "Core" : "Preview Candidate";
+}
 
 interface OhlcvRow {
   timestamp: number;

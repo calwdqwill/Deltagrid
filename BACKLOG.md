@@ -55,6 +55,7 @@
 - [x] P1: Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness: `/data/provider-inventory` использует `freshness_scope=requested_symbols`, а `/data/health` остаётся scoped к текущему UI universe `BTC/ETH/SOL`.
 - [x] P1: Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe: 72h `errors=0`, 7d `errors=0`, OHLCV gaps `0`, chart path готов.
 - [x] P1: Включить `HYPE/XRP/DOGE/ADA/LINK` как preview chart/asset candidates в `/charts` и `/assets`; оставить `Market Matrix`, `Arbitrage Scanner` и `Perp DEX` scoped к `BTC/ETH/SOL` до full promotion.
+- [x] P1: Добавить явную диагностику `chart_ready_candidates` в provider inventory и ручной `scripts/preview-candidate-smoke.sh` для проверки preview candidate paths.
 - [ ] P1: Закрыть `history_completion_required=5` для `HYPE/XRP/DOGE/ADA/LINK` по partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price` или явно утвердить policy-разделение `chart_ready` и full analytics universe.
 - [x] P1: Добавить CI audit gate `npm audit --audit-level=high`, чтобы high/critical frontend advisory снова не прошли в `preview/main`.
 - [ ] P1: Дождаться stable Next.js с bundled `postcss >=8.5.10` или другого upstream patch; `next@canary` не использовать в production path без отдельного решения.
