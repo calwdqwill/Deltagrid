@@ -5,7 +5,10 @@
 - `OkxAdapter` теперь классифицирует HTTP `429` и OKX rate-limit payload как `RateLimitExceeded`, чтобы существующий `RetryPolicy` выполнял backoff/retry вместо немедленного `partial` sync-run.
 - Default pacing для OKX в `GlobalRateLimiter` снижен до более консервативного публичного режима `capacity=5`, `refill_rate=2 req/sec`.
 - Добавлен regression test для классификации OKX HTTP `429` в `RateLimitExceeded`.
-- Локально проверено: `python -m py_compile backend/app/adapters/data/okx_adapter.py backend/app/adapters/data/rate_limiter.py backend/tests/test_okx_adapter.py` и `git diff --check`; локальный `pytest` в Windows-сессии недоступен из-за отсутствующего пакета `pytest`, финальную проверку должен закрыть GitHub CI/backend container.
+- Локально проверено: `backend\venv\Scripts\python.exe -m pytest tests\test_okx_adapter.py` из `backend` прошёл `6 passed`, также прошли `py_compile` и `git diff --check`.
+- CI `27539771597` и `Deploy Preview` `27539817178` завершились успешно; `/opt/deltagrid-preview` обновился до `725387d`, backend/frontend/PostgreSQL healthy.
+- Scheduled preview core cron в `2026-06-15 10:30 UTC` снова получил OKX HTTP `429` на `SOL long_short_ratio`, выполнил retry через `RateLimitExceeded`, повторный запрос вернул `200 OK`, итог sync-run: `fetched=462`, `inserted=461`, `errors=0`.
+- Финальный `/api/v1/data/health` на preview: cron diagnostics `healthy`, latest `okx/long_short_ratio` `completed`, свежие `rate_limit=2` остаются только как 24h history от старых partial-run до фикса.
 
 ## [2026-06-15] - [OPS] - Preview market sync cron path
 - `scripts/install-market-sync-cron.sh` теперь умеет записывать в cron переменные `ENV_FILE`, `COMPOSE_FILE` и `COMPOSE_PROJECT_NAME`, чтобы один installer можно было безопасно использовать для production и preview Compose projects.

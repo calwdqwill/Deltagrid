@@ -10,7 +10,10 @@
 - Причина на уровне кода: `resp.raise_for_status()` поднимал `httpx.HTTPStatusError`, который не попадал в существующий `RetryPolicy`; поэтому transient `429` превращался в `partial` run без retry.
 - `OkxAdapter` теперь переводит HTTP `429` и OKX rate-limit payload в `RateLimitExceeded`; этот тип уже поддержан общим retry/backoff.
 - OKX default pacing в `GlobalRateLimiter` снижен до `capacity=5`, `refill_rate=2 req/sec`, чтобы cron-path меньше давил на публичные derived endpoints.
-- Добавлен regression test на классификацию OKX HTTP `429`; локально прошёл `py_compile`, но локальный `pytest` недоступен в Windows-сессии из-за отсутствующего пакета `pytest`.
+- Добавлен regression test на классификацию OKX HTTP `429`; локально из `backend` прошёл `backend\venv\Scripts\python.exe -m pytest tests\test_okx_adapter.py` (`6 passed`), также прошли `py_compile` и `git diff --check`.
+- CI `27539771597` и `Deploy Preview` `27539817178` завершились успешно; `/opt/deltagrid-preview` обновился до `725387d`, контейнеры preview healthy.
+- Контрольный scheduled core cron в `2026-06-15 10:30 UTC` подтвердил fix: OKX вернул `429` на `SOL long_short_ratio`, adapter сделал retry, повторный запрос вернул `200 OK`, итог cron-run `fetched=462`, `inserted=461`, `errors=0`.
+- Финальный preview `/api/v1/data/health`: cron diagnostics `healthy`, latest `okx/long_short_ratio` `completed`, `recent_error_classes.rate_limit=2` остаётся только как 24h история старых partial-run до фикса.
 
 ## Обновление 2026-06-15 — Preview market sync cron path
 
