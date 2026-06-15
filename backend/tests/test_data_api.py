@@ -237,6 +237,109 @@ def _seed_coverage_rows() -> tuple[int, int]:
     return base_ts, base_ts + 23 * 60 * 60_000
 
 
+def _seed_fresh_candidate_rows(symbol: str = "HYPE") -> None:
+    """Seed fresh but incomplete 7d candidate rows for provider inventory policy."""
+    session = _TestSessionLocal()
+    from app.domain.models import (
+        BasisPremium,
+        DataFundingRate,
+        DataLiquidation,
+        DataLongShortRatio,
+        DataOhlcv,
+        DataOpenInterest,
+        ProviderSyncRun,
+    )
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now_ms = int(now.timestamp() * 1000)
+    fresh_ts = now_ms - 5 * 60_000
+
+    for interval in ("1m", "5m", "1h"):
+        session.merge(
+            DataOhlcv(
+                timestamp=fresh_ts,
+                symbol=symbol,
+                exchange="okx",
+                interval=interval,
+                open=10.0,
+                high=11.0,
+                low=9.0,
+                close=10.5,
+                volume=100.0,
+                quote_volume=1050.0,
+                trades_count=50,
+            )
+        )
+    session.merge(
+        DataFundingRate(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            funding_rate=0.0001,
+            next_funding_time=fresh_ts + 8 * 60 * 60_000,
+            interval="8h",
+        )
+    )
+    session.merge(
+        DataOpenInterest(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            interval="1h",
+            oi_usd=1_000_000.0,
+            oi_coins=1000.0,
+        )
+    )
+    session.merge(
+        DataLongShortRatio(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            interval="1h",
+            long_ratio=0.52,
+            short_ratio=0.48,
+            long_account_ratio=0.52,
+            short_account_ratio=0.48,
+        )
+    )
+    session.merge(
+        DataLiquidation(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            side="long",
+            quantity=0.0,
+            price=0.0,
+            value_usd=1000.0,
+        )
+    )
+    session.add(
+        BasisPremium(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            spot_price=10.0,
+            perp_price=10.1,
+            basis_pct=1.0,
+            premium_pct=1.0,
+        )
+    )
+    session.add(
+        ProviderSyncRun(
+            provider_name="coinglass",
+            sync_type="liquidations",
+            status="completed",
+            start_time=fresh_ts - 60_000,
+            end_time=fresh_ts,
+            records_fetched=1,
+            records_inserted=1,
+            created_at=now,
+        )
+    )
+    session.commit()
+    session.close()
+
+
 def test_ohlcv_canonical_symbol_returns_data() -> None:
     """Critical regression: canonical BTC must return seeded rows."""
     _seed_canonical_btc()
@@ -412,8 +515,27 @@ def test_provider_inventory_defers_symbol_without_coverage() -> None:
     assert data["policy"]["deferred_symbols"] == ["UNI"]
     assert uni["promotion_candidate"] is False
     assert uni["next_action"] == "backfill_required"
-    assert uni["freshness_tracked"] is False
+    assert uni["freshness_tracked"] is True
     assert len(uni["missing_streams_7d"]) > 0
+
+
+def test_provider_inventory_tracks_candidate_freshness_scope() -> None:
+    """Fresh candidate rows should move inventory to history completion gate."""
+    _seed_fresh_candidate_rows("HYPE")
+    response = client.get("/api/v1/data/provider-inventory?symbols=HYPE&exchange=okx")
+    assert response.status_code == 200
+    data = response.json()["data"]
+
+    hype = data["symbols"][0]
+    assert data["scope"]["freshness_scope"] == "requested_symbols"
+    assert hype["symbol"] == "HYPE"
+    assert hype["freshness_tracked"] is True
+    assert hype["freshness"]["worst_status"] == "fresh"
+    assert hype["status"] == "partial_history"
+    assert hype["promotion_candidate"] is False
+    assert hype["next_action"] == "history_completion_required"
+    assert len(hype["partial_streams_7d"]) > 0
+    assert hype["missing_streams_7d"] == []
 
 
 def test_health_reports_freshness_and_sync_diagnostics() -> None:

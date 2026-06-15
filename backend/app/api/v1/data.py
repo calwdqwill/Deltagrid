@@ -583,7 +583,10 @@ def _sparse_event_status(
     )
 
 
-def _build_freshness_report(db: Session) -> dict[str, Any]:
+def _build_freshness_report(
+    db: Session,
+    symbols: tuple[str, ...] = WATCHED_SYMBOLS,
+) -> dict[str, Any]:
     now = _utc_now()
     now_ms = _milliseconds_now()
     streams: list[dict[str, Any]] = []
@@ -593,7 +596,7 @@ def _build_freshness_report(db: Session) -> dict[str, Any]:
     for spec in FRESHNESS_SPECS:
         stream_name = spec["stream"]
         stream_summary = {"fresh": 0, "stale": 0, "degraded": 0}
-        for symbol in WATCHED_SYMBOLS:
+        for symbol in symbols:
             for interval in spec["intervals"]:
                 latest_ts = _latest_timestamp(
                     db,
@@ -654,7 +657,7 @@ def _build_freshness_report(db: Session) -> dict[str, Any]:
 
     return {
         "scope": {
-            "symbols": list(WATCHED_SYMBOLS),
+            "symbols": list(symbols),
             "primary_exchange": PRIMARY_PERP_EXCHANGE,
             "streams": [spec["stream"] for spec in FRESHNESS_SPECS],
         },
@@ -1259,7 +1262,7 @@ def _build_provider_inventory_report(
 ) -> dict[str, Any]:
     normalized_exchange = _normalize_exchange(exchange)
     coverage_7d = _build_coverage_report(db, symbols, normalized_exchange, "7d")
-    freshness = _build_freshness_report(db)
+    freshness = _build_freshness_report(db, symbols=symbols)
     universe = _build_universe_report(
         db,
         symbols=symbols,
@@ -1305,6 +1308,7 @@ def _build_provider_inventory_report(
             "primary_range": "7d",
             "inventory_mode": "persisted_data_only",
             "external_provider_calls": False,
+            "freshness_scope": "requested_symbols",
         },
         "summary": summary,
         "policy": {
