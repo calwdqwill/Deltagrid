@@ -2,14 +2,25 @@ import { fetchServerApi } from "@/lib/server-api";
 import { KpiMetric, SeriesPoint } from "@/types/terminal";
 import { DataHealthPayload } from "./live-data";
 
-const TRACKED_SYMBOLS = ["BTC", "ETH", "SOL", "HYPE", "XRP", "DOGE", "ADA", "LINK"] as const;
+const CORE_SYMBOLS = ["BTC", "ETH", "SOL"] as const;
+const CANDIDATE_SYMBOLS = ["HYPE", "XRP", "DOGE", "ADA", "LINK"] as const;
+const TRACKED_SYMBOLS = [...CORE_SYMBOLS, ...CANDIDATE_SYMBOLS] as const;
+const CORE_SYMBOLS_LABEL = CORE_SYMBOLS.join(" / ");
 const TRACKED_SYMBOLS_LABEL = TRACKED_SYMBOLS.join(" / ");
 const DEFAULT_EXCHANGE = "okx";
 const DEFAULT_EXCHANGE_LABEL = "OKX";
 const CHART_INTERVALS = ["1m", "5m", "1h"] as const;
 const CHART_RANGES = ["2h", "8h", "24h", "7d"] as const;
 
-export { TRACKED_SYMBOLS, TRACKED_SYMBOLS_LABEL, CHART_INTERVALS, CHART_RANGES };
+export {
+  CORE_SYMBOLS,
+  CORE_SYMBOLS_LABEL,
+  CANDIDATE_SYMBOLS,
+  TRACKED_SYMBOLS,
+  TRACKED_SYMBOLS_LABEL,
+  CHART_INTERVALS,
+  CHART_RANGES,
+};
 
 export type TrackedSymbol = (typeof TRACKED_SYMBOLS)[number];
 export type ChartInterval = (typeof CHART_INTERVALS)[number];
@@ -457,7 +468,7 @@ export async function getLiveChartsWorkspace(
 
 export async function getLiveMarketMatrix(): Promise<LiveMarketMatrix> {
   const [streams, healthResponse] = await Promise.all([
-    Promise.all(TRACKED_SYMBOLS.map((symbol) => symbolStreams(symbol))),
+    Promise.all(CORE_SYMBOLS.map((symbol) => symbolStreams(symbol))),
     fetchServerApi<DataHealthPayload>("/data/health"),
   ]);
   const health = healthResponse?.success ? healthResponse.data : null;
@@ -499,7 +510,7 @@ export async function getLiveMarketMatrix(): Promise<LiveMarketMatrix> {
       {
         label: "Assets",
         value: `${liveRows}/${rows.length}`,
-        caption: TRACKED_SYMBOLS_LABEL,
+        caption: CORE_SYMBOLS_LABEL,
         tone: liveRows === rows.length ? "positive" : "warning",
       },
       {

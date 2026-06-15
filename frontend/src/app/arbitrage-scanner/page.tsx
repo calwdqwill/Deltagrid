@@ -9,9 +9,9 @@ import {
   toneText,
 } from "@/components/terminal/terminal-ui";
 import {
+  CORE_SYMBOLS_LABEL,
   getLiveArbitrageScanner,
   LiveArbitrageOpportunity,
-  TRACKED_SYMBOLS_LABEL,
 } from "@/lib/terminal/live-streams";
 
 export const dynamic = "force-dynamic";
@@ -79,7 +79,7 @@ export default async function ArbitrageScannerPage() {
         <TerminalPanel>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             <SelectPill label="Mode" value="Basis / Funding" />
-            <SelectPill label="Assets" value={TRACKED_SYMBOLS_LABEL} />
+            <SelectPill label="Assets" value={CORE_SYMBOLS_LABEL} />
             <SelectPill label="Spot Source" value="CoinGecko" />
             <SelectPill label="Perp Source" value="OKX" />
             <SelectPill label="Risk" value="Read-only research" />

@@ -9,7 +9,7 @@ import {
   TerminalTable,
   toneText,
 } from "@/components/terminal/terminal-ui";
-import { getLiveMarketMatrix, LiveMatrixRow, TRACKED_SYMBOLS_LABEL } from "@/lib/terminal/live-streams";
+import { CORE_SYMBOLS_LABEL, getLiveMarketMatrix, LiveMatrixRow } from "@/lib/terminal/live-streams";
 
 export const dynamic = "force-dynamic";
 
@@ -94,7 +94,7 @@ export default async function MarketMatrixPage() {
 
         <TerminalPanel>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            <SelectPill label="Universe" value={TRACKED_SYMBOLS_LABEL} />
+            <SelectPill label="Universe" value={CORE_SYMBOLS_LABEL} />
             <SelectPill label="Price" value="CoinGecko + OKX" />
             <SelectPill label="Derivatives" value="Funding / OI / L/S" />
             <SelectPill label="Basis" value="Spot vs Perp" />
