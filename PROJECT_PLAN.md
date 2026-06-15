@@ -226,6 +226,7 @@
 - [x] Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
 - [x] Включить первую малую группу как preview chart/asset candidates в `/charts` и `/assets`; full analytics screens оставить на `BTC/ETH/SOL` до строгого promotion gate.
 - [x] Добавить provider-inventory `chart_ready_candidates` и ручной preview candidate smoke для проверки `/charts`/`/assets` без расширения full analytics universe.
+- [x] Добавить provider-inventory `promotion_blockers`: отдельные coverage/freshness blockers и summary-счётчики причин, почему symbol ещё не проходит full analytics promotion.
 - [ ] Закрыть `history_completion_required=5` по `open_interest`, `basis_premium`, `spot_perp_price` или явно зафиксировать policy-разделение `chart_ready` и full analytics universe.
 - [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.

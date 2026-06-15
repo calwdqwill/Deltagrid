@@ -1102,6 +1102,67 @@ def _stream_interval_key(row: dict[str, Any]) -> str:
     return f"{row['stream']}:{row['interval']}"
 
 
+def _coverage_blockers_for_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    blocker_keys = (
+        "stream",
+        "interval",
+        "status",
+        "rows",
+        "expected_rows",
+        "coverage_pct",
+        "window_start_iso",
+        "window_end_iso",
+        "latest_timestamp_iso",
+        "window_source",
+        "coverage_mode",
+        "sync_provider",
+        "sync_type",
+        "sync_age_minutes",
+        "latest_successful_sync_at",
+        "reason",
+    )
+    return [
+        {
+            "blocker_type": "coverage",
+            "range": "7d",
+            **{key: row.get(key) for key in blocker_keys if key in row},
+        }
+        for row in rows
+        if row["status"] != "covered"
+    ]
+
+
+def _freshness_blockers_for_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    blocker_keys = (
+        "stream",
+        "interval",
+        "status",
+        "latest_timestamp_iso",
+        "age_minutes",
+        "expected_cadence_minutes",
+        "stale_after_minutes",
+        "degraded_after_minutes",
+        "freshness_mode",
+        "sync_provider",
+        "sync_type",
+        "sync_age_minutes",
+        "sync_stale_after_minutes",
+        "sync_degraded_after_minutes",
+        "latest_sync_status",
+        "latest_sync_at",
+        "latest_successful_sync_at",
+        "reason",
+    )
+    return [
+        {
+            "blocker_type": "freshness",
+            **{key: row.get(key) for key in blocker_keys if key in row},
+        }
+        for row in rows
+        if row["status"] != "fresh"
+    ]
+
+
 def _universe_status(
     coverage_7d_rows: list[dict[str, Any]],
     freshness_rows: list[dict[str, Any]],
@@ -1191,6 +1252,8 @@ def _build_universe_report(
             for row in coverage_by_range["7d"]
             if row["status"] == "covered"
         ]
+        coverage_blockers_7d = _coverage_blockers_for_rows(coverage_by_range["7d"])
+        freshness_blockers = _freshness_blockers_for_rows(symbol_freshness_rows)
 
         symbol_rows.append(
             {
@@ -1208,6 +1271,9 @@ def _build_universe_report(
                 "covered_streams_7d": covered_7d,
                 "partial_streams_7d": partial_7d,
                 "missing_streams_7d": missing_7d,
+                "coverage_blockers_7d": coverage_blockers_7d,
+                "freshness_blockers": freshness_blockers,
+                "promotion_blockers": coverage_blockers_7d + freshness_blockers,
                 "reason": reason,
             }
         )
@@ -1280,6 +1346,9 @@ def _build_provider_inventory_report(
         "freshness_tracking_required": 0,
         "history_completion_required": 0,
         "manual_review_required": 0,
+        "coverage_blockers": 0,
+        "freshness_blockers": 0,
+        "promotion_blockers": 0,
     }
     inventory_rows: list[dict[str, Any]] = []
 
@@ -1292,6 +1361,9 @@ def _build_provider_inventory_report(
         if symbol_row["chart_ready"]:
             summary["chart_ready_candidates"] += 1
         summary[next_action] += 1
+        summary["coverage_blockers"] += len(symbol_row["coverage_blockers_7d"])
+        summary["freshness_blockers"] += len(symbol_row["freshness_blockers"])
+        summary["promotion_blockers"] += len(symbol_row["promotion_blockers"])
 
         inventory_rows.append(
             {

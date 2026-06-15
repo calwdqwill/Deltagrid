@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [DATA] - Promotion blocker diagnostics for provider inventory
+- `GET /api/v1/data/provider-inventory` расширен additive-диагностикой `coverage_blockers_7d`, `freshness_blockers` и `promotion_blockers` на уровне каждого symbol.
+- В `summary` добавлены счётчики `coverage_blockers`, `freshness_blockers` и `promotion_blockers`, чтобы быстро видеть масштаб причин, блокирующих full analytics promotion.
+- Новые blocker-поля используют уже рассчитанные persisted coverage/freshness rows и не делают внешних вызовов к OKX, CoinGlass, CoinGecko или legacy Binance.
+- Regression tests обновлены: проверяется symbol без coverage, fresh-but-partial candidate и наличие новых summary/symbol fields.
+- Локально проверено: `backend\venv\Scripts\python.exe -m pytest tests\test_data_api.py -q` из `backend` прошёл `20 passed`; `python -m compileall backend\app` и `backend\venv\Scripts\python.exe -m compileall backend\app` прошли.
+
 ## [2026-06-15] - [DATA/OPS] - Candidate gate diagnostics batch
 - `GET /api/v1/data/provider-inventory` расширен additive-полями `summary.chart_ready_candidates` и `policy.chart_ready_candidates`, чтобы явно отделять активы, готовые для `/charts`/`/assets`, от `promotion_candidates` для full analytics universe.
 - Добавлен regression coverage для новых provider-inventory полей без изменения существующих `promotion_candidate` и `next_action`.

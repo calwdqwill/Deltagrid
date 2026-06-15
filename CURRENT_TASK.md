@@ -4,6 +4,14 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены, но full analytics universe promotion отложен до закрытия `history_completion_required=5` по partial snapshot/enrichment streams.
 **Last Updated**: 2026-06-15
 
+## Обновление 2026-06-15 — Promotion blocker diagnostics
+
+- Provider inventory теперь возвращает явные blocker-поля для full analytics promotion: `coverage_blockers_7d`, `freshness_blockers` и объединённый `promotion_blockers` на уровне каждого symbol.
+- В `summary` добавлены счётчики `coverage_blockers`, `freshness_blockers` и `promotion_blockers`, чтобы видеть масштаб причин блокировки без ручного разбора coverage/freshness rows.
+- Диагностика использует только persisted data из уже рассчитанных coverage/freshness reports и не вызывает внешние provider API.
+- Regression tests обновлены для symbol без coverage и fresh-but-partial candidate; локально через `backend/venv` пройдено `20 passed`.
+- Статус full promotion не менялся: `HYPE/XRP/DOGE/ADA/LINK` остаются preview chart/asset candidates, а следующий продуктовый выбор — закрывать partial `open_interest`, `basis_premium`, `spot_perp_price` или формально утвердить разделение `chart_ready` и full analytics universe.
+
 ## Обновление 2026-06-15 — Candidate gate diagnostics batch
 
 - Provider inventory получил additive-поля `chart_ready_candidates` в `summary` и `policy`, чтобы не смешивать chart/asset readiness с full analytics promotion.

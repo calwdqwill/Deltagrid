@@ -502,7 +502,11 @@ def test_provider_inventory_defaults_to_expansion_candidates() -> None:
     assert "promotion_candidates" in data["policy"]
     assert "chart_ready_candidates" in data["policy"]
     assert "chart_ready_candidates" in data["summary"]
+    assert "coverage_blockers" in data["summary"]
+    assert "freshness_blockers" in data["summary"]
+    assert "promotion_blockers" in data["summary"]
     assert all("next_action" in row for row in data["symbols"])
+    assert all("promotion_blockers" in row for row in data["symbols"])
 
 
 def test_provider_inventory_defers_symbol_without_coverage() -> None:
@@ -519,6 +523,11 @@ def test_provider_inventory_defers_symbol_without_coverage() -> None:
     assert uni["next_action"] == "backfill_required"
     assert uni["freshness_tracked"] is True
     assert len(uni["missing_streams_7d"]) > 0
+    assert len(uni["coverage_blockers_7d"]) > 0
+    assert len(uni["freshness_blockers"]) > 0
+    assert len(uni["promotion_blockers"]) == (
+        len(uni["coverage_blockers_7d"]) + len(uni["freshness_blockers"])
+    )
 
 
 def test_provider_inventory_tracks_candidate_freshness_scope() -> None:
@@ -538,8 +547,17 @@ def test_provider_inventory_tracks_candidate_freshness_scope() -> None:
     assert hype["next_action"] == "history_completion_required"
     assert len(hype["partial_streams_7d"]) > 0
     assert hype["missing_streams_7d"] == []
+    assert len(hype["coverage_blockers_7d"]) > 0
+    assert hype["freshness_blockers"] == []
+    assert hype["promotion_blockers"] == hype["coverage_blockers_7d"]
+    coverage_blocker = hype["promotion_blockers"][0]
+    assert coverage_blocker["blocker_type"] == "coverage"
+    assert coverage_blocker["range"] == "7d"
+    assert coverage_blocker["status"] == "partial"
+    assert coverage_blocker["stream"] in {"ohlcv", "funding_rates", "open_interest", "long_short_ratio"}
     assert isinstance(data["policy"]["chart_ready_candidates"], list)
     assert data["summary"]["chart_ready_candidates"] >= 0
+    assert data["summary"]["coverage_blockers"] >= len(hype["coverage_blockers_7d"])
 
 
 def test_health_reports_freshness_and_sync_diagnostics() -> None:
