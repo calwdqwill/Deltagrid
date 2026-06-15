@@ -1,8 +1,16 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены; следующий gate — preview UI universe expansion и `/charts` QA до production rollout.
+**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены; следующий gate — preview UI universe expansion и `/charts` QA до production rollout.
 **Last Updated**: 2026-06-15
+
+## Обновление 2026-06-15 — Preview deploy SSH hardening
+
+- Последний flaky `Deploy Preview` падал на шаге `Test preview SSH login`, хотя preview stack на VPS оставался healthy.
+- В `deploy-preview.yml` и `deploy-production.yml` добавлены более строгие SSH options, явные `timeout` и controlled retries для login, app-dir check и deploy.
+- GitHub Actions проверка: CI commit `4c3dec0` прошёл успешно, `Deploy Preview` run `27532247102` завершился `success`.
+- `/opt/deltagrid-preview` автоматически обновился до `4c3dec0`; backend/frontend/PostgreSQL healthy.
+- Следующий шаг по продукту: включить `HYPE/XRP/DOGE/ADA/LINK` в preview UI universe/selectors и проверить `/charts`.
 
 ## Обновление 2026-06-15 — 72h/7d preview backfill первой группы
 
@@ -157,6 +165,7 @@
 - [x] P1: выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
 - [x] P1: расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
 - [x] P1: выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед UI universe expansion.
+- [x] OPS/P1: стабилизировать preview deploy SSH retry path и подтвердить успешный `Deploy Preview` после CI.
 - [ ] P1: включить первую малую группу в preview UI universe/selectors и проверить `/charts` на desktop/mobile до production rollout.
 - [ ] P2: backtest engine и scheduler делать только после стабилизации исторических рядов.
 

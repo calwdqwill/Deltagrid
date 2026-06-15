@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [OPS] - Preview deploy SSH hardening
+- Усилен `Deploy Preview` workflow после flaky failure на шаге `Test preview SSH login`: SSH теперь использует `IdentitiesOnly`, `PreferredAuthentications=publickey`, короткий `ConnectionAttempts=1`, явные `timeout` и controlled retries для login, app-dir check и deploy.
+- Аналогичный SSH retry/timeout hardening применён к `Deploy Production`, чтобы production workflow имел тот же безопасный профиль перед отдельной проверкой `PROD_*`.
+- Проверка GitHub Actions: CI для commit `4c3dec0` прошёл успешно, `Deploy Preview` run `27532247102` завершился `success`.
+- Preview VPS `/opt/deltagrid-preview` автоматически обновился до `4c3dec0`; backend/frontend/PostgreSQL в Compose project `deltagrid-preview` находятся в состоянии `healthy`.
+
 ## [2026-06-15] - [DATA] - 72h/7d preview backfill первой expansion group
 - На preview выполнен 72h backfill `HYPE/XRP/DOGE/ADA/LINK` через OKX primary path: `fetched=27065`, `inserted=26902`, `errors=0`, OHLCV gaps по `1m/5m/1h` равны `0`.
 - На preview выполнен 7d backfill той же группы: `fetched=63125`, `inserted=62858`, `errors=0`, OHLCV jobs по всем symbols/intervals завершились с `gaps=0`.
