@@ -4,6 +4,14 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены, но full analytics universe promotion отложен до закрытия `history_completion_required=5` по partial snapshot/enrichment streams.
 **Last Updated**: 2026-06-15
 
+## Обновление 2026-06-15 — OKX rate-limit retry для preview cron
+
+- Первый реальный scheduled preview core cron после установки split cron подтвердил, что один split не полностью закрывает проблему: OKX `long_short_ratio` для `SOL` вернул HTTP `429`, sync завершился `errors=1`.
+- Причина на уровне кода: `resp.raise_for_status()` поднимал `httpx.HTTPStatusError`, который не попадал в существующий `RetryPolicy`; поэтому transient `429` превращался в `partial` run без retry.
+- `OkxAdapter` теперь переводит HTTP `429` и OKX rate-limit payload в `RateLimitExceeded`; этот тип уже поддержан общим retry/backoff.
+- OKX default pacing в `GlobalRateLimiter` снижен до `capacity=5`, `refill_rate=2 req/sec`, чтобы cron-path меньше давил на публичные derived endpoints.
+- Добавлен regression test на классификацию OKX HTTP `429`; локально прошёл `py_compile`, но локальный `pytest` недоступен в Windows-сессии из-за отсутствующего пакета `pytest`.
+
 ## Обновление 2026-06-15 — Preview market sync cron path
 
 - Причина stale/degraded freshness на preview: регулярный host cron был установлен только для production `/opt/deltagrid` и синкал `BTC/ETH/SOL`; отдельного `/etc/cron.d/deltagrid-preview-market-sync` не было.

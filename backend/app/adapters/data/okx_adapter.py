@@ -14,7 +14,7 @@ from .data_models import (
     OpenInterest,
     ProviderHealthStatus,
 )
-from .rate_limiter import AdapterError, GlobalRateLimiter, RetryPolicy
+from .rate_limiter import AdapterError, GlobalRateLimiter, RateLimitExceeded, RetryPolicy
 from .symbol_mapper import SymbolMapper
 
 logger = logging.getLogger(__name__)
@@ -140,10 +140,17 @@ class OkxAdapter(BaseDataAdapter):
     async def _get_okx_data(self, url: str, params: dict[str, Any]) -> list[Any]:
         async def _do_request():
             resp = await self.client.get(url, params=params)
+            if resp.status_code == 429:
+                retry_after = resp.headers.get("Retry-After")
+                retry_hint = f"; retry_after={retry_after}" if retry_after else ""
+                raise RateLimitExceeded(f"OKX rate limit exceeded for {resp.url}{retry_hint}")
             resp.raise_for_status()
             payload = resp.json()
             if payload.get("code") != "0":
-                raise AdapterError(payload.get("msg") or f"OKX error code {payload.get('code')}")
+                message = payload.get("msg") or f"OKX error code {payload.get('code')}"
+                if "rate limit" in message.lower() or "too many requests" in message.lower():
+                    raise RateLimitExceeded(message)
+                raise AdapterError(message)
             data = payload.get("data")
             return data if isinstance(data, list) else []
 

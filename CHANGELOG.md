@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [DATA/OPS] - OKX rate-limit retry for preview cron
+- Реальный cron-triggered preview core sync подтвердил проблему: после установки split cron OKX `long_short_ratio` всё ещё мог вернуть HTTP `429` даже на `BTC/ETH/SOL`.
+- `OkxAdapter` теперь классифицирует HTTP `429` и OKX rate-limit payload как `RateLimitExceeded`, чтобы существующий `RetryPolicy` выполнял backoff/retry вместо немедленного `partial` sync-run.
+- Default pacing для OKX в `GlobalRateLimiter` снижен до более консервативного публичного режима `capacity=5`, `refill_rate=2 req/sec`.
+- Добавлен regression test для классификации OKX HTTP `429` в `RateLimitExceeded`.
+- Локально проверено: `python -m py_compile backend/app/adapters/data/okx_adapter.py backend/app/adapters/data/rate_limiter.py backend/tests/test_okx_adapter.py` и `git diff --check`; локальный `pytest` в Windows-сессии недоступен из-за отсутствующего пакета `pytest`, финальную проверку должен закрыть GitHub CI/backend container.
+
 ## [2026-06-15] - [OPS] - Preview market sync cron path
 - `scripts/install-market-sync-cron.sh` теперь умеет записывать в cron переменные `ENV_FILE`, `COMPOSE_FILE` и `COMPOSE_PROJECT_NAME`, чтобы один installer можно было безопасно использовать для production и preview Compose projects.
 - Для preview зафиксирован split cron contract: core symbols пишутся в `/etc/cron.d/deltagrid-preview-market-sync-core`, candidates — в `/etc/cron.d/deltagrid-preview-market-sync-candidates` со сдвигом минут, чтобы снизить OKX derived endpoint burst.
