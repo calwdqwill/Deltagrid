@@ -122,7 +122,10 @@
 - 24h coverage после dry-run: `covered=30`, `partial=15`, `missing=0`; partial ожидаем у snapshot-потоков `open_interest`, `basis_premium`, `spot_perp_price`.
 - Candidate freshness scope вынесен в `/data/provider-inventory`: endpoint считает freshness по запрошенным symbols (`freshness_scope=requested_symbols`), а `/data/health` остаётся scoped к текущему UI universe `BTC/ETH/SOL`.
 - Preview-проверка после deploy: `freshness_tracking_required=0`, `history_completion_required=5`, у `HYPE/XRP/DOGE/ADA/LINK` `freshness.worst_status=fresh`, но 7d coverage ещё partial.
-- Следующий milestone: выполнить 72h/7d preview backfill первой группы и проверить gaps/coverage перед любым UI universe expansion.
+- 72h preview backfill завершён `fetched=27065`, `inserted=26902`, `errors=0`; 7d preview backfill завершён `fetched=63125`, `inserted=62858`, `errors=0`.
+- 7d coverage первой группы: `covered=30`, `partial=15`, `missing=0`; OHLCV/funding/long-short/liquidations covered, partial остаётся только у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Provider inventory после 7d backfill: `promotion_candidates=5`, `ready_for_ui_review=5`, `history_completion_required=0`; все symbols `core_perp_ready`.
+- Следующий milestone: preview UI universe expansion для первой группы без перевода на production, с проверкой `/charts` и selector states.
 
 ## Текущая итерация
 
@@ -217,7 +220,8 @@
 - [x] Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
 - [x] Выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
 - [x] Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
-- [ ] Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
+- [x] Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
+- [ ] Включить первую малую группу в preview UI universe/selectors и проверить `/charts` на desktop/mobile до production rollout.
 - [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.

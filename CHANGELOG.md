@@ -1,5 +1,13 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [DATA] - 72h/7d preview backfill первой expansion group
+- На preview выполнен 72h backfill `HYPE/XRP/DOGE/ADA/LINK` через OKX primary path: `fetched=27065`, `inserted=26902`, `errors=0`, OHLCV gaps по `1m/5m/1h` равны `0`.
+- На preview выполнен 7d backfill той же группы: `fetched=63125`, `inserted=62858`, `errors=0`, OHLCV jobs по всем symbols/intervals завершились с `gaps=0`.
+- `/api/v1/data/coverage?symbols=HYPE,XRP,DOGE,ADA,LINK&exchange=okx&range=7d` показывает `covered=30`, `partial=15`, `missing=0`, `total=45`, `coverage_pct=66.67`.
+- 7d coverage по streams: OHLCV `15/15 covered`, funding `5/5 covered`, long/short `5/5 covered`, liquidations `5/5 covered`; partial остаётся у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- `/api/v1/data/provider-inventory` теперь показывает `promotion_candidates=5`, `ready_for_ui_review=5`, `backfill_required=0`, `freshness_tracking_required=0`, `history_completion_required=0`; все 5 symbols имеют `status=core_perp_ready` и `next_action=ready_for_ui_review`.
+- Проверен chart window endpoint на preview: `HYPE 1m 7d` отдаёт `10080` свечей, `LINK 5m 7d` отдаёт `2016` свечей.
+
 ## [2026-06-15] - [DATA] - Candidate freshness scope для provider inventory
 - `/api/v1/data/provider-inventory` теперь строит freshness report по запрошенным candidate symbols, а не только по текущему watched universe `BTC/ETH/SOL`.
 - `/api/v1/data/health` сохранён без расширения публичного health scope: основной production SLA по-прежнему относится к текущему UI universe `BTC/ETH/SOL`.

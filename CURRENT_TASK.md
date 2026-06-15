@@ -1,8 +1,17 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run и candidate freshness scope для первой малой группы завершены; следующий gate — 72h/7d preview backfill и gaps/coverage проверка перед UI universe expansion.
+**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены; следующий gate — preview UI universe expansion и `/charts` QA до production rollout.
 **Last Updated**: 2026-06-15
+
+## Обновление 2026-06-15 — 72h/7d preview backfill первой группы
+
+- 72h backfill `HYPE/XRP/DOGE/ADA/LINK` на preview завершён: `fetched=27065`, `inserted=26902`, `errors=0`.
+- 7d backfill той же группы завершён: `fetched=63125`, `inserted=62858`, `errors=0`.
+- OHLCV gaps по `1m/5m/1h` для всех 5 symbols равны `0`; chart window проверен: `HYPE 1m 7d = 10080` свечей, `LINK 5m 7d = 2016` свечей.
+- 7d coverage: `covered=30`, `partial=15`, `missing=0`; partial остаётся только у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- `/api/v1/data/provider-inventory` показывает `promotion_candidates=5`, `ready_for_ui_review=5`, `history_completion_required=0`; все symbols имеют `status=core_perp_ready`.
+- Следующий шаг: включить `HYPE/XRP/DOGE/ADA/LINK` в preview UI universe/selectors и проверить `/charts` на desktop/mobile перед production rollout.
 
 ## Обновление 2026-06-15 — Candidate freshness scope
 
@@ -147,7 +156,8 @@
 - [x] P1: подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
 - [x] P1: выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
 - [x] P1: расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
-- [ ] P1: выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед UI universe expansion.
+- [x] P1: выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед UI universe expansion.
+- [ ] P1: включить первую малую группу в preview UI universe/selectors и проверить `/charts` на desktop/mobile до production rollout.
 - [ ] P2: backtest engine и scheduler делать только после стабилизации исторических рядов.
 
 ## PostgreSQL MVP Summary — 2026-06-05
