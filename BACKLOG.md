@@ -15,6 +15,7 @@
 - [x] Проверить preview auto-deploy end-to-end через GitHub Actions: deploy key fingerprint, SSH login, `/opt/deltagrid-preview`, deploy step и server smoke.
 - [x] Усилить preview deploy workflow после flaky GitHub runner: TCP port probe warning-only, SSH login с timeout/keepalive и retry.
 - [x] Стабилизировать preview deploy SSH retry path после flaky `Test preview SSH login`: commit `4c3dec0`, CI success, `Deploy Preview` run `27532247102` success, `/opt/deltagrid-preview` healthy.
+- [x] Перевести diagnostic SSH login/app-dir checks в deploy workflows в warning-only режим и оставить реальным gate сам deploy step с 3 retry.
 - [x] Подготовить hardening `Deploy Production` workflow в `preview`: secret diagnostics, fingerprint, expected values, SSH retry и app-dir check.
 - [ ] Настроить и проверить GitHub repository secrets `PROD_*` для production auto-deploy отдельной безопасной итерацией.
 - [ ] Перенести production deploy hardening в `main` и проверить, что `Deploy Production` делает реальный deploy, а не safe-skip.

@@ -132,7 +132,8 @@ jobs:
             echo "::warning::Preview SSH login failed on attempt $attempt"
             sleep $((attempt * 15))
           done
-          exit 1
+          echo "::warning::Preview SSH login diagnostic failed after retries; deploy step remains the gating SSH command"
+          exit 0
 
       - name: Check preview app directory
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
@@ -151,12 +152,13 @@ jobs:
             echo "::warning::Preview app directory check failed on attempt $attempt"
             sleep $((attempt * 15))
           done
-          exit 1
+          echo "::warning::Preview app directory diagnostic failed after retries; deploy step remains the gating check"
+          exit 0
 
       - name: Deploy preview
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
-          for attempt in 1 2; do
+          for attempt in 1 2 3; do
             echo "Preview deploy attempt $attempt"
             if timeout 1200 ssh -i ~/.ssh/deltagrid_preview_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "
               set -e
@@ -171,6 +173,6 @@ jobs:
               exit 0
             fi
             echo "::warning::Preview deploy failed on attempt $attempt"
-            sleep 30
+            sleep $((attempt * 30))
           done
           exit 1

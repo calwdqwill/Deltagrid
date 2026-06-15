@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [OPS] - Deploy SSH diagnostics made non-blocking
+- После успешного CI для docs commit `e8ddb1f` workflow `Deploy Preview` run `27533723576` упал на диагностическом шаге `Test preview SSH login`; deploy step не запускался, preview VPS при этом оставался healthy и локальный SSH к `root@2.25.143.143` работал.
+- В `deploy-preview.yml` и `deploy-production.yml` шаги `Test SSH login` и `Check app directory` переведены в warning-only diagnostics: они больше не останавливают workflow сами по себе.
+- Реальным gating шагом остаётся `Deploy preview` / `Deploy production`: если SSH deploy не сможет подключиться или выполнить `scripts/deploy-compose-stack.sh`, workflow по-прежнему завершится failure.
+- Количество попыток deploy увеличено с 2 до 3, пауза между попытками стала нарастающей: `30/60/90` секунд.
+
 ## [2026-06-15] - [FRONTEND] - Preview chart candidates scope
 - В preview frontend добавлено разделение universe: `CORE_SYMBOLS=BTC/ETH/SOL` остаётся для `Market Matrix`, `Arbitrage Scanner` и `Perp DEX`, а `CANDIDATE_SYMBOLS=HYPE/XRP/DOGE/ADA/LINK` доступны в `/charts` и `/assets` как preview chart/asset candidates.
 - Устаревшие UI-подписи `Binance` в affected screens заменены на `OKX` там, где это только отображение текущего primary perp source и не меняет backend-логику.
