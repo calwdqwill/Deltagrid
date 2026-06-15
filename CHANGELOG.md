@@ -1,5 +1,13 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [FRONTEND] - Preview chart candidates scope
+- В preview frontend добавлено разделение universe: `CORE_SYMBOLS=BTC/ETH/SOL` остаётся для `Market Matrix`, `Arbitrage Scanner` и `Perp DEX`, а `CANDIDATE_SYMBOLS=HYPE/XRP/DOGE/ADA/LINK` доступны в `/charts` и `/assets` как preview chart/asset candidates.
+- Устаревшие UI-подписи `Binance` в affected screens заменены на `OKX` там, где это только отображение текущего primary perp source и не меняет backend-логику.
+- Повторная gate-проверка `/api/v1/data/provider-inventory?symbols=HYPE,XRP,DOGE,ADA,LINK&exchange=okx` перед UI promotion показала текущий строгий статус: `promotion_candidates=0`, `ready_for_ui_review=0`, `history_completion_required=5`; у всех 5 symbols `chart_ready=true`, но полный promotion блокируют partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Preview CI/CD подтверждён на итоговом commit `57e743a`: CI `success`, `Deploy Preview` run `27533404025` `success`, `/opt/deltagrid-preview` обновлён до `57e743a`, backend/frontend/PostgreSQL healthy.
+- Smoke-check preview после deploy: `/charts?symbol=HYPE&interval=1m&range=7d` и `/assets?symbol=ADA` возвращают HTTP `200` и показывают candidate symbols + OKX; `/market-matrix`, `/arbitrage-scanner`, `/perp-dex` возвращают HTTP `200` и остаются scoped к `BTC/ETH/SOL`.
+- API smoke для chart windows: `HYPE 1m 7d` отдаёт около `10080` timestamp rows, `LINK 5m 7d` отдаёт около `2016` timestamp rows.
+
 ## [2026-06-15] - [OPS] - Preview deploy SSH hardening
 - Усилен `Deploy Preview` workflow после flaky failure на шаге `Test preview SSH login`: SSH теперь использует `IdentitiesOnly`, `PreferredAuthentications=publickey`, короткий `ConnectionAttempts=1`, явные `timeout` и controlled retries для login, app-dir check и deploy.
 - Аналогичный SSH retry/timeout hardening применён к `Deploy Production`, чтобы production workflow имел тот же безопасный профиль перед отдельной проверкой `PROD_*`.
@@ -11,7 +19,7 @@
 - На preview выполнен 7d backfill той же группы: `fetched=63125`, `inserted=62858`, `errors=0`, OHLCV jobs по всем symbols/intervals завершились с `gaps=0`.
 - `/api/v1/data/coverage?symbols=HYPE,XRP,DOGE,ADA,LINK&exchange=okx&range=7d` показывает `covered=30`, `partial=15`, `missing=0`, `total=45`, `coverage_pct=66.67`.
 - 7d coverage по streams: OHLCV `15/15 covered`, funding `5/5 covered`, long/short `5/5 covered`, liquidations `5/5 covered`; partial остаётся у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
-- `/api/v1/data/provider-inventory` теперь показывает `promotion_candidates=5`, `ready_for_ui_review=5`, `backfill_required=0`, `freshness_tracking_required=0`, `history_completion_required=0`; все 5 symbols имеют `status=core_perp_ready` и `next_action=ready_for_ui_review`.
+- Для chart path группа готова: `/api/v1/data/provider-inventory` показывает `backfill_required=0`, `freshness_tracking_required=0`, а у всех 5 symbols `chart_ready=true`; последующая строгая gate-проверка перед full UI promotion зафиксирована отдельной frontend-итерацией выше и требует закрыть `history_completion_required=5` по partial snapshot/enrichment streams.
 - Проверен chart window endpoint на preview: `HYPE 1m 7d` отдаёт `10080` свечей, `LINK 5m 7d` отдаёт `2016` свечей.
 
 ## [2026-06-15] - [DATA] - Candidate freshness scope для provider inventory

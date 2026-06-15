@@ -125,8 +125,10 @@
 - Preview-проверка после deploy: `freshness_tracking_required=0`, `history_completion_required=5`, у `HYPE/XRP/DOGE/ADA/LINK` `freshness.worst_status=fresh`, но 7d coverage ещё partial.
 - 72h preview backfill завершён `fetched=27065`, `inserted=26902`, `errors=0`; 7d preview backfill завершён `fetched=63125`, `inserted=62858`, `errors=0`.
 - 7d coverage первой группы: `covered=30`, `partial=15`, `missing=0`; OHLCV/funding/long-short/liquidations covered, partial остаётся только у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
-- Provider inventory после 7d backfill: `promotion_candidates=5`, `ready_for_ui_review=5`, `history_completion_required=0`; все symbols `core_perp_ready`.
-- Следующий milestone: preview UI universe expansion для первой группы без перевода на production, с проверкой `/charts` и selector states.
+- Preview chart path после 7d backfill готов: OHLCV gaps `0`, `/charts` может читать `HYPE/XRP/DOGE/ADA/LINK` через OKX window endpoint.
+- Повторная strict gate-проверка перед full UI promotion показала `promotion_candidates=0`, `ready_for_ui_review=0`, `history_completion_required=5`: у всех 5 symbols `chart_ready=true`, но full analytics universe блокируют partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Preview frontend разделён на `CORE_SYMBOLS=BTC/ETH/SOL` для `Market Matrix`/`Arbitrage Scanner`/`Perp DEX` и `CANDIDATE_SYMBOLS=HYPE/XRP/DOGE/ADA/LINK` для `/charts` и `/assets`.
+- Следующий milestone: закрыть history/policy gap для snapshot/enrichment streams и только после этого расширять full analytics universe или выкатывать candidates в production.
 
 ## Текущая итерация
 
@@ -222,7 +224,8 @@
 - [x] Выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
 - [x] Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
 - [x] Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
-- [ ] Включить первую малую группу в preview UI universe/selectors и проверить `/charts` на desktop/mobile до production rollout.
+- [x] Включить первую малую группу как preview chart/asset candidates в `/charts` и `/assets`; full analytics screens оставить на `BTC/ETH/SOL` до строгого promotion gate.
+- [ ] Закрыть `history_completion_required=5` по `open_interest`, `basis_premium`, `spot_perp_price` или явно зафиксировать policy-разделение `chart_ready` и full analytics universe.
 - [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
