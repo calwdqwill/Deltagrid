@@ -1,12 +1,19 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [DATA] - Candidate freshness scope для provider inventory
+- `/api/v1/data/provider-inventory` теперь строит freshness report по запрошенным candidate symbols, а не только по текущему watched universe `BTC/ETH/SOL`.
+- `/api/v1/data/health` сохранён без расширения публичного health scope: основной production SLA по-прежнему относится к текущему UI universe `BTC/ETH/SOL`.
+- В ответ `provider-inventory.scope` добавлено `freshness_scope=requested_symbols`, чтобы явно отделять candidate freshness от current UI universe freshness.
+- Preview deploy проверен на `HYPE/XRP/DOGE/ADA/LINK`: `freshness_tracking_required=0`, все 5 symbols получили `freshness.worst_status=fresh`, но остаются `history_completion_required` до 72h/7d backfill.
+- Добавлен regression test, который проверяет freshness scope для candidate symbol за пределами `BTC/ETH/SOL`.
+
 ## [2026-06-15] - [DATA] - Alias expansion и 24h preview sync dry-run
 - `SymbolMapper.seed_defaults()` стал идемпотентным: повторный запуск больше не создаёт дубликаты `instruments`/`instrument_aliases` и безопасно обновляет существующие aliases.
 - В default aliases добавлена первая малая группа expansion candidates: `HYPE`, `XRP`, `DOGE`, `ADA`, `LINK` для OKX, CoinGlass, CoinGecko и legacy Binance.
 - Preview DB засеяна aliases через `SymbolMapper().seed_defaults()`; проверены OKX/CoinGlass/CoinGecko mappings для всех 5 symbols.
 - На preview выполнен 24h sync dry-run `HYPE/XRP/DOGE/ADA/LINK` через OKX primary path без расширения UI: `fetched=9035`, `inserted=8986`, `errors=0`.
 - OHLCV gaps по `1m/5m/1h` для всех 5 symbols равны `0`; `/data/coverage` за 24h показывает `missing=0`, `covered=30`, `partial=15`.
-- `/data/provider-inventory` после dry-run оставляет symbols вне promotion candidates с `next_action=freshness_tracking_required`, потому freshness SLA пока формально покрывает только `BTC/ETH/SOL`.
+- До отдельного candidate freshness scope `/data/provider-inventory` оставлял symbols вне promotion candidates с `next_action=freshness_tracking_required`, потому freshness SLA формально покрывал только `BTC/ETH/SOL`.
 - Добавлен regression test для idempotent `SymbolMapper` seeding и новых aliases.
 
 ## [2026-06-15] - [DATA] - Provider discovery v1 для expansion candidates

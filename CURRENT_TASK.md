@@ -1,8 +1,16 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Provider inventory v0, provider discovery v1, alias expansion и 24h preview sync dry-run первой малой группы завершены; следующий gate — freshness SLA scope и/или 72h/7d preview backfill перед UI universe expansion.
+**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run и candidate freshness scope для первой малой группы завершены; следующий gate — 72h/7d preview backfill и gaps/coverage проверка перед UI universe expansion.
 **Last Updated**: 2026-06-15
+
+## Обновление 2026-06-15 — Candidate freshness scope
+
+- `/api/v1/data/provider-inventory` теперь считает freshness по запрошенным candidate symbols и явно возвращает `scope.freshness_scope=requested_symbols`.
+- `/api/v1/data/health` не расширялся и остаётся production SLA snapshot для текущего UI universe `BTC/ETH/SOL`.
+- Preview deploy проверен на `HYPE/XRP/DOGE/ADA/LINK`: `freshness_tracking_required=0`, все 5 symbols имеют `freshness.worst_status=fresh`.
+- По readiness все 5 symbols пока остаются `history_completion_required`, потому 7d coverage ещё partial.
+- Следующий шаг: выполнить 72h/7d preview backfill первой группы и проверить gaps/coverage перед UI universe expansion.
 
 ## Обновление 2026-06-15 — Alias expansion и 24h preview dry-run
 
@@ -11,8 +19,8 @@
 - 24h sync dry-run `HYPE/XRP/DOGE/ADA/LINK` на preview завершён без расширения UI: `fetched=9035`, `inserted=8986`, `errors=0`.
 - OHLCV gaps по `1m/5m/1h` для всех 5 symbols равны `0`.
 - `/api/v1/data/coverage?symbols=HYPE,XRP,DOGE,ADA,LINK&exchange=okx&range=24h` показывает `covered=30`, `partial=15`, `missing=0`.
-- `/api/v1/data/provider-inventory` оставляет symbols вне promotion candidates с `next_action=freshness_tracking_required`, потому freshness SLA пока формально покрывает только `BTC/ETH/SOL`.
-- Следующий шаг: расширить freshness SLA scope для первой группы или выполнить 72h/7d preview backfill и проверить gaps/coverage перед UI universe expansion.
+- До отдельного candidate freshness scope `/api/v1/data/provider-inventory` оставлял symbols вне promotion candidates с `next_action=freshness_tracking_required`, потому freshness SLA формально покрывал только `BTC/ETH/SOL`.
+- Следующий шаг закрыт отдельной итерацией candidate freshness scope; далее нужен 72h/7d preview backfill и проверка gaps/coverage перед UI universe expansion.
 
 ## Обновление 2026-06-15 — Provider discovery v1
 
@@ -138,7 +146,7 @@
 - [x] P1: провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
 - [x] P1: подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
 - [x] P1: выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
-- [ ] P1: расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
+- [x] P1: расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
 - [ ] P1: выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед UI universe expansion.
 - [ ] P2: backtest engine и scheduler делать только после стабилизации исторических рядов.
 

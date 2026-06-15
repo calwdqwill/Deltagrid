@@ -50,7 +50,7 @@
 - [x] P1: Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe: preview/VPS показал `20/20 eligible_for_24h_sync_dry_run`, Binance legacy остаётся `HTTP 451`.
 - [x] P1: Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
 - [x] P1: Выполнить 24h sync dry-run первой малой группы на preview без расширения UI и проверить errors/gaps/coverage: `fetched=9035`, `inserted=8986`, `errors=0`, OHLCV gaps `0`, 24h coverage `missing=0`.
-- [ ] P1: Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
+- [x] P1: Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness: `/data/provider-inventory` использует `freshness_scope=requested_symbols`, а `/data/health` остаётся scoped к текущему UI universe `BTC/ETH/SOL`.
 - [ ] P1: Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
 - [x] P1: Добавить CI audit gate `npm audit --audit-level=high`, чтобы high/critical frontend advisory снова не прошли в `preview/main`.
 - [ ] P1: Дождаться stable Next.js с bundled `postcss >=8.5.10` или другого upstream patch; `next@canary` не использовать в production path без отдельного решения.

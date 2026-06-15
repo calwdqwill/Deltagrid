@@ -120,7 +120,9 @@
 - 24h sync dry-run первой малой группы на preview завершён `errors=0`: `fetched=9035`, `inserted=8986`.
 - OHLCV по `1m/5m/1h` для `HYPE/XRP/DOGE/ADA/LINK` прошёл с `gaps=0`.
 - 24h coverage после dry-run: `covered=30`, `partial=15`, `missing=0`; partial ожидаем у snapshot-потоков `open_interest`, `basis_premium`, `spot_perp_price`.
-- Следующий milestone: расширить freshness SLA scope для первой группы или выполнить 72h/7d preview backfill перед любым UI universe expansion.
+- Candidate freshness scope вынесен в `/data/provider-inventory`: endpoint считает freshness по запрошенным symbols (`freshness_scope=requested_symbols`), а `/data/health` остаётся scoped к текущему UI universe `BTC/ETH/SOL`.
+- Preview-проверка после deploy: `freshness_tracking_required=0`, `history_completion_required=5`, у `HYPE/XRP/DOGE/ADA/LINK` `freshness.worst_status=fresh`, но 7d coverage ещё partial.
+- Следующий milestone: выполнить 72h/7d preview backfill первой группы и проверить gaps/coverage перед любым UI universe expansion.
 
 ## Текущая итерация
 
@@ -214,7 +216,7 @@
 - [x] Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
 - [x] Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
 - [x] Выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
-- [ ] Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
+- [x] Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
 - [ ] Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
 - [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
