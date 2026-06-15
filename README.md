@@ -177,6 +177,17 @@ sudo sh scripts/install-market-sync-cron.sh
 tail -100 /var/log/deltagrid-market-sync.log
 ```
 
+Для preview/dev стека используется отдельный cron-файл и отдельный лог, чтобы не смешивать его с production:
+
+```bash
+cd /opt/deltagrid-preview
+sudo PROJECT_DIR=/opt/deltagrid-preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview \
+  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync \
+  LOG_FILE=/var/log/deltagrid-preview-market-sync.log \
+  SYMBOLS=BTC,ETH,SOL,HYPE,XRP,DOGE,ADA,LINK \
+  sh scripts/install-market-sync-cron.sh
+```
+
 На сервере используйте `docker compose`, `.env.production` и `docker-compose.prod.yml` из `/opt/deltagrid`. Старый SQLite-файл `deltagrid.db` не используется в production runtime.
 
 ## Features

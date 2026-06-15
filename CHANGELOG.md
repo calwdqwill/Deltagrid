@@ -1,5 +1,10 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [OPS] - Preview market sync cron path
+- `scripts/install-market-sync-cron.sh` теперь умеет записывать в cron переменные `ENV_FILE`, `COMPOSE_FILE` и `COMPOSE_PROJECT_NAME`, чтобы один installer можно было безопасно использовать для production и preview Compose projects.
+- Для preview зафиксирован отдельный cron contract: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, cron file `/etc/cron.d/deltagrid-preview-market-sync` и лог `/var/log/deltagrid-preview-market-sync.log`.
+- Production cron по умолчанию не меняется: без `ENV_FILE` и `COMPOSE_PROJECT_NAME` installer сохраняет прежний production-safe path через `/opt/deltagrid`.
+
 ## [2026-06-15] - [DATA] - Promotion blocker diagnostics for provider inventory
 - `GET /api/v1/data/provider-inventory` расширен additive-диагностикой `coverage_blockers_7d`, `freshness_blockers` и `promotion_blockers` на уровне каждого symbol.
 - В `summary` добавлены счётчики `coverage_blockers`, `freshness_blockers` и `promotion_blockers`, чтобы быстро видеть масштаб причин, блокирующих full analytics promotion.

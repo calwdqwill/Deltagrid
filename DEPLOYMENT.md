@@ -274,6 +274,28 @@ tail -100 /var/log/deltagrid-market-sync.log
 sudo SCHEDULE="*/30 * * * *" LOOKBACK_HOURS=4 sh scripts/install-market-sync-cron.sh
 ```
 
+Для отдельного preview/dev стека cron нужно ставить отдельным файлом и явно передавать preview env/project, чтобы не затронуть production контейнеры и volume:
+
+```bash
+cd /opt/deltagrid-preview
+sudo PROJECT_DIR=/opt/deltagrid-preview \
+  ENV_FILE=.env.preview \
+  COMPOSE_PROJECT_NAME=deltagrid-preview \
+  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync \
+  LOG_FILE=/var/log/deltagrid-preview-market-sync.log \
+  SYMBOLS=BTC,ETH,SOL,HYPE,XRP,DOGE,ADA,LINK \
+  LOOKBACK_HOURS=2 \
+  OHLCV_INTERVALS=1m,5m,1h \
+  sh scripts/install-market-sync-cron.sh
+```
+
+Проверка preview cron:
+
+```bash
+tail -100 /var/log/deltagrid-preview-market-sync.log
+curl http://127.0.0.1:8011/api/v1/data/provider-inventory?symbols=HYPE,XRP,DOGE,ADA,LINK\&exchange=okx
+```
+
 Важно:
 
 - на сервере рабочая директория проекта — `/opt/deltagrid`, не `/root`;
