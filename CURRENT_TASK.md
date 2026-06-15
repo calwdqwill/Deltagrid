@@ -8,8 +8,11 @@
 
 - Причина stale/degraded freshness на preview: регулярный host cron был установлен только для production `/opt/deltagrid` и синкал `BTC/ETH/SOL`; отдельного `/etc/cron.d/deltagrid-preview-market-sync` не было.
 - `scripts/install-market-sync-cron.sh` обновлён: cron-команда теперь может явно пробрасывать `ENV_FILE`, `COMPOSE_FILE` и `COMPOSE_PROJECT_NAME`.
-- Для preview зафиксирован безопасный contract: `/opt/deltagrid-preview`, `.env.preview`, Compose project `deltagrid-preview`, отдельный cron-файл и отдельный лог.
+- Для preview зафиксирован безопасный split contract: отдельный cron/log для core symbols и отдельный cron/log для candidates со сдвигом минут, чтобы снизить риск OKX `429` на derived streams.
 - Production cron не менялся и не переустанавливался в рамках кодовой правки.
+- На preview VPS установлены `/etc/cron.d/deltagrid-preview-market-sync-core` и `/etc/cron.d/deltagrid-preview-market-sync-candidates`; production `/etc/cron.d/deltagrid-market-sync` остался прежним.
+- Ручной preview sync по split-path прошёл `errors=0` для core и `errors=0` для candidates. Provider inventory после проверки: `chart_ready_candidates=5`, `promotion_candidates=0`, `coverage_blockers=15`, `freshness_blockers=5`, `promotion_blockers=20`.
+- Оставшийся freshness blocker у candidates — `funding_rates:8h:stale`; full promotion по-прежнему блокируют 15 coverage blockers по `open_interest`, `basis_premium`, `spot_perp_price`.
 
 ## Обновление 2026-06-15 — Promotion blocker diagnostics
 

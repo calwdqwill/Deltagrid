@@ -177,14 +177,20 @@ sudo sh scripts/install-market-sync-cron.sh
 tail -100 /var/log/deltagrid-market-sync.log
 ```
 
-Для preview/dev стека используется отдельный cron-файл и отдельный лог, чтобы не смешивать его с production:
+Для preview/dev стека используются отдельные cron-файлы и логи, чтобы не смешивать его с production и не запускать core/candidate symbols одним большим burst:
 
 ```bash
 cd /opt/deltagrid-preview
-sudo PROJECT_DIR=/opt/deltagrid-preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview \
-  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync \
-  LOG_FILE=/var/log/deltagrid-preview-market-sync.log \
-  SYMBOLS=BTC,ETH,SOL,HYPE,XRP,DOGE,ADA,LINK \
+sudo SCHEDULE="*/15 * * * *" PROJECT_DIR=/opt/deltagrid-preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview \
+  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync-core \
+  LOG_FILE=/var/log/deltagrid-preview-market-sync-core.log \
+  SYMBOLS=BTC,ETH,SOL \
+  sh scripts/install-market-sync-cron.sh
+
+sudo SCHEDULE="5,20,35,50 * * * *" PROJECT_DIR=/opt/deltagrid-preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview \
+  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync-candidates \
+  LOG_FILE=/var/log/deltagrid-preview-market-sync-candidates.log \
+  SYMBOLS=HYPE,XRP,DOGE,ADA,LINK \
   sh scripts/install-market-sync-cron.sh
 ```
 
