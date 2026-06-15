@@ -328,6 +328,18 @@ docker compose --env-file .env.preview -p deltagrid-preview -f docker-compose.pr
 
 CLI не пишет в PostgreSQL и не меняет sync/UI-конфигурацию. Он проверяет OKX, CoinGlass, CoinGecko и legacy Binance, после чего выдаёт `eligible_for_24h_sync_dry_run`, `okx_core_only_review` или `do_not_expand_sync_yet`.
 
+Idempotent seed aliases для core symbols и первой малой expansion group:
+
+```bash
+cd backend
+python - <<'PY'
+from app.adapters.data.symbol_mapper import SymbolMapper
+SymbolMapper().seed_defaults()
+PY
+```
+
+На preview эта команда выполняется внутри backend container перед sync dry-run. Она не расширяет UI universe сама по себе.
+
 ## Roadmap
 
 | Phase | Status | Focus |

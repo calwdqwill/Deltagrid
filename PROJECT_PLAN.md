@@ -113,6 +113,15 @@
 - Все `20/20` MVP1 candidate symbols получили `eligible_for_24h_sync_dry_run`: `BTC/ETH/SOL/HYPE/XRP/DOGE/BNB/ADA/LINK/AVAX/SUI/TON/TRX/DOT/LTC/BCH/AAVE/UNI/APT/ARB`.
 - Следующий milestone: `SymbolMapper`/alias expansion plan и 24h sync dry-run малой группы без расширения UI.
 
+## Alias expansion и preview dry-run — 2026-06-15
+
+- `SymbolMapper.seed_defaults()` переведён на идемпотентный upsert и расширен aliases для `HYPE/XRP/DOGE/ADA/LINK`.
+- Preview DB засеяна aliases; OKX/CoinGlass/CoinGecko mappings проверены вручную внутри backend container.
+- 24h sync dry-run первой малой группы на preview завершён `errors=0`: `fetched=9035`, `inserted=8986`.
+- OHLCV по `1m/5m/1h` для `HYPE/XRP/DOGE/ADA/LINK` прошёл с `gaps=0`.
+- 24h coverage после dry-run: `covered=30`, `partial=15`, `missing=0`; partial ожидаем у snapshot-потоков `open_interest`, `basis_premium`, `spot_perp_price`.
+- Следующий milestone: расширить freshness SLA scope для первой группы или выполнить 72h/7d preview backfill перед любым UI universe expansion.
+
 ## Текущая итерация
 
 - [x] Перевести runtime persistence с SQLite на PostgreSQL.
@@ -203,8 +212,10 @@
 - [x] Сформировать production universe v1 на основе coverage matrix.
 - [x] Провести provider inventory v0 для расширения universe за пределы BTC/ETH/SOL через read-only persisted-data endpoint.
 - [x] Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
-- [ ] Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
-- [ ] Выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
+- [x] Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
+- [x] Выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
+- [ ] Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
+- [ ] Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
 - [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.

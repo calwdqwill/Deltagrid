@@ -48,8 +48,10 @@
 - [x] P1: Проверить Next.js 16 stable для остаточного PostCSS advisory: `next@16.2.9` всё ещё использует bundled `postcss 8.4.31`, поэтому production-safe апгрейд не закрывает `moderate`.
 - [x] P1: Добавить provider inventory v0 через `GET /api/v1/data/provider-inventory`: read-only persisted-data кандидаты на расширение universe без внешних API-вызовов.
 - [x] P1: Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe: preview/VPS показал `20/20 eligible_for_24h_sync_dry_run`, Binance legacy остаётся `HTTP 451`.
-- [ ] P1: Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
-- [ ] P1: Выполнить 24h sync dry-run первой малой группы на preview без расширения UI и проверить errors/gaps/coverage.
+- [x] P1: Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
+- [x] P1: Выполнить 24h sync dry-run первой малой группы на preview без расширения UI и проверить errors/gaps/coverage: `fetched=9035`, `inserted=8986`, `errors=0`, OHLCV gaps `0`, 24h coverage `missing=0`.
+- [ ] P1: Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
+- [ ] P1: Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
 - [x] P1: Добавить CI audit gate `npm audit --audit-level=high`, чтобы high/critical frontend advisory снова не прошли в `preview/main`.
 - [ ] P1: Дождаться stable Next.js с bundled `postcss >=8.5.10` или другого upstream patch; `next@canary` не использовать в production path без отдельного решения.
 - [ ] P2: Подготовить настоящий backtest engine после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
@@ -79,6 +81,7 @@
 - [x] Довести charts layer после production QA: backend window endpoint добавлен, `/charts` проверен, coverage matrix подготовлена перед расширением universe.
 - [x] Провести provider inventory v0 по persisted data: `GET /api/v1/data/provider-inventory` показывает candidate symbols, coverage/freshness readiness, `promotion_candidate` и `next_action`.
 - [x] Провести внешнюю инвентаризацию perp-инструментов по CoinGlass, CoinGecko, OKX и legacy Binance: для каждого symbol зафиксировать OKX core, CoinGlass enrichment, CoinGecko spot и Binance legacy status.
+- [x] Засеять aliases и выполнить 24h preview dry-run для первой малой группы `HYPE/XRP/DOGE/ADA/LINK` без изменения UI.
 - [ ] Сформировать production universe для дашборда: топ-30 crypto assets плюс RWA-кандидаты, отдельно пометить активы с полной историей и активы только со spot/market данными.
 - [ ] Расширить `SymbolMapper` и sync-конфигурацию только после coverage-матрицы, чтобы не показывать в UI активы без честных backend data streams.
 - [ ] Подготовить RWA coverage map: tokenized commodities, treasuries, equities/stock-like assets, доступные источники CoinGecko/CoinGlass/прочие provider'ы и ограничения по истории.

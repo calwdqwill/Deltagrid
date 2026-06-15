@@ -1,5 +1,14 @@
 # Changelog — DeltaGrid
 
+## [2026-06-15] - [DATA] - Alias expansion и 24h preview sync dry-run
+- `SymbolMapper.seed_defaults()` стал идемпотентным: повторный запуск больше не создаёт дубликаты `instruments`/`instrument_aliases` и безопасно обновляет существующие aliases.
+- В default aliases добавлена первая малая группа expansion candidates: `HYPE`, `XRP`, `DOGE`, `ADA`, `LINK` для OKX, CoinGlass, CoinGecko и legacy Binance.
+- Preview DB засеяна aliases через `SymbolMapper().seed_defaults()`; проверены OKX/CoinGlass/CoinGecko mappings для всех 5 symbols.
+- На preview выполнен 24h sync dry-run `HYPE/XRP/DOGE/ADA/LINK` через OKX primary path без расширения UI: `fetched=9035`, `inserted=8986`, `errors=0`.
+- OHLCV gaps по `1m/5m/1h` для всех 5 symbols равны `0`; `/data/coverage` за 24h показывает `missing=0`, `covered=30`, `partial=15`.
+- `/data/provider-inventory` после dry-run оставляет symbols вне promotion candidates с `next_action=freshness_tracking_required`, потому freshness SLA пока формально покрывает только `BTC/ETH/SOL`.
+- Добавлен regression test для idempotent `SymbolMapper` seeding и новых aliases.
+
 ## [2026-06-15] - [DATA] - Provider discovery v1 для expansion candidates
 - Добавлен read-only CLI `python -m app.adapters.data.discover_provider_universe` для live discovery по OKX, CoinGlass, CoinGecko и legacy Binance без записи в PostgreSQL.
 - CLI проверяет candidate symbols из MVP1 inventory: OKX USDT swap instrument/OHLCV/funding/OI/long-short, CoinGlass OKX snapshots/liquidations, CoinGecko spot price и Binance USD-M как legacy diagnostic.

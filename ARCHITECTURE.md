@@ -56,6 +56,8 @@ Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/ohl
 
 Для внешнего discovery добавлен CLI `python -m app.adapters.data.discover_provider_universe`. Он не является API endpoint'ом и не пишет в PostgreSQL: задача CLI — проверить live provider availability для candidate symbols перед изменением aliases/sync universe. Проверяются OKX USDT swap instrument/OHLCV/funding/OI/long-short, CoinGlass OKX snapshots/liquidations, CoinGecko spot price и Binance USD-M как legacy diagnostic. На VPS Binance остаётся `blocked_http_451`, поэтому не используется как primary path.
 
+`SymbolMapper.seed_defaults()` теперь идемпотентно поддерживает core symbols `BTC/ETH/SOL` и первую малую expansion group `HYPE/XRP/DOGE/ADA/LINK`. Эти aliases нужны для preview sync dry-run и CoinGecko-derived basis, но сами по себе не расширяют UI universe: `/data/provider-inventory` и freshness SLA остаются gate перед показом новых symbols в product screens.
+
 Для sparse event streams, сейчас это `liquidations`, freshness разделяет два сигнала: возраст последнего события и возраст последнего успешного sync-run. Если новых liquidation events нет, но `coinglass/liquidations` sync свежий и успешный, поток остаётся `fresh` с reason `no recent liquidation events`; `/data-health` показывает это как `event age / sync age`.
 
 `Perp DEX` не показывает mock DEX volume/OI/liquidity как реальные данные, пока не подключён отдельный live DEX venue adapter. `Strategy Lab` показывает readiness live inputs, но не показывает fake PnL/trades до появления реального backtest engine.
