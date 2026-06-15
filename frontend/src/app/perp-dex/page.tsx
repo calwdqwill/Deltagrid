@@ -17,6 +17,7 @@ import {
   getLiveMarketMatrix,
   LiveArbitrageOpportunity,
   LiveMatrixRow,
+  TRACKED_SYMBOLS_LABEL,
 } from "@/lib/terminal/live-streams";
 import { KpiMetric } from "@/types/terminal";
 
@@ -167,7 +168,7 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
     {
       label: "Perp Inputs",
       value: `${livePerpRows}/${matrix.rows.length}`,
-      caption: "BTC/ETH/SOL live streams",
+      caption: `${TRACKED_SYMBOLS_LABEL} live streams`,
       tone: livePerpRows === matrix.rows.length ? "positive" : "warning",
     },
     {
@@ -265,7 +266,7 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
 
         <TerminalPanel>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            <SelectPill label="Universe" value="BTC / ETH / SOL" />
+            <SelectPill label="Universe" value={TRACKED_SYMBOLS_LABEL} />
             <SelectPill label="Perp Source" value="OKX USDT Swap" />
             <SelectPill label="Derivatives" value="Funding / OI / L/S" />
             <SelectPill label="DEX Venues" value="Pending direct adapters" />
