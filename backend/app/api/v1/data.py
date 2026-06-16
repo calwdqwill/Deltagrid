@@ -66,7 +66,7 @@ PROVIDER_INVENTORY_SYMBOLS = (
     "APT",
     "ARB",
 )
-PROVIDER_INVENTORY_PROMOTION_STATUSES = {"complete_history", "core_perp_ready"}
+PROVIDER_INVENTORY_PROMOTION_STATUSES = {"complete_history"}
 PRIMARY_PERP_EXCHANGE = "okx"
 CRON_EXPECTED_INTERVAL_MINUTES = 15
 RECENT_SYNC_WINDOW_HOURS = 24
@@ -1402,9 +1402,29 @@ def _build_provider_inventory_report(
                 for row in inventory_rows
                 if not row["promotion_candidate"]
             ],
+            "gates": {
+                "chart_ready": {
+                    "field": "chart_ready",
+                    "candidate_list": "chart_ready_candidates",
+                    "purpose": "preview charts/assets eligibility",
+                    "rule": "chart-critical streams are covered; this does not grant full analytics promotion",
+                },
+                "promotion_candidate": {
+                    "field": "promotion_candidate",
+                    "candidate_list": "promotion_candidates",
+                    "purpose": "full analytics universe review",
+                    "required_statuses": sorted(PROVIDER_INVENTORY_PROMOTION_STATUSES),
+                    "rule": "all tracked streams must have complete 7d persisted history and fresh SLA signals",
+                    "blocker_fields": [
+                        "coverage_blockers_7d",
+                        "freshness_blockers",
+                        "promotion_blockers",
+                    ],
+                },
+            },
             "rule": (
-                "candidate symbols can move to UI review only after production universe readiness "
-                "passes on persisted coverage and freshness signals"
+                "chart_ready_candidates can be used only for preview charts/assets; promotion_candidates "
+                "require complete_history for full analytics universe review"
             ),
         },
         "symbols": inventory_rows,

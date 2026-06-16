@@ -59,7 +59,8 @@
 - [x] P1: Добавить детальные `promotion_blockers` в provider inventory: `coverage_blockers_7d`, `freshness_blockers` и summary-счётчики причин, блокирующих full analytics promotion.
 - [x] OPS/P1: Подготовить preview-safe market sync cron path через `ENV_FILE=.env.preview`, `COMPOSE_PROJECT_NAME=deltagrid-preview`, отдельный cron-файл и отдельный лог.
 - [x] OPS/P1: Стабилизировать OKX preview cron при transient HTTP `429`: классифицировать rate-limit ответы как retriable `RateLimitExceeded` и снизить default OKX pacing.
-- [ ] P1: Закрыть `history_completion_required=5` для `HYPE/XRP/DOGE/ADA/LINK` по partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price` или явно утвердить policy-разделение `chart_ready` и full analytics universe.
+- [x] P1: Закрыть `history_completion_required=5` для `HYPE/XRP/DOGE/ADA/LINK` по partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price` или явно утвердить policy-разделение `chart_ready` и full analytics universe: provider inventory теперь допускает `chart_ready_candidates` только для preview `/charts`/`/assets`, а `promotion_candidates` требует `complete_history`.
+- [ ] P1: Отдельно оценить backfill/ingestion для 7d `open_interest`, `basis_premium`, `spot_perp_price`, если candidates нужно продвигать в full analytics universe, а не держать в chart/asset режиме.
 - [x] P1: Добавить CI audit gate `npm audit --audit-level=high`, чтобы high/critical frontend advisory снова не прошли в `preview/main`.
 - [ ] P1: Дождаться stable Next.js с bundled `postcss >=8.5.10` или другого upstream patch; `next@canary` не использовать в production path без отдельного решения.
 - [ ] P2: Подготовить настоящий backtest engine после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.

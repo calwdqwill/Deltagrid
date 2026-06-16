@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-16] - [DATA] - Provider inventory policy gate для chart-ready candidates
+- `GET /api/v1/data/provider-inventory` теперь явно разделяет `chart_ready_candidates` и `promotion_candidates` через `policy.gates`.
+- `promotion_candidate` для full analytics universe требует `complete_history`; статус `core_perp_ready` с partial snapshot/enrichment streams больше не считается full promotion.
+- `chart_ready_candidates` остаются разрешением только для preview `/charts` и `/assets`, чтобы можно было смотреть 7d OHLCV candidates без продвижения их в `Market Matrix`, `Arbitrage Scanner` и `Perp DEX`.
+- Добавлен regression test для symbol с полной chart-critical 7d coverage и partial `open_interest`, `basis_premium`, `spot_perp_price`: такой symbol получает `chart_ready=true`, но остаётся `promotion_candidate=false` и `next_action=history_completion_required`.
+- Документация обновлена: `CURRENT_TASK.md`, `PROJECT_PLAN.md`, `BACKLOG.md`, `ARCHITECTURE.md`, `README.md`.
+
 ## [2026-06-15] - [DATA/OPS] - OKX rate-limit retry for preview cron
 - Реальный cron-triggered preview core sync подтвердил проблему: после установки split cron OKX `long_short_ratio` всё ещё мог вернуть HTTP `429` даже на `BTC/ETH/SOL`.
 - `OkxAdapter` теперь классифицирует HTTP `429` и OKX rate-limit payload как `RateLimitExceeded`, чтобы существующий `RetryPolicy` выполнял backoff/retry вместо немедленного `partial` sync-run.

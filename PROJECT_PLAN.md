@@ -127,9 +127,10 @@
 - 7d coverage первой группы: `covered=30`, `partial=15`, `missing=0`; OHLCV/funding/long-short/liquidations covered, partial остаётся только у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
 - Preview chart path после 7d backfill готов: OHLCV gaps `0`, `/charts` может читать `HYPE/XRP/DOGE/ADA/LINK` через OKX window endpoint.
 - Повторная strict gate-проверка перед full UI promotion показала `promotion_candidates=0`, `ready_for_ui_review=0`, `history_completion_required=5`: у всех 5 symbols `chart_ready=true`, но full analytics universe блокируют partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Policy-разделение зафиксировано в provider inventory: `chart_ready_candidates` подходят только для preview `/charts` и `/assets`, а `promotion_candidates` для full analytics universe требуют `complete_history`; `core_perp_ready` с partial snapshot/enrichment streams не считается full promotion.
 - Preview frontend разделён на `CORE_SYMBOLS=BTC/ETH/SOL` для `Market Matrix`/`Arbitrage Scanner`/`Perp DEX` и `CANDIDATE_SYMBOLS=HYPE/XRP/DOGE/ADA/LINK` для `/charts` и `/assets`.
 - Preview market sync получил отдельный split cron path, но первый реальный scheduled core run выявил transient OKX HTTP `429` на `long_short_ratio`; адаптер стабилизирован через retriable `RateLimitExceeded` и более консервативный OKX pacing.
-- Следующий milestone: закрыть history/policy gap для snapshot/enrichment streams и только после этого расширять full analytics universe или выкатывать candidates в production.
+- Следующий milestone: отдельно решить, добирать ли 7d snapshot/enrichment историю для full promotion или оставлять candidates в chart/asset режиме до новых data requirements.
 
 ## Текущая итерация
 
@@ -230,7 +231,8 @@
 - [x] Добавить provider-inventory `promotion_blockers`: отдельные coverage/freshness blockers и summary-счётчики причин, почему symbol ещё не проходит full analytics promotion.
 - [x] Подготовить отдельный preview market sync cron path, чтобы candidate freshness не зависела только от one-off backfill/sync.
 - [x] Стабилизировать OKX rate-limit handling для preview cron: HTTP `429` теперь retriable, default OKX pacing снижен.
-- [ ] Закрыть `history_completion_required=5` по `open_interest`, `basis_premium`, `spot_perp_price` или явно зафиксировать policy-разделение `chart_ready` и full analytics universe.
+- [x] Закрыть `history_completion_required=5` по `open_interest`, `basis_premium`, `spot_perp_price` или явно зафиксировать policy-разделение `chart_ready` и full analytics universe.
+- [ ] Отдельно оценить backfill/ingestion для 7d `open_interest`, `basis_premium`, `spot_perp_price`, если candidates нужно продвигать в full analytics universe.
 - [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
 - [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
