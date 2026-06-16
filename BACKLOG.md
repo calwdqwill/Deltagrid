@@ -57,6 +57,7 @@
 - [x] P1: Включить `HYPE/XRP/DOGE/ADA/LINK` как preview chart/asset candidates в `/charts` и `/assets`; оставить `Market Matrix`, `Arbitrage Scanner` и `Perp DEX` scoped к `BTC/ETH/SOL` до full promotion.
 - [x] P1: Добавить явную диагностику `chart_ready_candidates` в provider inventory и ручной `scripts/preview-candidate-smoke.sh` для проверки preview candidate paths.
 - [x] P1: Добавить детальные `promotion_blockers` в provider inventory: `coverage_blockers_7d`, `freshness_blockers` и summary-счётчики причин, блокирующих full analytics promotion.
+- [x] P1: Добавить summary-разбивку provider inventory blocker'ов по stream: `coverage_blockers_by_stream`, `freshness_blockers_by_stream`, `promotion_blockers_by_stream`.
 - [x] OPS/P1: Подготовить preview-safe market sync cron path через `ENV_FILE=.env.preview`, `COMPOSE_PROJECT_NAME=deltagrid-preview`, отдельный cron-файл и отдельный лог.
 - [x] OPS/P1: Стабилизировать OKX preview cron при transient HTTP `429`: классифицировать rate-limit ответы как retriable `RateLimitExceeded` и снизить default OKX pacing.
 - [x] P1: Закрыть `history_completion_required=5` для `HYPE/XRP/DOGE/ADA/LINK` по partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price` или явно утвердить policy-разделение `chart_ready` и full analytics universe: provider inventory теперь допускает `chart_ready_candidates` только для preview `/charts`/`/assets`, а `promotion_candidates` требует `complete_history`.

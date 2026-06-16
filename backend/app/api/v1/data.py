@@ -1163,6 +1163,14 @@ def _freshness_blockers_for_rows(rows: list[dict[str, Any]]) -> list[dict[str, A
     ]
 
 
+def _increment_blocker_counts(target: dict[str, int], blockers: list[dict[str, Any]]) -> None:
+    for blocker in blockers:
+        stream_name = blocker.get("stream") or "unknown"
+        interval = blocker.get("interval")
+        key = f"{stream_name}:{interval}" if interval else stream_name
+        target[key] = target.get(key, 0) + 1
+
+
 def _universe_status(
     coverage_7d_rows: list[dict[str, Any]],
     freshness_rows: list[dict[str, Any]],
@@ -1349,6 +1357,9 @@ def _build_provider_inventory_report(
         "coverage_blockers": 0,
         "freshness_blockers": 0,
         "promotion_blockers": 0,
+        "coverage_blockers_by_stream": {},
+        "freshness_blockers_by_stream": {},
+        "promotion_blockers_by_stream": {},
     }
     inventory_rows: list[dict[str, Any]] = []
 
@@ -1364,6 +1375,18 @@ def _build_provider_inventory_report(
         summary["coverage_blockers"] += len(symbol_row["coverage_blockers_7d"])
         summary["freshness_blockers"] += len(symbol_row["freshness_blockers"])
         summary["promotion_blockers"] += len(symbol_row["promotion_blockers"])
+        _increment_blocker_counts(
+            summary["coverage_blockers_by_stream"],
+            symbol_row["coverage_blockers_7d"],
+        )
+        _increment_blocker_counts(
+            summary["freshness_blockers_by_stream"],
+            symbol_row["freshness_blockers"],
+        )
+        _increment_blocker_counts(
+            summary["promotion_blockers_by_stream"],
+            symbol_row["promotion_blockers"],
+        )
 
         inventory_rows.append(
             {
@@ -1374,6 +1397,13 @@ def _build_provider_inventory_report(
                 "freshness_tracked": symbol_row["freshness"]["total"] > 0,
             }
         )
+
+    for key in (
+        "coverage_blockers_by_stream",
+        "freshness_blockers_by_stream",
+        "promotion_blockers_by_stream",
+    ):
+        summary[key] = dict(sorted(summary[key].items()))
 
     return {
         "scope": {

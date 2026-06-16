@@ -1,5 +1,10 @@
 # Changelog — DeltaGrid
 
+## [2026-06-16] - [DATA] - Provider inventory blocker breakdown
+- `GET /api/v1/data/provider-inventory` получил additive summary-поля `coverage_blockers_by_stream`, `freshness_blockers_by_stream` и `promotion_blockers_by_stream`.
+- Разбивка считается из уже построенных persisted coverage/freshness blocker rows и не делает внешних API-вызовов к OKX, CoinGlass, CoinGecko или legacy Binance.
+- Regression tests расширены: chart-ready candidate с partial `open_interest`, `basis_premium`, `spot_perp_price` теперь проверяет не только `promotion_candidate=false`, но и ожидаемую stream-разбивку blocker'ов.
+
 ## [2026-06-16] - [SECURITY] - Frontend audit repair for `form-data`
 - После push commit `2b561bb` GitHub Actions показал `Frontend build` failure, при этом `Backend tests` прошли успешно.
 - Причина failure воспроизведена локально: `npm audit --audit-level=high` нашёл новый high advisory для транзитивного `form-data@4.0.5` через `axios`.

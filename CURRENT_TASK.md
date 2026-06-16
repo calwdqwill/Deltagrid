@@ -6,6 +6,8 @@
 
 ## Обновление 2026-06-16 — Policy gate для chart-ready candidates
 
+- В provider inventory добавлена summary-разбивка blocker'ов по stream: `coverage_blockers_by_stream`, `freshness_blockers_by_stream`, `promotion_blockers_by_stream`.
+- Для текущего candidate gate это позволяет сразу увидеть, что full promotion блокируют partial `open_interest:1h`, `basis_premium:snapshot`, `spot_perp_price:snapshot`, без ручного разбора всех per-symbol rows.
 - В provider inventory зафиксировано разделение двух gate: `chart_ready_candidates` подходят только для preview `/charts` и `/assets`, а `promotion_candidates` относятся к full analytics universe.
 - `promotion_candidate` теперь требует `complete_history`; статус `core_perp_ready` больше не считается full promotion, если `open_interest`, `basis_premium` или `spot_perp_price` остаются partial.
 - В `policy.gates` добавлено машинно-читаемое описание правил для `chart_ready` и `promotion_candidate`, чтобы API сам объяснял, почему symbol можно смотреть на графиках, но нельзя продвигать в полный analytics universe.

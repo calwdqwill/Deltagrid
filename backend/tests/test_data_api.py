@@ -630,6 +630,9 @@ def test_provider_inventory_defaults_to_expansion_candidates() -> None:
     assert "coverage_blockers" in data["summary"]
     assert "freshness_blockers" in data["summary"]
     assert "promotion_blockers" in data["summary"]
+    assert "coverage_blockers_by_stream" in data["summary"]
+    assert "freshness_blockers_by_stream" in data["summary"]
+    assert "promotion_blockers_by_stream" in data["summary"]
     assert all("next_action" in row for row in data["symbols"])
     assert all("promotion_blockers" in row for row in data["symbols"])
 
@@ -708,6 +711,17 @@ def test_provider_inventory_keeps_chart_ready_candidate_out_of_full_promotion() 
     assert data["policy"]["promotion_candidates"] == []
     assert data["policy"]["gates"]["promotion_candidate"]["required_statuses"] == ["complete_history"]
     assert doge["promotion_blockers"] == doge["coverage_blockers_7d"]
+    assert data["summary"]["coverage_blockers_by_stream"] == {
+        "basis_premium:snapshot": 1,
+        "open_interest:1h": 1,
+        "spot_perp_price:snapshot": 1,
+    }
+    assert data["summary"]["freshness_blockers_by_stream"] == {}
+    assert data["summary"]["promotion_blockers_by_stream"] == {
+        "basis_premium:snapshot": 1,
+        "open_interest:1h": 1,
+        "spot_perp_price:snapshot": 1,
+    }
 
 
 def test_health_reports_freshness_and_sync_diagnostics() -> None:
