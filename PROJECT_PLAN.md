@@ -9,6 +9,7 @@
 - Production baseline зафиксирован как `v1.3.0`.
 - `preview` используется как dev/staging ветка, `main` — как production ветка.
 - Добавлен `RELEASES.md` с правилами SemVer и release flow.
+- Добавлен `scripts/release-preflight.sh`, чтобы перед patch/minor release проверять согласованность `VERSION`, frontend package version и lockfile root version.
 - Добавлены GitHub Actions workflows: `CI`, `Deploy Preview`, `Deploy Production`.
 - Deploy workflows используют SSH secrets и не выполняют deploy, если secrets ещё не настроены.
 - Подготовлено dev/prod разделение на уровне deployment: production `/opt/deltagrid` + `.env.production` + ports `8000/3001`, preview `/opt/deltagrid-preview` + `.env.preview` + ports `8011/3012`.

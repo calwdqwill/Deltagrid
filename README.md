@@ -147,6 +147,12 @@ GitHub Actions:
 - `Deploy Preview` деплоит `preview`, если в GitHub настроены `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY`, `PREVIEW_APP_DIR`;
 - `Deploy Production` деплоит `main`, если настроены `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`.
 
+Перед релизным bump используйте `scripts/release-preflight.sh`, чтобы проверить согласованность `VERSION`, `frontend/package.json` и `frontend/package-lock.json`:
+
+```bash
+ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.3.1
+```
+
 Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
 На 2026-06-15 `Deploy Preview` проверен end-to-end: GitHub Actions деплоит ветку `preview` в `/opt/deltagrid-preview`, контейнеры становятся `healthy`, server smoke проходит на ports `8011/3012`. Для ручной проверки preview chart/asset candidates добавлен `scripts/preview-candidate-smoke.sh`; он проверяет `/charts`, `/assets`, OHLCV window endpoint для `HYPE/XRP/DOGE/ADA/LINK` и отсутствие candidate symbols на core-only страницах `Market Matrix`, `Arbitrage Scanner`, `Perp DEX`.
 Production auto-deploy пока не считается подтверждённым: hardening `Deploy Production` подготовлен в `preview`, перенос в `main` и проверка реального deploy в `/opt/deltagrid` остаются отдельной production-итерацией.

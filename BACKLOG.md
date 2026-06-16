@@ -3,6 +3,7 @@
 ## Release / CI-CD — 2026-06-14
 - [x] Зафиксировать текущую production-ready версию как `v1.3.0`.
 - [x] Добавить `VERSION` и `RELEASES.md`.
+- [x] Добавить `scripts/release-preflight.sh` для проверки согласованности `VERSION`, frontend package version и lockfile root version перед patch-релизом.
 - [x] Добавить GitHub Actions CI для backend tests, `compileall` и frontend build.
 - [x] Добавить GitHub Actions deploy workflows для `preview` и `main`.
 - [x] Подготовить отдельный preview stack contract: `.env.preview.example`, Compose project `deltagrid-preview`, ports `8011/3012`.

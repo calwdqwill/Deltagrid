@@ -1,5 +1,10 @@
 # Changelog — DeltaGrid
 
+## [2026-06-16] - [RELEASE] - Release preflight для patch-релизов
+- Добавлен `scripts/release-preflight.sh` для проверки согласованности `VERSION`, `frontend/package.json` и root version в `frontend/package-lock.json`.
+- Скрипт поддерживает ожидаемую версию аргументом или через `EXPECTED_VERSION`, проверку ветки через `RELEASE_BRANCH` и строгую проверку чистого git-дерева; для проверки во время незакоммиченного release bump можно использовать `ALLOW_DIRTY=1`.
+- `RELEASES.md` и `README.md` обновлены: preflight добавлен в release flow перед bump/tag для `v1.3.1`.
+
 ## [2026-06-16] - [DATA] - Provider inventory blocker breakdown
 - `GET /api/v1/data/provider-inventory` получил additive summary-поля `coverage_blockers_by_stream`, `freshness_blockers_by_stream` и `promotion_blockers_by_stream`.
 - Разбивка считается из уже построенных persisted coverage/freshness blocker rows и не делает внешних API-вызовов к OKX, CoinGlass, CoinGecko или legacy Binance.
