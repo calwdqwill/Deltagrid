@@ -88,6 +88,8 @@ BRANCH=main ENV_FILE=.env.production COMPOSE_PROJECT_NAME=deltagrid sh scripts/d
 BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh scripts/deploy-compose-stack.sh
 ```
 
+Скрипт сначала собирает `backend` и `frontend`, и только после успешного build явно пересоздаёт app containers через `compose rm -sf backend frontend` и `compose up -d --no-build backend frontend`. PostgreSQL container и volume при этом не удаляются.
+
 Фактический preview rollout от 2026-06-14:
 
 - `/opt/deltagrid-preview` развёрнут из ветки `preview`;
@@ -272,6 +274,41 @@ tail -100 /var/log/deltagrid-market-sync.log
 sudo SCHEDULE="*/30 * * * *" LOOKBACK_HOURS=4 sh scripts/install-market-sync-cron.sh
 ```
 
+Для отдельного preview/dev стека cron нужно ставить отдельными файлами и явно передавать preview env/project, чтобы не затронуть production контейнеры и volume. Core symbols и candidate symbols лучше разносить по минутам, чтобы не собирать все OKX derived-запросы в один burst:
+
+```bash
+cd /opt/deltagrid-preview
+sudo SCHEDULE="*/15 * * * *" \
+  PROJECT_DIR=/opt/deltagrid-preview \
+  ENV_FILE=.env.preview \
+  COMPOSE_PROJECT_NAME=deltagrid-preview \
+  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync-core \
+  LOG_FILE=/var/log/deltagrid-preview-market-sync-core.log \
+  SYMBOLS=BTC,ETH,SOL \
+  LOOKBACK_HOURS=2 \
+  OHLCV_INTERVALS=1m,5m,1h \
+  sh scripts/install-market-sync-cron.sh
+
+sudo SCHEDULE="5,20,35,50 * * * *" \
+  PROJECT_DIR=/opt/deltagrid-preview \
+  ENV_FILE=.env.preview \
+  COMPOSE_PROJECT_NAME=deltagrid-preview \
+  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync-candidates \
+  LOG_FILE=/var/log/deltagrid-preview-market-sync-candidates.log \
+  SYMBOLS=HYPE,XRP,DOGE,ADA,LINK \
+  LOOKBACK_HOURS=2 \
+  OHLCV_INTERVALS=1m,5m,1h \
+  sh scripts/install-market-sync-cron.sh
+```
+
+Проверка preview cron:
+
+```bash
+tail -100 /var/log/deltagrid-preview-market-sync-core.log
+tail -100 /var/log/deltagrid-preview-market-sync-candidates.log
+curl http://127.0.0.1:8011/api/v1/data/provider-inventory?symbols=HYPE,XRP,DOGE,ADA,LINK\&exchange=okx
+```
+
 Важно:
 
 - на сервере рабочая директория проекта — `/opt/deltagrid`, не `/root`;
@@ -376,6 +413,13 @@ sh scripts/server-smoke.sh
 
 ```bash
 BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh
+```
+
+Для ручной проверки preview chart/asset candidates на VPS:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 MIN_CANDIDATE_OHLCV_ROWS=1000 sh scripts/preview-candidate-smoke.sh
 ```
 
 Фактический production rollout от 2026-06-05, обновлённый baseline от 2026-06-14:

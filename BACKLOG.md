@@ -3,6 +3,7 @@
 ## Release / CI-CD — 2026-06-14
 - [x] Зафиксировать текущую production-ready версию как `v1.3.0`.
 - [x] Добавить `VERSION` и `RELEASES.md`.
+- [x] Добавить `scripts/release-preflight.sh` для проверки согласованности `VERSION`, frontend package version и lockfile root version перед patch-релизом.
 - [x] Добавить GitHub Actions CI для backend tests, `compileall` и frontend build.
 - [x] Добавить GitHub Actions deploy workflows для `preview` и `main`.
 - [x] Подготовить отдельный preview stack contract: `.env.preview.example`, Compose project `deltagrid-preview`, ports `8011/3012`.
@@ -11,10 +12,19 @@
 - [x] Создать dedicated SSH deploy key и добавить public key на VPS для GitHub Actions.
 - [x] Перенести актуальные deploy workflows и ops runbooks в `main`, чтобы default-branch GitHub Actions использовал корректный preview/prod deploy path.
 - [x] Проверить preview deploy workflow probe: workflow запускается после CI, но безопасно пропускает deploy без GitHub secrets.
-- [ ] Настроить GitHub repository secrets для deploy: `PREVIEW_*` и `PROD_*`.
+- [x] Настроить и проверить GitHub repository secrets `PREVIEW_*` для preview auto-deploy.
+- [x] Проверить preview auto-deploy end-to-end через GitHub Actions: deploy key fingerprint, SSH login, `/opt/deltagrid-preview`, deploy step и server smoke.
+- [x] Усилить preview deploy workflow после flaky GitHub runner: TCP port probe warning-only, SSH login с timeout/keepalive и retry.
+- [x] Стабилизировать preview deploy SSH retry path после flaky `Test preview SSH login`: commit `4c3dec0`, CI success, `Deploy Preview` run `27532247102` success, `/opt/deltagrid-preview` healthy.
+- [x] Перевести diagnostic SSH login/app-dir checks в deploy workflows в warning-only режим и оставить реальным gate сам deploy step с 3 retry.
+- [x] Подготовить hardening `Deploy Production` workflow в `preview`: secret diagnostics, fingerprint, expected values, SSH retry и app-dir check.
+- [ ] Настроить и проверить GitHub repository secrets `PROD_*` для production auto-deploy отдельной безопасной итерацией.
+- [ ] Перенести production deploy hardening в `main` и проверить, что `Deploy Production` делает реальный deploy, а не safe-skip.
 - [x] Поднять отдельный dev/staging стенд на VPS в `/opt/deltagrid-preview`.
 - [x] Подготовить DNS/Nginx/SSL runbook и template для `preview.deltagrid.pro`.
-- [ ] Настроить DNS/Nginx для `preview.deltagrid.pro` после локального smoke preview stack.
+- [x] Включить preview Nginx HTTP site `deltagrid-preview` на VPS и проверить routing через `Host: preview.deltagrid.pro`.
+- [ ] Добавить DNS-запись `preview.deltagrid.pro` и выпустить Let's Encrypt SSL через `scripts/configure-preview-nginx-ssl.sh`.
+- [x] Разобраться с Docker Compose name-conflict при ручном preview deploy/recreate backend: deploy script теперь делает build до остановки сервисов и явно пересоздаёт только `backend/frontend`.
 - [x] Перевести production `/opt/deltagrid` на чистый `main` checkout после push baseline.
 - [x] Восстановить `AGENTS.md` как проектные правила для Codex/AI-агентов.
 
@@ -37,7 +47,25 @@
 - [x] P1: Задеплоить charts v0 на `deltagrid.pro` и проверить `/charts?symbol=BTC&interval=1m&range=7d` через домен.
 - [x] P1: Задеплоить sparse liquidation freshness fix: для `liquidations` различать отсутствие свежих событий и свежесть `coinglass/liquidations` sync-run.
 - [x] P1: Задеплоить отдельный backend window endpoint для OHLCV и убрать client-side pagination из основного `/charts` path.
-- [ ] P1: Обновить `next` до patched версии после отдельного regression pass, так как `npm audit` показывает critical advisory для текущего `next@14.1.0`.
+- [x] P1: Обновить `next` до `15.5.19` и мигрировать App Router `searchParams`; critical/high advisory для `next@14.1.0` закрыты, production build проходит.
+- [x] P1: Проверить Next.js 16 stable для остаточного PostCSS advisory: `next@16.2.9` всё ещё использует bundled `postcss 8.4.31`, поэтому production-safe апгрейд не закрывает `moderate`.
+- [x] P1: Добавить provider inventory v0 через `GET /api/v1/data/provider-inventory`: read-only persisted-data кандидаты на расширение universe без внешних API-вызовов.
+- [x] P1: Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe: preview/VPS показал `20/20 eligible_for_24h_sync_dry_run`, Binance legacy остаётся `HTTP 451`.
+- [x] P1: Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
+- [x] P1: Выполнить 24h sync dry-run первой малой группы на preview без расширения UI и проверить errors/gaps/coverage: `fetched=9035`, `inserted=8986`, `errors=0`, OHLCV gaps `0`, 24h coverage `missing=0`.
+- [x] P1: Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness: `/data/provider-inventory` использует `freshness_scope=requested_symbols`, а `/data/health` остаётся scoped к текущему UI universe `BTC/ETH/SOL`.
+- [x] P1: Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe: 72h `errors=0`, 7d `errors=0`, OHLCV gaps `0`, chart path готов.
+- [x] P1: Включить `HYPE/XRP/DOGE/ADA/LINK` как preview chart/asset candidates в `/charts` и `/assets`; оставить `Market Matrix`, `Arbitrage Scanner` и `Perp DEX` scoped к `BTC/ETH/SOL` до full promotion.
+- [x] P1: Добавить явную диагностику `chart_ready_candidates` в provider inventory и ручной `scripts/preview-candidate-smoke.sh` для проверки preview candidate paths.
+- [x] P1: Добавить детальные `promotion_blockers` в provider inventory: `coverage_blockers_7d`, `freshness_blockers` и summary-счётчики причин, блокирующих full analytics promotion.
+- [x] P1: Добавить summary-разбивку provider inventory blocker'ов по stream: `coverage_blockers_by_stream`, `freshness_blockers_by_stream`, `promotion_blockers_by_stream`.
+- [x] OPS/P1: Подготовить preview-safe market sync cron path через `ENV_FILE=.env.preview`, `COMPOSE_PROJECT_NAME=deltagrid-preview`, отдельный cron-файл и отдельный лог.
+- [x] OPS/P1: Стабилизировать OKX preview cron при transient HTTP `429`: классифицировать rate-limit ответы как retriable `RateLimitExceeded` и снизить default OKX pacing.
+- [x] P1: Закрыть `history_completion_required=5` для `HYPE/XRP/DOGE/ADA/LINK` по partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price` или явно утвердить policy-разделение `chart_ready` и full analytics universe: provider inventory теперь допускает `chart_ready_candidates` только для preview `/charts`/`/assets`, а `promotion_candidates` требует `complete_history`.
+- [ ] P1: Отдельно оценить backfill/ingestion для 7d `open_interest`, `basis_premium`, `spot_perp_price`, если candidates нужно продвигать в full analytics universe, а не держать в chart/asset режиме.
+- [x] P1: Добавить CI audit gate `npm audit --audit-level=high`, чтобы high/critical frontend advisory снова не прошли в `preview/main`.
+- [x] P1: Закрыть свежий frontend high advisory `form-data@4.0.5` через lockfile update до `form-data@4.0.6` без `npm audit fix --force`.
+- [ ] P1: Дождаться stable Next.js с bundled `postcss >=8.5.10` или другого upstream patch; `next@canary` не использовать в production path без отдельного решения.
 - [ ] P2: Подготовить настоящий backtest engine после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
 
 ## Production Ops — 2026-06-05
@@ -63,7 +91,9 @@
 - [x] Реализовать первый interactive historical charts layer на `lightweight-charts`: crosshair tooltip, pan/zoom/scroll, выбор диапазона `2h/8h/24h/7d`, чтение проверенной OKX истории и честный empty-state для потоков без истории.
 - [x] Пройти production QA для charts layer: доменный smoke-check и Browser QA desktop/mobile.
 - [x] Довести charts layer после production QA: backend window endpoint добавлен, `/charts` проверен, coverage matrix подготовлена перед расширением universe.
-- [ ] Провести инвентаризацию perp-инструментов по CoinGlass, CoinGecko, OKX и legacy Binance: для каждого символа зафиксировать наличие OHLCV, funding, OI, long/short, liquidations, basis и цену spot/perp.
+- [x] Провести provider inventory v0 по persisted data: `GET /api/v1/data/provider-inventory` показывает candidate symbols, coverage/freshness readiness, `promotion_candidate` и `next_action`.
+- [x] Провести внешнюю инвентаризацию perp-инструментов по CoinGlass, CoinGecko, OKX и legacy Binance: для каждого symbol зафиксировать OKX core, CoinGlass enrichment, CoinGecko spot и Binance legacy status.
+- [x] Засеять aliases и выполнить 24h preview dry-run для первой малой группы `HYPE/XRP/DOGE/ADA/LINK` без изменения UI.
 - [ ] Сформировать production universe для дашборда: топ-30 crypto assets плюс RWA-кандидаты, отдельно пометить активы с полной историей и активы только со spot/market данными.
 - [ ] Расширить `SymbolMapper` и sync-конфигурацию только после coverage-матрицы, чтобы не показывать в UI активы без честных backend data streams.
 - [ ] Подготовить RWA coverage map: tokenized commodities, treasuries, equities/stock-like assets, доступные источники CoinGecko/CoinGlass/прочие provider'ы и ограничения по истории.
@@ -369,7 +399,9 @@
 - [ ] Перевести `_json` Text-поля на PostgreSQL `JSONB` после стабилизации API-сериализации.
 - [ ] Пересмотреть `Float` в market data там, где значения начнут использоваться для финансово-критичных расчётов.
 - [ ] Подготовить отдельный one-off export/import, если потребуется перенос исторических данных из старого SQLite `.db`.
-- [ ] Обновить Next.js до patched версии: Docker build сообщает о security vulnerability в `next@14.1.0`.
+- [x] Обновить Next.js до `15.5.19`: critical/high advisory для `next@14.1.0` закрыты, frontend production build проходит.
+- [x] Проверить Next.js 16.x для полного снятия остаточного `moderate` audit: stable `16.2.9` всё ещё содержит bundled `postcss 8.4.31`, fixed `8.5.10` пока только в canary.
+- [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Перевести оставшиеся `datetime.utcnow()` на timezone-aware UTC timestamps.
 - [ ] Перевести Pydantic class-based `Config` на `ConfigDict`, чтобы убрать deprecation warnings перед Pydantic v3.
 - [ ] Разобраться с локальными permission warning для `.pytest_cache` в OneDrive workspace.

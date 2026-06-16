@@ -1,8 +1,18 @@
 """Regression tests for OKX market data normalization."""
 
+import asyncio
+
+import httpx
 import pytest
 
 from app.adapters.data.okx_adapter import OkxAdapter
+from app.adapters.data.rate_limiter import GlobalRateLimiter, RateLimitExceeded, RetryPolicy
+
+
+class _FakeRateLimitedClient:
+    async def get(self, url: str, params: dict | None = None):
+        request = httpx.Request("GET", url, params=params)
+        return httpx.Response(429, headers={"Retry-After": "2"}, request=request)
 
 
 def test_okx_interval_mapping_uses_uppercase_hours() -> None:
@@ -10,6 +20,24 @@ def test_okx_interval_mapping_uses_uppercase_hours() -> None:
     assert OkxAdapter._to_okx_bar("5m") == "5m"
     assert OkxAdapter._to_okx_bar("1h") == "1H"
     assert OkxAdapter._to_okx_bar("1d") == "1D"
+
+
+def test_okx_http_429_is_classified_as_rate_limit() -> None:
+    async def _run() -> None:
+        adapter = OkxAdapter(
+            rate_limiter=GlobalRateLimiter(),
+            retry_policy=RetryPolicy(max_retries=0),
+        )
+        await adapter.client.aclose()
+        adapter.client = _FakeRateLimitedClient()
+
+        with pytest.raises(RateLimitExceeded) as exc_info:
+            await adapter._get_okx_data("https://www.okx.com/api/v5/test", {})
+
+        assert "OKX rate limit exceeded" in str(exc_info.value)
+        assert "retry_after=2" in str(exc_info.value)
+
+    asyncio.run(_run())
 
 
 def test_okx_candle_normalization_uses_base_and_quote_volume() -> None:

@@ -237,6 +237,232 @@ def _seed_coverage_rows() -> tuple[int, int]:
     return base_ts, base_ts + 23 * 60 * 60_000
 
 
+def _seed_fresh_candidate_rows(symbol: str = "HYPE") -> None:
+    """Seed fresh but incomplete 7d candidate rows for provider inventory policy."""
+    session = _TestSessionLocal()
+    from app.domain.models import (
+        BasisPremium,
+        DataFundingRate,
+        DataLiquidation,
+        DataLongShortRatio,
+        DataOhlcv,
+        DataOpenInterest,
+        ProviderSyncRun,
+    )
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now_ms = int(now.timestamp() * 1000)
+    fresh_ts = now_ms - 5 * 60_000
+
+    for interval in ("1m", "5m", "1h"):
+        session.merge(
+            DataOhlcv(
+                timestamp=fresh_ts,
+                symbol=symbol,
+                exchange="okx",
+                interval=interval,
+                open=10.0,
+                high=11.0,
+                low=9.0,
+                close=10.5,
+                volume=100.0,
+                quote_volume=1050.0,
+                trades_count=50,
+            )
+        )
+    session.merge(
+        DataFundingRate(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            funding_rate=0.0001,
+            next_funding_time=fresh_ts + 8 * 60 * 60_000,
+            interval="8h",
+        )
+    )
+    session.merge(
+        DataOpenInterest(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            interval="1h",
+            oi_usd=1_000_000.0,
+            oi_coins=1000.0,
+        )
+    )
+    session.merge(
+        DataLongShortRatio(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            interval="1h",
+            long_ratio=0.52,
+            short_ratio=0.48,
+            long_account_ratio=0.52,
+            short_account_ratio=0.48,
+        )
+    )
+    session.merge(
+        DataLiquidation(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            side="long",
+            quantity=0.0,
+            price=0.0,
+            value_usd=1000.0,
+        )
+    )
+    session.add(
+        BasisPremium(
+            timestamp=fresh_ts,
+            symbol=symbol,
+            exchange="okx",
+            spot_price=10.0,
+            perp_price=10.1,
+            basis_pct=1.0,
+            premium_pct=1.0,
+        )
+    )
+    session.add(
+        ProviderSyncRun(
+            provider_name="coinglass",
+            sync_type="liquidations",
+            status="completed",
+            start_time=fresh_ts - 60_000,
+            end_time=fresh_ts,
+            records_fetched=1,
+            records_inserted=1,
+            created_at=now,
+        )
+    )
+    session.commit()
+    session.close()
+
+
+def _seed_chart_ready_partial_candidate_rows(symbol: str = "DOGE") -> None:
+    """Seed full chart coverage while enrichment streams remain partial."""
+    session = _TestSessionLocal()
+    from app.domain.models import (
+        BasisPremium,
+        DataFundingRate,
+        DataLiquidation,
+        DataLongShortRatio,
+        DataOhlcv,
+        DataOpenInterest,
+        ProviderSyncRun,
+    )
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now_ms = int(now.timestamp() * 1000)
+    latest_ts = now_ms - 5 * 60_000
+
+    ohlcv_rows = []
+    for interval, cadence_ms, expected_rows in (
+        ("1m", 60_000, 10_080),
+        ("5m", 5 * 60_000, 2_016),
+        ("1h", 60 * 60_000, 168),
+    ):
+        start_ts = latest_ts - (expected_rows - 1) * cadence_ms
+        for index in range(expected_rows):
+            ts = start_ts + index * cadence_ms
+            ohlcv_rows.append(
+                DataOhlcv(
+                    timestamp=ts,
+                    symbol=symbol,
+                    exchange="okx",
+                    interval=interval,
+                    open=10.0,
+                    high=11.0,
+                    low=9.0,
+                    close=10.5,
+                    volume=100.0,
+                    quote_volume=1050.0,
+                    trades_count=50,
+                )
+            )
+    session.bulk_save_objects(ohlcv_rows)
+
+    funding_rows = []
+    for index in range(21):
+        ts = latest_ts - (20 - index) * 8 * 60 * 60_000
+        funding_rows.append(
+            DataFundingRate(
+                timestamp=ts,
+                symbol=symbol,
+                exchange="okx",
+                funding_rate=0.0001,
+                next_funding_time=ts + 8 * 60 * 60_000,
+                interval="8h",
+            )
+        )
+    session.bulk_save_objects(funding_rows)
+
+    long_short_rows = []
+    for index in range(168):
+        ts = latest_ts - (167 - index) * 60 * 60_000
+        long_short_rows.append(
+            DataLongShortRatio(
+                timestamp=ts,
+                symbol=symbol,
+                exchange="okx",
+                interval="1h",
+                long_ratio=0.52,
+                short_ratio=0.48,
+                long_account_ratio=0.52,
+                short_account_ratio=0.48,
+            )
+        )
+    session.bulk_save_objects(long_short_rows)
+
+    session.merge(
+        DataOpenInterest(
+            timestamp=latest_ts,
+            symbol=symbol,
+            exchange="okx",
+            interval="1h",
+            oi_usd=1_000_000.0,
+            oi_coins=1000.0,
+        )
+    )
+    session.merge(
+        DataLiquidation(
+            timestamp=latest_ts,
+            symbol=symbol,
+            exchange="okx",
+            side="long",
+            quantity=0.0,
+            price=0.0,
+            value_usd=1000.0,
+        )
+    )
+    session.add(
+        BasisPremium(
+            timestamp=latest_ts,
+            symbol=symbol,
+            exchange="okx",
+            spot_price=10.0,
+            perp_price=10.1,
+            basis_pct=1.0,
+            premium_pct=1.0,
+        )
+    )
+    session.add(
+        ProviderSyncRun(
+            provider_name="coinglass",
+            sync_type="liquidations",
+            status="completed",
+            start_time=latest_ts - 60_000,
+            end_time=latest_ts,
+            records_fetched=1,
+            records_inserted=1,
+            created_at=now,
+        )
+    )
+    session.commit()
+    session.close()
+
+
 def test_ohlcv_canonical_symbol_returns_data() -> None:
     """Critical regression: canonical BTC must return seeded rows."""
     _seed_canonical_btc()
@@ -382,6 +608,120 @@ def test_universe_reports_not_ready_symbol_policy() -> None:
     assert uni["ui_visible"] is False
     assert uni["chart_ready"] is False
     assert len(uni["missing_streams_7d"]) > 0
+
+
+def test_provider_inventory_defaults_to_expansion_candidates() -> None:
+    """Provider inventory should expose a read-only candidate list for universe expansion."""
+    response = client.get("/api/v1/data/provider-inventory")
+    assert response.status_code == 200
+    payload = response.json()
+    data = payload["data"]
+
+    assert payload["meta"]["read_only"] is True
+    assert data["scope"]["inventory_mode"] == "persisted_data_only"
+    assert data["scope"]["external_provider_calls"] is False
+    assert data["scope"]["symbols"][:4] == ["BTC", "ETH", "SOL", "HYPE"]
+    assert data["summary"]["total"] == len(data["scope"]["symbols"])
+    assert "promotion_candidates" in data["policy"]
+    assert "chart_ready_candidates" in data["policy"]
+    assert "gates" in data["policy"]
+    assert data["policy"]["gates"]["promotion_candidate"]["required_statuses"] == ["complete_history"]
+    assert "chart_ready_candidates" in data["summary"]
+    assert "coverage_blockers" in data["summary"]
+    assert "freshness_blockers" in data["summary"]
+    assert "promotion_blockers" in data["summary"]
+    assert "coverage_blockers_by_stream" in data["summary"]
+    assert "freshness_blockers_by_stream" in data["summary"]
+    assert "promotion_blockers_by_stream" in data["summary"]
+    assert all("next_action" in row for row in data["symbols"])
+    assert all("promotion_blockers" in row for row in data["symbols"])
+
+
+def test_provider_inventory_defers_symbol_without_coverage() -> None:
+    """Symbols without persisted streams must stay out of UI promotion candidates."""
+    response = client.get("/api/v1/data/provider-inventory?symbols=UNI&exchange=okx")
+    assert response.status_code == 200
+    data = response.json()["data"]
+
+    uni = data["symbols"][0]
+    assert data["scope"]["symbols"] == ["UNI"]
+    assert data["policy"]["promotion_candidates"] == []
+    assert data["policy"]["deferred_symbols"] == ["UNI"]
+    assert uni["promotion_candidate"] is False
+    assert uni["next_action"] == "backfill_required"
+    assert uni["freshness_tracked"] is True
+    assert len(uni["missing_streams_7d"]) > 0
+    assert len(uni["coverage_blockers_7d"]) > 0
+    assert len(uni["freshness_blockers"]) > 0
+    assert len(uni["promotion_blockers"]) == (
+        len(uni["coverage_blockers_7d"]) + len(uni["freshness_blockers"])
+    )
+
+
+def test_provider_inventory_tracks_candidate_freshness_scope() -> None:
+    """Fresh candidate rows should move inventory to history completion gate."""
+    _seed_fresh_candidate_rows("HYPE")
+    response = client.get("/api/v1/data/provider-inventory?symbols=HYPE&exchange=okx")
+    assert response.status_code == 200
+    data = response.json()["data"]
+
+    hype = data["symbols"][0]
+    assert data["scope"]["freshness_scope"] == "requested_symbols"
+    assert hype["symbol"] == "HYPE"
+    assert hype["freshness_tracked"] is True
+    assert hype["freshness"]["worst_status"] == "fresh"
+    assert hype["status"] == "partial_history"
+    assert hype["promotion_candidate"] is False
+    assert hype["next_action"] == "history_completion_required"
+    assert len(hype["partial_streams_7d"]) > 0
+    assert hype["missing_streams_7d"] == []
+    assert len(hype["coverage_blockers_7d"]) > 0
+    assert hype["freshness_blockers"] == []
+    assert hype["promotion_blockers"] == hype["coverage_blockers_7d"]
+    coverage_blocker = hype["promotion_blockers"][0]
+    assert coverage_blocker["blocker_type"] == "coverage"
+    assert coverage_blocker["range"] == "7d"
+    assert coverage_blocker["status"] == "partial"
+    assert coverage_blocker["stream"] in {"ohlcv", "funding_rates", "open_interest", "long_short_ratio"}
+    assert isinstance(data["policy"]["chart_ready_candidates"], list)
+    assert data["summary"]["chart_ready_candidates"] >= 0
+    assert data["summary"]["coverage_blockers"] >= len(hype["coverage_blockers_7d"])
+
+
+def test_provider_inventory_keeps_chart_ready_candidate_out_of_full_promotion() -> None:
+    """Chart-ready candidates must not become full analytics promotion candidates."""
+    _seed_chart_ready_partial_candidate_rows("DOGE")
+    response = client.get("/api/v1/data/provider-inventory?symbols=DOGE&exchange=okx")
+    assert response.status_code == 200
+    data = response.json()["data"]
+
+    doge = data["symbols"][0]
+    assert doge["symbol"] == "DOGE"
+    assert doge["chart_ready"] is True
+    assert doge["status"] == "core_perp_ready"
+    assert doge["promotion_candidate"] is False
+    assert doge["next_action"] == "history_completion_required"
+    assert doge["missing_streams_7d"] == []
+    assert set(doge["partial_streams_7d"]) == {
+        "open_interest:1h",
+        "basis_premium:snapshot",
+        "spot_perp_price:snapshot",
+    }
+    assert data["policy"]["chart_ready_candidates"] == ["DOGE"]
+    assert data["policy"]["promotion_candidates"] == []
+    assert data["policy"]["gates"]["promotion_candidate"]["required_statuses"] == ["complete_history"]
+    assert doge["promotion_blockers"] == doge["coverage_blockers_7d"]
+    assert data["summary"]["coverage_blockers_by_stream"] == {
+        "basis_premium:snapshot": 1,
+        "open_interest:1h": 1,
+        "spot_perp_price:snapshot": 1,
+    }
+    assert data["summary"]["freshness_blockers_by_stream"] == {}
+    assert data["summary"]["promotion_blockers_by_stream"] == {
+        "basis_premium:snapshot": 1,
+        "open_interest:1h": 1,
+        "spot_perp_price:snapshot": 1,
+    }
 
 
 def test_health_reports_freshness_and_sync_diagnostics() -> None:

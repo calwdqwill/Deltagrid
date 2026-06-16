@@ -1,5 +1,165 @@
 # Changelog — DeltaGrid
 
+## [v1.3.1] - 2026-06-16 - Patch release
+- Уточнён MVP1 provider inventory gate: `promotion_candidate` для full analytics universe теперь требует `complete_history`, а `chart_ready_candidates` остаются только для preview `/charts` и `/assets`.
+- Добавлена summary-разбивка blocker'ов по stream для `/api/v1/data/provider-inventory`, чтобы быстро видеть, какие persisted streams блокируют full promotion.
+- Закрыт свежий frontend high advisory `form-data@4.0.5` через lockfile update до `form-data@4.0.6`; `npm audit --audit-level=high` снова проходит.
+- Добавлен `scripts/release-preflight.sh` и обновлён release flow для проверки согласованности `VERSION`, frontend package version и lockfile root version.
+- Версия проекта поднята до `1.3.1` в `VERSION`, `frontend/package.json` и `frontend/package-lock.json`.
+
+## [2026-06-16] - [RELEASE] - Release preflight для patch-релизов
+- Добавлен `scripts/release-preflight.sh` для проверки согласованности `VERSION`, `frontend/package.json` и root version в `frontend/package-lock.json`.
+- Скрипт поддерживает ожидаемую версию аргументом или через `EXPECTED_VERSION`, проверку ветки через `RELEASE_BRANCH` и строгую проверку чистого git-дерева; для проверки во время незакоммиченного release bump можно использовать `ALLOW_DIRTY=1`.
+- `RELEASES.md` и `README.md` обновлены: preflight добавлен в release flow перед bump/tag для `v1.3.1`.
+
+## [2026-06-16] - [DATA] - Provider inventory blocker breakdown
+- `GET /api/v1/data/provider-inventory` получил additive summary-поля `coverage_blockers_by_stream`, `freshness_blockers_by_stream` и `promotion_blockers_by_stream`.
+- Разбивка считается из уже построенных persisted coverage/freshness blocker rows и не делает внешних API-вызовов к OKX, CoinGlass, CoinGecko или legacy Binance.
+- Regression tests расширены: chart-ready candidate с partial `open_interest`, `basis_premium`, `spot_perp_price` теперь проверяет не только `promotion_candidate=false`, но и ожидаемую stream-разбивку blocker'ов.
+
+## [2026-06-16] - [SECURITY] - Frontend audit repair for `form-data`
+- После push commit `2b561bb` GitHub Actions показал `Frontend build` failure, при этом `Backend tests` прошли успешно.
+- Причина failure воспроизведена локально: `npm audit --audit-level=high` нашёл новый high advisory для транзитивного `form-data@4.0.5` через `axios`.
+- Выполнен production-safe `npm audit fix` без `--force`: `frontend/package-lock.json` обновлён до `form-data@4.0.6` и `hasown@2.0.4`.
+- Повторная локальная проверка: `npm audit --audit-level=high` проходит; остаётся только известный moderate `postcss` внутри Next.js, который не блокирует текущий CI gate. `npm run build` проходит на Next.js `15.5.19`.
+
+## [2026-06-16] - [DATA] - Provider inventory policy gate для chart-ready candidates
+- `GET /api/v1/data/provider-inventory` теперь явно разделяет `chart_ready_candidates` и `promotion_candidates` через `policy.gates`.
+- `promotion_candidate` для full analytics universe требует `complete_history`; статус `core_perp_ready` с partial snapshot/enrichment streams больше не считается full promotion.
+- `chart_ready_candidates` остаются разрешением только для preview `/charts` и `/assets`, чтобы можно было смотреть 7d OHLCV candidates без продвижения их в `Market Matrix`, `Arbitrage Scanner` и `Perp DEX`.
+- Добавлен regression test для symbol с полной chart-critical 7d coverage и partial `open_interest`, `basis_premium`, `spot_perp_price`: такой symbol получает `chart_ready=true`, но остаётся `promotion_candidate=false` и `next_action=history_completion_required`.
+- Документация обновлена: `CURRENT_TASK.md`, `PROJECT_PLAN.md`, `BACKLOG.md`, `ARCHITECTURE.md`, `README.md`.
+
+## [2026-06-15] - [DATA/OPS] - OKX rate-limit retry for preview cron
+- Реальный cron-triggered preview core sync подтвердил проблему: после установки split cron OKX `long_short_ratio` всё ещё мог вернуть HTTP `429` даже на `BTC/ETH/SOL`.
+- `OkxAdapter` теперь классифицирует HTTP `429` и OKX rate-limit payload как `RateLimitExceeded`, чтобы существующий `RetryPolicy` выполнял backoff/retry вместо немедленного `partial` sync-run.
+- Default pacing для OKX в `GlobalRateLimiter` снижен до более консервативного публичного режима `capacity=5`, `refill_rate=2 req/sec`.
+- Добавлен regression test для классификации OKX HTTP `429` в `RateLimitExceeded`.
+- Локально проверено: `backend\venv\Scripts\python.exe -m pytest tests\test_okx_adapter.py` из `backend` прошёл `6 passed`, также прошли `py_compile` и `git diff --check`.
+- CI `27539771597` и `Deploy Preview` `27539817178` завершились успешно; `/opt/deltagrid-preview` обновился до `725387d`, backend/frontend/PostgreSQL healthy.
+- Scheduled preview core cron в `2026-06-15 10:30 UTC` снова получил OKX HTTP `429` на `SOL long_short_ratio`, выполнил retry через `RateLimitExceeded`, повторный запрос вернул `200 OK`, итог sync-run: `fetched=462`, `inserted=461`, `errors=0`.
+- Финальный `/api/v1/data/health` на preview: cron diagnostics `healthy`, latest `okx/long_short_ratio` `completed`, свежие `rate_limit=2` остаются только как 24h history от старых partial-run до фикса.
+
+## [2026-06-15] - [OPS] - Preview market sync cron path
+- `scripts/install-market-sync-cron.sh` теперь умеет записывать в cron переменные `ENV_FILE`, `COMPOSE_FILE` и `COMPOSE_PROJECT_NAME`, чтобы один installer можно было безопасно использовать для production и preview Compose projects.
+- Для preview зафиксирован split cron contract: core symbols пишутся в `/etc/cron.d/deltagrid-preview-market-sync-core`, candidates — в `/etc/cron.d/deltagrid-preview-market-sync-candidates` со сдвигом минут, чтобы снизить OKX derived endpoint burst.
+- Production cron по умолчанию не меняется: без `ENV_FILE` и `COMPOSE_PROJECT_NAME` installer сохраняет прежний production-safe path через `/opt/deltagrid`.
+- На VPS preview установлены оба cron-файла; ручной core-only и candidate-only sync прошёл `errors=0`. Candidate freshness blockers снизились с `39` до `5`, остался stale funding `8h` по каждому candidate.
+
+## [2026-06-15] - [DATA] - Promotion blocker diagnostics for provider inventory
+- `GET /api/v1/data/provider-inventory` расширен additive-диагностикой `coverage_blockers_7d`, `freshness_blockers` и `promotion_blockers` на уровне каждого symbol.
+- В `summary` добавлены счётчики `coverage_blockers`, `freshness_blockers` и `promotion_blockers`, чтобы быстро видеть масштаб причин, блокирующих full analytics promotion.
+- Новые blocker-поля используют уже рассчитанные persisted coverage/freshness rows и не делают внешних вызовов к OKX, CoinGlass, CoinGecko или legacy Binance.
+- Regression tests обновлены: проверяется symbol без coverage, fresh-but-partial candidate и наличие новых summary/symbol fields.
+- Локально проверено: `backend\venv\Scripts\python.exe -m pytest tests\test_data_api.py -q` из `backend` прошёл `20 passed`; `python -m compileall backend\app` и `backend\venv\Scripts\python.exe -m compileall backend\app` прошли.
+
+## [2026-06-15] - [DATA/OPS] - Candidate gate diagnostics batch
+- `GET /api/v1/data/provider-inventory` расширен additive-полями `summary.chart_ready_candidates` и `policy.chart_ready_candidates`, чтобы явно отделять активы, готовые для `/charts`/`/assets`, от `promotion_candidates` для full analytics universe.
+- Добавлен regression coverage для новых provider-inventory полей без изменения существующих `promotion_candidate` и `next_action`.
+- Во frontend добавлен компактный scope label выбранного актива: `/charts` показывает `Core` или `Preview Candidate`, `/assets` показывает такой же status badge.
+- Добавлен ручной smoke-скрипт `scripts/preview-candidate-smoke.sh`: проверяет candidate `/charts`, `/assets`, 7d OHLCV window rows и отсутствие candidate markers на core-only pages `/market-matrix`, `/arbitrage-scanner`, `/perp-dex`.
+- Скрипт проверен против текущего preview VPS через SSH: `HYPE/XRP/DOGE/ADA/LINK` charts/assets и 7d windows прошли, core-only pages остались без candidate markers.
+
+## [2026-06-15] - [OPS] - Deploy SSH diagnostics made non-blocking
+- После успешного CI для docs commit `e8ddb1f` workflow `Deploy Preview` run `27533723576` упал на диагностическом шаге `Test preview SSH login`; deploy step не запускался, preview VPS при этом оставался healthy и локальный SSH к `root@2.25.143.143` работал.
+- В `deploy-preview.yml` и `deploy-production.yml` шаги `Test SSH login` и `Check app directory` переведены в warning-only diagnostics: они больше не останавливают workflow сами по себе.
+- Реальным gating шагом остаётся `Deploy preview` / `Deploy production`: если SSH deploy не сможет подключиться или выполнить `scripts/deploy-compose-stack.sh`, workflow по-прежнему завершится failure.
+- Количество попыток deploy увеличено с 2 до 3, пауза между попытками стала нарастающей: `30/60/90` секунд.
+
+## [2026-06-15] - [FRONTEND] - Preview chart candidates scope
+- В preview frontend добавлено разделение universe: `CORE_SYMBOLS=BTC/ETH/SOL` остаётся для `Market Matrix`, `Arbitrage Scanner` и `Perp DEX`, а `CANDIDATE_SYMBOLS=HYPE/XRP/DOGE/ADA/LINK` доступны в `/charts` и `/assets` как preview chart/asset candidates.
+- Устаревшие UI-подписи `Binance` в affected screens заменены на `OKX` там, где это только отображение текущего primary perp source и не меняет backend-логику.
+- Повторная gate-проверка `/api/v1/data/provider-inventory?symbols=HYPE,XRP,DOGE,ADA,LINK&exchange=okx` перед UI promotion показала текущий строгий статус: `promotion_candidates=0`, `ready_for_ui_review=0`, `history_completion_required=5`; у всех 5 symbols `chart_ready=true`, но полный promotion блокируют partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Preview CI/CD подтверждён на итоговом commit `57e743a`: CI `success`, `Deploy Preview` run `27533404025` `success`, `/opt/deltagrid-preview` обновлён до `57e743a`, backend/frontend/PostgreSQL healthy.
+- Smoke-check preview после deploy: `/charts?symbol=HYPE&interval=1m&range=7d` и `/assets?symbol=ADA` возвращают HTTP `200` и показывают candidate symbols + OKX; `/market-matrix`, `/arbitrage-scanner`, `/perp-dex` возвращают HTTP `200` и остаются scoped к `BTC/ETH/SOL`.
+- API smoke для chart windows: `HYPE 1m 7d` отдаёт около `10080` timestamp rows, `LINK 5m 7d` отдаёт около `2016` timestamp rows.
+
+## [2026-06-15] - [OPS] - Preview deploy SSH hardening
+- Усилен `Deploy Preview` workflow после flaky failure на шаге `Test preview SSH login`: SSH теперь использует `IdentitiesOnly`, `PreferredAuthentications=publickey`, короткий `ConnectionAttempts=1`, явные `timeout` и controlled retries для login, app-dir check и deploy.
+- Аналогичный SSH retry/timeout hardening применён к `Deploy Production`, чтобы production workflow имел тот же безопасный профиль перед отдельной проверкой `PROD_*`.
+- Проверка GitHub Actions: CI для commit `4c3dec0` прошёл успешно, `Deploy Preview` run `27532247102` завершился `success`.
+- Preview VPS `/opt/deltagrid-preview` автоматически обновился до `4c3dec0`; backend/frontend/PostgreSQL в Compose project `deltagrid-preview` находятся в состоянии `healthy`.
+
+## [2026-06-15] - [DATA] - 72h/7d preview backfill первой expansion group
+- На preview выполнен 72h backfill `HYPE/XRP/DOGE/ADA/LINK` через OKX primary path: `fetched=27065`, `inserted=26902`, `errors=0`, OHLCV gaps по `1m/5m/1h` равны `0`.
+- На preview выполнен 7d backfill той же группы: `fetched=63125`, `inserted=62858`, `errors=0`, OHLCV jobs по всем symbols/intervals завершились с `gaps=0`.
+- `/api/v1/data/coverage?symbols=HYPE,XRP,DOGE,ADA,LINK&exchange=okx&range=7d` показывает `covered=30`, `partial=15`, `missing=0`, `total=45`, `coverage_pct=66.67`.
+- 7d coverage по streams: OHLCV `15/15 covered`, funding `5/5 covered`, long/short `5/5 covered`, liquidations `5/5 covered`; partial остаётся у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Для chart path группа готова: `/api/v1/data/provider-inventory` показывает `backfill_required=0`, `freshness_tracking_required=0`, а у всех 5 symbols `chart_ready=true`; последующая строгая gate-проверка перед full UI promotion зафиксирована отдельной frontend-итерацией выше и требует закрыть `history_completion_required=5` по partial snapshot/enrichment streams.
+- Проверен chart window endpoint на preview: `HYPE 1m 7d` отдаёт `10080` свечей, `LINK 5m 7d` отдаёт `2016` свечей.
+
+## [2026-06-15] - [DATA] - Candidate freshness scope для provider inventory
+- `/api/v1/data/provider-inventory` теперь строит freshness report по запрошенным candidate symbols, а не только по текущему watched universe `BTC/ETH/SOL`.
+- `/api/v1/data/health` сохранён без расширения публичного health scope: основной production SLA по-прежнему относится к текущему UI universe `BTC/ETH/SOL`.
+- В ответ `provider-inventory.scope` добавлено `freshness_scope=requested_symbols`, чтобы явно отделять candidate freshness от current UI universe freshness.
+- Preview deploy проверен на `HYPE/XRP/DOGE/ADA/LINK`: `freshness_tracking_required=0`, все 5 symbols получили `freshness.worst_status=fresh`, но остаются `history_completion_required` до 72h/7d backfill.
+- Добавлен regression test, который проверяет freshness scope для candidate symbol за пределами `BTC/ETH/SOL`.
+
+## [2026-06-15] - [DATA] - Alias expansion и 24h preview sync dry-run
+- `SymbolMapper.seed_defaults()` стал идемпотентным: повторный запуск больше не создаёт дубликаты `instruments`/`instrument_aliases` и безопасно обновляет существующие aliases.
+- В default aliases добавлена первая малая группа expansion candidates: `HYPE`, `XRP`, `DOGE`, `ADA`, `LINK` для OKX, CoinGlass, CoinGecko и legacy Binance.
+- Preview DB засеяна aliases через `SymbolMapper().seed_defaults()`; проверены OKX/CoinGlass/CoinGecko mappings для всех 5 symbols.
+- На preview выполнен 24h sync dry-run `HYPE/XRP/DOGE/ADA/LINK` через OKX primary path без расширения UI: `fetched=9035`, `inserted=8986`, `errors=0`.
+- OHLCV gaps по `1m/5m/1h` для всех 5 symbols равны `0`; `/data/coverage` за 24h показывает `missing=0`, `covered=30`, `partial=15`.
+- До отдельного candidate freshness scope `/data/provider-inventory` оставлял symbols вне promotion candidates с `next_action=freshness_tracking_required`, потому freshness SLA формально покрывал только `BTC/ETH/SOL`.
+- Добавлен regression test для idempotent `SymbolMapper` seeding и новых aliases.
+
+## [2026-06-15] - [DATA] - Provider discovery v1 для expansion candidates
+- Добавлен read-only CLI `python -m app.adapters.data.discover_provider_universe` для live discovery по OKX, CoinGlass, CoinGecko и legacy Binance без записи в PostgreSQL.
+- CLI проверяет candidate symbols из MVP1 inventory: OKX USDT swap instrument/OHLCV/funding/OI/long-short, CoinGlass OKX snapshots/liquidations, CoinGecko spot price и Binance USD-M как legacy diagnostic.
+- Добавлены retry/backoff и спокойный OKX pacing, чтобы discovery не ловил ложные `429` на long/short endpoint.
+- Preview/VPS discovery выполнен внутри `deltagrid-preview-backend`: OKX/CoinGlass/CoinGecko `healthy`, Binance legacy `blocked_http_451`, все `20/20` symbols получили `eligible_for_24h_sync_dry_run`.
+- Добавлены unit tests для parser/readiness/markdown report helpers.
+
+## [2026-06-15] - [DATA] - Provider inventory v0 для расширения universe
+- Добавлен read-only endpoint `GET /api/v1/data/provider-inventory`, который строит inventory кандидатов на расширение universe поверх уже сохранённых coverage/freshness сигналов.
+- Default candidate set расширен за пределы `BTC/ETH/SOL`: `HYPE`, `XRP`, `DOGE`, `BNB`, `ADA`, `LINK`, `AVAX`, `SUI`, `TON`, `TRX`, `DOT`, `LTC`, `BCH`, `AAVE`, `UNI`, `APT`, `ARB`.
+- Endpoint не вызывает OKX, CoinGlass, CoinGecko или legacy Binance: `inventory_mode=persisted_data_only`, `external_provider_calls=false`.
+- Для каждого symbol возвращаются readiness status, 24h/7d coverage summary, freshness tracking, `promotion_candidate`, `next_action` и reason. Символы без persisted streams получают `backfill_required` и не попадают в promotion candidates.
+- Добавлены regression tests для default candidate list и блокировки symbol без coverage.
+
+## [2026-06-14] - [OPS] - Docker Compose deploy recreate стабилизирован
+- `scripts/deploy-compose-stack.sh` больше не использует единый `docker compose up -d --build backend frontend`, который на preview дважды приводил к Docker Compose name-conflict при recreate backend.
+- Новый порядок deploy: сначала `compose build backend frontend`, затем явный `compose rm -sf backend frontend`, затем `compose up -d --no-build backend frontend`.
+- PostgreSQL container и volume не удаляются; изменение касается только пересоздания app containers `backend` и `frontend`.
+- Добавлен `.gitattributes` с `*.sh text eol=lf`, чтобы shell-скрипты не получали CRLF/mixed line endings в Windows workspace.
+- Проверка на `/opt/deltagrid-preview`: `sh -n scripts/deploy-compose-stack.sh` проходит, ручной preview deploy завершился без name-conflict, backend/frontend/PostgreSQL healthy, `scripts/server-smoke.sh` прошёл.
+
+## [2026-06-14] - [CI/SECURITY] - Frontend audit gate для high/critical advisory
+- Проверен Next.js 16 regression path: актуальный stable `next@16.2.9` требует Node `>=20.9.0`, но всё ещё содержит bundled `postcss 8.4.31`, поэтому не закрывает остаточный `moderate` advisory `postcss <8.5.10`.
+- Fixed `postcss 8.5.10` найден только в `next@canary`; canary-версия не переводится в production/preview runtime без отдельного решения.
+- В `CI` добавлен frontend-шаг `npm audit --audit-level=high`, который блокирует high/critical advisory и при этом не ломает pipeline из-за текущего известного moderate внутри Next.
+- `README.md`, `PROJECT_PLAN.md` и `BACKLOG.md` обновлены под новый security baseline и оставшийся upstream follow-up.
+
+## [2026-06-14] - [FRONTEND/SECURITY] - Next.js обновлён до 15.5.19
+- Frontend dependency `next` обновлена с `14.1.0` до `15.5.19`, чтобы закрыть critical/high advisory из старой версии.
+- App Router страницы `/assets`, `/charts`, `/funding` и `/perp-dex` мигрированы на async `searchParams`, который требуется Next.js 15 при production build.
+- `scripts/server-smoke.sh` переключён с проверки корня frontend на `/market`, чтобы deploy smoke оставался строгим по HTTP `200` и не падал на ожидаемом redirect `/ -> /market`.
+- `README.md` и `ARCHITECTURE.md` обновлены до актуального стека Next.js 15.
+- Проверка локально: `npm run build` во `frontend` проходит на Next.js `15.5.19`.
+- `npm audit --json` после апгрейда показывает `0 high`, `0 critical` и `2 moderate`; остаточный риск связан с bundled `postcss <8.5.10` внутри Next и вынесен в отдельный regression pass для Next.js 16.x или upstream patch.
+
+## [2026-06-14] - [OPS] - Production deploy diagnostics подготовлены в preview
+- В ветке `preview` подготовлен hardening для `Deploy Production`: явные `configured/missing` шаги для `PROD_*`, проверка fingerprint deploy key, expected values для `2.25.143.143/root//opt/deltagrid`, warning-only TCP port probe, SSH login retry и проверка production app dir перед deploy.
+- Safe-skip семантика сохранена: если обязательный production secret отсутствует, workflow не должен падать на value-check шагах.
+- Preview workflow также получил guard для value-check шагов, чтобы пустой secret не превращал safe-skip в failure.
+- Изменение пока не активировано на `main`; production `/opt/deltagrid` не менялся и остаётся healthy.
+- Проверка после preview auto-deploy: `/opt/deltagrid-preview` обновился до `9aab346`, backend/frontend/PostgreSQL healthy, `scripts/server-smoke.sh` прошёл.
+
+## [2026-06-14] - [OPS] - Preview Nginx HTTP pre-stage
+- На VPS заранее включён отдельный Nginx site `deltagrid-preview` для `preview.deltagrid.pro`: frontend проксируется на `127.0.0.1:3012`, backend/API/WebSocket — на `127.0.0.1:8011`.
+- Production site `deltagrid` не изменялся; `nginx -t` прошёл успешно, Nginx reload выполнен.
+- Проверка без публичного DNS через `Host: preview.deltagrid.pro` прошла: backend readiness возвращает `ready`, `/` и `/charts?symbol=BTC&interval=1m&range=7d` возвращают HTTP `200`.
+- DNS `preview.deltagrid.pro` пока не резолвится, поэтому Let's Encrypt SSL ещё не выпускался. Следующий шаг: добавить DNS `A preview -> 2.25.143.143`, затем запустить `scripts/configure-preview-nginx-ssl.sh`.
+
+## [2026-06-14] - [OPS] - Preview auto-deploy через GitHub Actions
+- GitHub repository secrets `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY` и `PREVIEW_APP_DIR` доведены до рабочего состояния для preview deploy.
+- Workflow `Deploy Preview` прошёл end-to-end: readiness обязательных secrets, fingerprint deploy key, SSH port/login, проверка `/opt/deltagrid-preview` и сам deploy step.
+- Preview VPS `/opt/deltagrid-preview` обновлён через GitHub Actions; контрольные probes `1e1371c` и `6e8edb2` подтвердили реальный deploy, backend/frontend/PostgreSQL в Compose project `deltagrid-preview` находятся в состоянии `healthy`.
+- Preview workflow усилен после flaky GitHub runner: TCP port probe переведён в warning-only diagnostics, SSH login получил явные timeout/keepalive и retry.
+- Проверка после auto-deploy: `BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/server-smoke.sh` прошёл.
+- Production deploy в этой итерации не менялся; следующий ops-шаг — DNS/Nginx/SSL для `preview.deltagrid.pro` и отдельная проверка `PROD_*` secrets.
+
 ## [2026-06-14] - [RELEASE/OPS] - Preview domain и deploy runbooks
 - Восстановлен `AGENTS.md` как проектный файл правил для Codex/AI-агентов; локально файла не было, хотя workflow проекта его требует.
 - Добавлен preview Nginx template `deploy/nginx/deltagrid-preview.conf.example`: frontend `127.0.0.1:3012`, backend/API/WebSocket `127.0.0.1:8011`, домен `preview.deltagrid.pro`.

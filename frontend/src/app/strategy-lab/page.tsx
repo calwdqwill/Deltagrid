@@ -69,9 +69,9 @@ export default async function StrategyLabPage() {
         <TerminalPanel>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             <SelectPill label="Strategy" value="Basis / Funding Research" />
-            <SelectPill label="Universe" value="BTC / ETH / SOL" />
-            <SelectPill label="Price Input" value="Binance OHLCV" />
-            <SelectPill label="Funding Input" value="Binance / CoinGlass" />
+            <SelectPill label="Universe" value="BTC input demo" />
+            <SelectPill label="Price Input" value="OKX OHLCV" />
+            <SelectPill label="Funding Input" value="OKX / CoinGlass" />
             <SelectPill label="Output Policy" value="Real PnL only" />
           </div>
         </TerminalPanel>

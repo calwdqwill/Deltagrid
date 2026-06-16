@@ -6,7 +6,7 @@ DeltaGrid — аналитическое приложение для крипт�
 
 ## Основные слои
 
-- `frontend/` — Next.js 14, React, TypeScript, Tailwind CSS, Zustand, TanStack Query и `lightweight-charts` для interactive charts.
+- `frontend/` — Next.js 15, React, TypeScript, Tailwind CSS, Zustand, TanStack Query и `lightweight-charts` для interactive charts.
 - `backend/app/api/v1/` — FastAPI routes и API boundary.
 - `backend/app/services/` — бизнес-логика: market, scanner, alerts, execution, RWA, treasury, auth.
 - `backend/app/adapters/` — внешние провайдеры и exchange/data adapters.
@@ -40,7 +40,7 @@ Frontend HTTP API использует относительный `/api/v1` и �
 
 `/charts` теперь имеет отдельный client-side слой `InteractiveCandlestickChart` на `lightweight-charts`. Server-side workspace собирает OKX OHLCV окно через `/data/ohlcv/window`, а старая постраничная сборка поверх `/data/ohlcv` оставлена fallback path. Client layer отвечает только за визуализацию candles, volume, crosshair и pan/zoom/scroll; расчёты data quality, freshness и coverage остаются в backend/data-layer.
 
-Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/ohlcv/window`, `/data/funding`, `/data/open-interest`, `/data/long-short-ratio`, `/data/basis-premium`, `/data/liquidations`, `/data/coverage`, `/data/universe` и `/data/health`.
+Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/ohlcv/window`, `/data/funding`, `/data/open-interest`, `/data/long-short-ratio`, `/data/basis-premium`, `/data/liquidations`, `/data/coverage`, `/data/universe`, `/data/provider-inventory` и `/data/health`.
 
 Для interactive charts добавлен отдельный read-only endpoint `/data/ohlcv/window`. Он возвращает bounded OHLCV окно по `symbol + exchange + interval + range`, ограничивает размер ответа `20000` строками и, если `end` не задан, использует последнюю доступную свечу в PostgreSQL как правый край окна. Старый `/data/ohlcv` сохраняет лимит `1000` строк для общих read-side сценариев.
 
@@ -51,6 +51,12 @@ Data-layer API открыт read-only endpoint'ами: `/data/ohlcv`, `/data/ohl
 - `universe` — policy view для текущего MVP universe: `complete_history`, `core_perp_ready`, `partial_history`, `not_ready`, `policy.ui_universe` и `deferred_symbols`;
 - `sync_health_by_type` — последние sync-runs по `provider_name + sync_type`, чтобы OHLCV, funding, OI, long/short, liquidations и basis были видны отдельно;
 - `sync_diagnostics` — cron-path диагностику по `provider_sync_runs`: последний запуск, последний успешный запуск, fetched/inserted records и классы ошибок вроде `http_451`, `rate_limit`, `circuit_breaker`, `empty_response`.
+
+`/data/provider-inventory` — отдельный read-only endpoint для MVP1 expansion gate. Он строит inventory candidate symbols поверх persisted coverage/freshness, возвращает `promotion_candidate`, `chart_ready_candidates`, `policy.gates`, `next_action`, readiness status и summaries по 24h/7d. Для объяснения strict gate endpoint также возвращает `coverage_blockers_7d`, `freshness_blockers`, объединённый `promotion_blockers` и summary-разбивку blocker'ов по stream, чтобы было видно, какие persisted signals блокируют full analytics promotion. `chart_ready` и `chart_ready_candidates` означают только готовность для preview `/charts` и `/assets`; `promotion_candidate` для full analytics universe требует `complete_history` и не выдаётся для `core_perp_ready`, если snapshot/enrichment streams ещё partial. В отличие от `/data/health`, который остаётся scoped к текущему UI universe `BTC/ETH/SOL`, provider inventory считает freshness по запрошенным candidate symbols и возвращает `scope.freshness_scope=requested_symbols`. Endpoint не вызывает внешние API и не меняет sync-конфигурацию; внешний discovery OKX/CoinGlass/CoinGecko/legacy Binance остаётся отдельным CLI-шагом перед расширением `SymbolMapper` и UI universe.
+
+Для внешнего discovery добавлен CLI `python -m app.adapters.data.discover_provider_universe`. Он не является API endpoint'ом и не пишет в PostgreSQL: задача CLI — проверить live provider availability для candidate symbols перед изменением aliases/sync universe. Проверяются OKX USDT swap instrument/OHLCV/funding/OI/long-short, CoinGlass OKX snapshots/liquidations, CoinGecko spot price и Binance USD-M как legacy diagnostic. На VPS Binance остаётся `blocked_http_451`, поэтому не используется как primary path.
+
+`SymbolMapper.seed_defaults()` теперь идемпотентно поддерживает core symbols `BTC/ETH/SOL` и первую малую expansion group `HYPE/XRP/DOGE/ADA/LINK`. Эти aliases нужны для preview sync dry-run и CoinGecko-derived basis, но сами по себе не расширяют UI universe: `/data/provider-inventory` и freshness SLA остаются gate перед показом новых symbols в product screens.
 
 Для sparse event streams, сейчас это `liquidations`, freshness разделяет два сигнала: возраст последнего события и возраст последнего успешного sync-run. Если новых liquidation events нет, но `coinglass/liquidations` sync свежий и успешный, поток остаётся `fresh` с reason `no recent liquidation events`; `/data-health` показывает это как `event age / sync age`.
 

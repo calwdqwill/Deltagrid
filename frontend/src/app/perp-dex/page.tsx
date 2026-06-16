@@ -17,6 +17,7 @@ import {
   getLiveMarketMatrix,
   LiveArbitrageOpportunity,
   LiveMatrixRow,
+  CORE_SYMBOLS_LABEL,
 } from "@/lib/terminal/live-streams";
 import { KpiMetric } from "@/types/terminal";
 
@@ -137,8 +138,13 @@ function opportunityCells(opportunity: LiveArbitrageOpportunity) {
   ];
 }
 
-export default async function PerpDexPage({ searchParams }: { searchParams?: { view?: string } }) {
-  const activeView = normalizeView(searchParams?.view);
+type PerpDexPageProps = {
+  searchParams?: Promise<{ view?: string }>;
+};
+
+export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
+  const params = await searchParams;
+  const activeView = normalizeView(params?.view);
   const activeTab = perpDexViews.find((item) => item.view === activeView) ?? perpDexViews[0];
   const [health, matrix, scanner] = await Promise.all([
     getLiveDataHealth(),
@@ -162,7 +168,7 @@ export default async function PerpDexPage({ searchParams }: { searchParams?: { v
     {
       label: "Perp Inputs",
       value: `${livePerpRows}/${matrix.rows.length}`,
-      caption: "BTC/ETH/SOL live streams",
+      caption: `${CORE_SYMBOLS_LABEL} live streams`,
       tone: livePerpRows === matrix.rows.length ? "positive" : "warning",
     },
     {
@@ -260,7 +266,7 @@ export default async function PerpDexPage({ searchParams }: { searchParams?: { v
 
         <TerminalPanel>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            <SelectPill label="Universe" value="BTC / ETH / SOL" />
+            <SelectPill label="Universe" value={CORE_SYMBOLS_LABEL} />
             <SelectPill label="Perp Source" value="OKX USDT Swap" />
             <SelectPill label="Derivatives" value="Funding / OI / L/S" />
             <SelectPill label="DEX Venues" value="Pending direct adapters" />

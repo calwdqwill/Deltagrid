@@ -9,11 +9,19 @@
 - Production baseline зафиксирован как `v1.3.0`.
 - `preview` используется как dev/staging ветка, `main` — как production ветка.
 - Добавлен `RELEASES.md` с правилами SemVer и release flow.
+- Добавлен `scripts/release-preflight.sh`, чтобы перед patch/minor release проверять согласованность `VERSION`, frontend package version и lockfile root version.
 - Добавлены GitHub Actions workflows: `CI`, `Deploy Preview`, `Deploy Production`.
 - Deploy workflows используют SSH secrets и не выполняют deploy, если secrets ещё не настроены.
 - Подготовлено dev/prod разделение на уровне deployment: production `/opt/deltagrid` + `.env.production` + ports `8000/3001`, preview `/opt/deltagrid-preview` + `.env.preview` + ports `8011/3012`.
 - Preview/dev stack поднят на VPS локально: отдельный Compose project `deltagrid-preview`, отдельная PostgreSQL БД, smoke-check зелёный, 7d BTC/ETH/SOL data sync выполнен без ошибок.
+- Preview auto-deploy через GitHub Actions проверен end-to-end: `PREVIEW_*` secrets, SSH login, deploy в `/opt/deltagrid-preview`, healthy containers и server smoke на ports `8011/3012`.
+- После flaky SSH login failure preview deploy workflow усилен явными SSH timeout/retry options; commit `4c3dec0` прошёл CI, `Deploy Preview` run `27532247102` завершился `success`, `/opt/deltagrid-preview` обновился автоматически и остался healthy.
+- Preview Nginx HTTP site заранее включён на VPS и проверен через `Host: preview.deltagrid.pro`; публичный HTTPS ждёт DNS-запись `preview -> 2.25.143.143`.
+- Production deploy diagnostics подготовлены в `preview`, но ещё не активированы на `main`: `PROD_*` нужно проверить отдельной безопасной production-итерацией.
+- Frontend security baseline обновлён до Next.js `15.5.19`; critical/high advisory из `next@14.1.0` закрыты, App Router страницы мигрированы на async `searchParams`.
 - Подготовлены runbook'и для следующего ops-шагa: `deploy/github-actions-secrets.md` для GitHub deploy secrets и `deploy/dns/preview.deltagrid.pro.md` для публикации preview-домена через Nginx/SSL.
+
+- Patch release `v1.3.1` подготовлен поверх `preview`: provider inventory promotion gate, blocker breakdown, frontend audit repair и release preflight.
 
 ## Что уже готово
 
@@ -58,7 +66,7 @@
 - График читает OKX USDT Swap историю из существующего read-only data-layer API. Для 7d `1m` режима frontend постранично собирает окно поверх лимита `/data/ohlcv=1000` строк, не меняя backend контракт.
 - Browser QA через SSH tunnel к production backend подтвердил desktop `BTC 1m 7d` с `10,080` свечами и mobile `ETH 5m 24h` с `288` свечами.
 - Production deploy charts v0 выполнен на `deltagrid.pro`; доменный smoke-check и Browser QA подтвердили desktop `BTC 1m 7d` и mobile `ETH 5m 24h`.
-- Следующий milestone: решение по отдельному backend window endpoint, если клиентская пагинация станет ограничением, и отдельный security upgrade `next`.
+- Следующий milestone по charts backend window endpoint выполнен; security upgrade `next` выполнен до `15.5.19`. Next.js 16 stable проверен и пока не закрывает остаточный `moderate` audit, потому что `next@16.2.9` всё ещё содержит bundled `postcss 8.4.31`; high/critical baseline защищён CI-шагом `npm audit --audit-level=high`.
 
 ## Sparse liquidation freshness — 2026-06-14
 
@@ -92,6 +100,40 @@
 - Для MVP1 primary UI universe допускает symbols, у которых chart-critical streams покрыты, freshness зелёный и нет missing tracked streams; partial enrichment streams остаются видимым ограничением, а не скрытым допущением.
 - Production deploy выполнен на `deltagrid.pro`: BTC/ETH/SOL классифицированы как `core_perp_ready`, `chart_ready=3/3`, missing streams отсутствуют, partial enrichment streams видны явно.
 - Следующий milestone: provider inventory по расширяемому universe до изменения sync-конфигурации и UI selector'ов.
+
+## Provider inventory v0 — 2026-06-15
+
+- Добавлен `GET /api/v1/data/provider-inventory` для read-only проверки кандидатов на расширение universe поверх persisted coverage/freshness.
+- Endpoint работает без внешних API-вызовов и не меняет sync-конфигурацию, `SymbolMapper` или UI selector'ы.
+- Default candidate set: `BTC/ETH/SOL/HYPE/XRP/DOGE/BNB/ADA/LINK/AVAX/SUI/TON/TRX/DOT/LTC/BCH/AAVE/UNI/APT/ARB`.
+- Для каждого symbol возвращаются `promotion_candidate`, `next_action`, readiness status, coverage summaries и freshness tracking.
+- Следующий milestone: внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance и только затем расширение aliases/sync universe.
+
+## Provider discovery v1 — 2026-06-15
+
+- Добавлен CLI `python -m app.adapters.data.discover_provider_universe`, который выполняет read-only live discovery без записи в PostgreSQL.
+- Проверяются OKX USDT swaps, CoinGlass OKX futures snapshots/liquidations, CoinGecko spot price и Binance USD-M как legacy diagnostic.
+- Preview/VPS результат: OKX/CoinGlass/CoinGecko `healthy`, Binance legacy заблокирован `HTTP 451`.
+- Все `20/20` MVP1 candidate symbols получили `eligible_for_24h_sync_dry_run`: `BTC/ETH/SOL/HYPE/XRP/DOGE/BNB/ADA/LINK/AVAX/SUI/TON/TRX/DOT/LTC/BCH/AAVE/UNI/APT/ARB`.
+- Следующий milestone: `SymbolMapper`/alias expansion plan и 24h sync dry-run малой группы без расширения UI.
+
+## Alias expansion и preview dry-run — 2026-06-15
+
+- `SymbolMapper.seed_defaults()` переведён на идемпотентный upsert и расширен aliases для `HYPE/XRP/DOGE/ADA/LINK`.
+- Preview DB засеяна aliases; OKX/CoinGlass/CoinGecko mappings проверены вручную внутри backend container.
+- 24h sync dry-run первой малой группы на preview завершён `errors=0`: `fetched=9035`, `inserted=8986`.
+- OHLCV по `1m/5m/1h` для `HYPE/XRP/DOGE/ADA/LINK` прошёл с `gaps=0`.
+- 24h coverage после dry-run: `covered=30`, `partial=15`, `missing=0`; partial ожидаем у snapshot-потоков `open_interest`, `basis_premium`, `spot_perp_price`.
+- Candidate freshness scope вынесен в `/data/provider-inventory`: endpoint считает freshness по запрошенным symbols (`freshness_scope=requested_symbols`), а `/data/health` остаётся scoped к текущему UI universe `BTC/ETH/SOL`.
+- Preview-проверка после deploy: `freshness_tracking_required=0`, `history_completion_required=5`, у `HYPE/XRP/DOGE/ADA/LINK` `freshness.worst_status=fresh`, но 7d coverage ещё partial.
+- 72h preview backfill завершён `fetched=27065`, `inserted=26902`, `errors=0`; 7d preview backfill завершён `fetched=63125`, `inserted=62858`, `errors=0`.
+- 7d coverage первой группы: `covered=30`, `partial=15`, `missing=0`; OHLCV/funding/long-short/liquidations covered, partial остаётся только у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Preview chart path после 7d backfill готов: OHLCV gaps `0`, `/charts` может читать `HYPE/XRP/DOGE/ADA/LINK` через OKX window endpoint.
+- Повторная strict gate-проверка перед full UI promotion показала `promotion_candidates=0`, `ready_for_ui_review=0`, `history_completion_required=5`: у всех 5 symbols `chart_ready=true`, но full analytics universe блокируют partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Policy-разделение зафиксировано в provider inventory: `chart_ready_candidates` подходят только для preview `/charts` и `/assets`, а `promotion_candidates` для full analytics universe требуют `complete_history`; `core_perp_ready` с partial snapshot/enrichment streams не считается full promotion.
+- Preview frontend разделён на `CORE_SYMBOLS=BTC/ETH/SOL` для `Market Matrix`/`Arbitrage Scanner`/`Perp DEX` и `CANDIDATE_SYMBOLS=HYPE/XRP/DOGE/ADA/LINK` для `/charts` и `/assets`.
+- Preview market sync получил отдельный split cron path, но первый реальный scheduled core run выявил transient OKX HTTP `429` на `long_short_ratio`; адаптер стабилизирован через retriable `RateLimitExceeded` и более консервативный OKX pacing.
+- Следующий milestone: отдельно решить, добирать ли 7d snapshot/enrichment историю для full promotion или оставлять candidates в chart/asset режиме до новых data requirements.
 
 ## Текущая итерация
 
@@ -155,6 +197,7 @@
 - [x] MVP1/P1: задеплоить backend OHLCV window endpoint для 7d/1m и проверить production `/charts`.
 - [x] MVP1/P1: добавить coverage matrix для BTC/ETH/SOL по основным persisted streams.
 - [x] MVP1/P1: сформировать production universe v1 поверх coverage/freshness.
+- [x] MVP1/P1: обновить frontend Next.js до `15.5.19` и закрыть critical/high audit advisory для `next@14.1.0`.
 - [x] Прогнать миграции на чистой PostgreSQL БД в локальном Docker.
 - [x] Проверить основные backend routes после миграции: `/health`, `/data/health`, `/data/ohlcv`, `/market/trending`.
 - [x] На реальном сервере создать `.env.production` с реальными secrets для `deltagrid.pro` и PostgreSQL `DATABASE_URL`.
@@ -167,16 +210,36 @@
 - [ ] Добавить email к Let's Encrypt account для уведомлений о продлении сертификата.
 - [ ] Запланировать reboot сервера после pending kernel upgrade.
 - [ ] Проверить первый cron-triggered market data sync по `/var/log/deltagrid-market-sync.log`.
-- [ ] Добавить DNS-запись `preview.deltagrid.pro` и включить preview Nginx/SSL через `scripts/configure-preview-nginx-ssl.sh`.
+- [x] Включить preview Nginx HTTP site `deltagrid-preview` и проверить routing через `Host: preview.deltagrid.pro`.
+- [ ] Добавить DNS-запись `preview.deltagrid.pro` и выпустить SSL через `scripts/configure-preview-nginx-ssl.sh`.
 - [x] Создать dedicated SSH deploy key и добавить public key на VPS для GitHub Actions.
 - [x] Синхронизировать `main` и `preview` на актуальных ops/deploy workflows после проверки CI.
-- [ ] Добавить GitHub repository secrets `PREVIEW_*` и `PROD_*`, чтобы deploy workflows перестали делать skip.
+- [x] Добавить и проверить GitHub repository secrets `PREVIEW_*`, чтобы `Deploy Preview` выполнял реальный deploy вместо skip.
+- [x] Подготовить production deploy diagnostics/hardening в `preview` без изменения production runtime.
+- [ ] Добавить и проверить GitHub repository secrets `PROD_*`, чтобы `Deploy Production` был готов к отдельной безопасной production-итерации.
+- [ ] Перенести production deploy hardening в `main` и подтвердить реальный production auto-deploy через `/opt/deltagrid`.
 - [x] Подключить Funding/Data Health frontend screens к backend/data-layer endpoint'ам.
 - [x] Подключить Market Matrix, Arbitrage Scanner, Charts и Strategy Lab к backend/data-layer endpoint'ам или честным pending/readiness states.
 - [x] Задеплоить live data SSR fix и проверить `/charts`, `/market-matrix`, `/arbitrage-scanner`, `/strategy-lab` через Cloudflare.
 - [x] Довести interactive historical charts после production QA: доменный smoke-check, backend window endpoint и coverage matrix выполнены.
 - [x] Сформировать production universe v1 на основе coverage matrix.
-- [ ] Провести provider inventory для расширения universe за пределы BTC/ETH/SOL.
+- [x] Провести provider inventory v0 для расширения universe за пределы BTC/ETH/SOL через read-only persisted-data endpoint.
+- [x] Провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
+- [x] Подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
+- [x] Выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
+- [x] Расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
+- [x] Выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед расширением UI universe.
+- [x] Включить первую малую группу как preview chart/asset candidates в `/charts` и `/assets`; full analytics screens оставить на `BTC/ETH/SOL` до строгого promotion gate.
+- [x] Добавить provider-inventory `chart_ready_candidates` и ручной preview candidate smoke для проверки `/charts`/`/assets` без расширения full analytics universe.
+- [x] Добавить provider-inventory `promotion_blockers`: отдельные coverage/freshness blockers и summary-счётчики причин, почему symbol ещё не проходит full analytics promotion.
+- [x] Добавить provider-inventory summary-разбивку blocker'ов по stream, чтобы быстро видеть, какие persisted streams блокируют full analytics promotion.
+- [x] Подготовить отдельный preview market sync cron path, чтобы candidate freshness не зависела только от one-off backfill/sync.
+- [x] Стабилизировать OKX rate-limit handling для preview cron: HTTP `429` теперь retriable, default OKX pacing снижен.
+- [x] Закрыть `history_completion_required=5` по `open_interest`, `basis_premium`, `spot_perp_price` или явно зафиксировать policy-разделение `chart_ready` и full analytics universe.
+- [ ] Отдельно оценить backfill/ingestion для 7d `open_interest`, `basis_premium`, `spot_perp_price`, если candidates нужно продвигать в full analytics universe.
+- [x] Провести отдельный regression pass Next.js 16.x: stable `16.2.9` не убирает остаточный `moderate` audit по bundled `postcss <8.5.10`.
+- [x] Закрыть свежий frontend high advisory `form-data@4.0.5` через lockfile update до `form-data@4.0.6`; `npm audit --audit-level=high` снова проходит без `--force`.
+- [ ] Дождаться stable Next.js patch с bundled `postcss >=8.5.10`.
 - [ ] Реализовать live Perp DEX venue adapter перед показом DEX volume/OI/liquidity как реальных данных.
 - [ ] Расширить CoinGlass data adapter до дополнительных provider-specific L/S потоков, если Binance global L/S будет недостаточно для MVP.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.

@@ -198,7 +198,7 @@ class GlobalRateLimiter:
     DEFAULT_LIMITS = {
         "binance": (20.0, 20.0),      # 20 req/sec
         "bybit": (120.0, 120.0),      # 120 req/sec
-        "okx": (30.0, 30.0),          # 30 req/sec
+        "okx": (5.0, 2.0),            # conservative public API pacing
         "hyperliquid": (100.0, 100.0), # 100 req/sec
         "coinglass": (3.0, 3.0),      # 3 req/sec
         "coingecko": (8.0, 8.0),      # 500/min = ~8/sec

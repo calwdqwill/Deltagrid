@@ -2,11 +2,11 @@
 
 Production-ready crypto research terminal для анализа spot/perp рынков CEX и DEX, RWA, treasury, funding, market matrix и strategy research workflows.
 
-**Текущая версия**: `v1.3.0`
+**Текущая версия**: `v1.3.1`
 
 ## Архитектура
 
-- **Frontend**: Next.js 14 + React + TypeScript + Tailwind CSS + Zustand + TanStack Query + lightweight-charts
+- **Frontend**: Next.js 15 + React + TypeScript + Tailwind CSS + Zustand + TanStack Query + lightweight-charts
 - **Backend**: FastAPI + Python 3.11 + SQLAlchemy + PostgreSQL
 - **Data**: OKX public market data (primary perp), CoinGecko API, CoinGlass, GeckoTerminal, alternative.me
 - **Cache**: In-memory LRU with TTL (Redis-ready interface)
@@ -143,11 +143,19 @@ Release policy описана в [RELEASES.md](RELEASES.md). Базовая сх
 
 GitHub Actions:
 
-- `CI` запускает backend tests, `compileall` и frontend build на `preview`, `main` и pull requests;
+- `CI` запускает backend tests, `compileall`, frontend `npm audit --audit-level=high` и frontend build на `preview`, `main` и pull requests;
 - `Deploy Preview` деплоит `preview`, если в GitHub настроены `PREVIEW_SSH_HOST`, `PREVIEW_SSH_USER`, `PREVIEW_SSH_KEY`, `PREVIEW_APP_DIR`;
 - `Deploy Production` деплоит `main`, если настроены `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`.
 
+Перед релизным bump используйте `scripts/release-preflight.sh`, чтобы проверить согласованность `VERSION`, `frontend/package.json` и `frontend/package-lock.json`:
+
+```bash
+ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.3.1
+```
+
 Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
+На 2026-06-15 `Deploy Preview` проверен end-to-end: GitHub Actions деплоит ветку `preview` в `/opt/deltagrid-preview`, контейнеры становятся `healthy`, server smoke проходит на ports `8011/3012`. Для ручной проверки preview chart/asset candidates добавлен `scripts/preview-candidate-smoke.sh`; он проверяет `/charts`, `/assets`, OHLCV window endpoint для `HYPE/XRP/DOGE/ADA/LINK` и отсутствие candidate symbols на core-only страницах `Market Matrix`, `Arbitrage Scanner`, `Perp DEX`.
+Production auto-deploy пока не считается подтверждённым: hardening `Deploy Production` подготовлен в `preview`, перенос в `main` и проверка реального deploy в `/opt/deltagrid` остаются отдельной production-итерацией.
 Подробный чеклист secrets: [deploy/github-actions-secrets.md](deploy/github-actions-secrets.md).
 
 Рекомендуемая схема стендов на VPS:
@@ -157,7 +165,7 @@ GitHub Actions:
 
 Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview.
 
-Текущее preview-состояние от 2026-06-14: stack поднят локально на VPS, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Внешний DNS/Nginx для `preview.deltagrid.pro` ещё не настроен; подготовлены `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh` и DNS-чеклист [deploy/dns/preview.deltagrid.pro.md](deploy/dns/preview.deltagrid.pro.md).
+Текущее preview-состояние от 2026-06-14: stack поднят на VPS, GitHub Actions auto-deploy проверен, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Preview Nginx HTTP site `deltagrid-preview` уже включён и проверен через `Host: preview.deltagrid.pro`; внешний HTTPS-домен ждёт DNS-запись `preview -> 2.25.143.143` и выпуск SSL по чеклисту [deploy/dns/preview.deltagrid.pro.md](deploy/dns/preview.deltagrid.pro.md).
 
 Для ручной загрузки свежих market data в production PostgreSQL:
 
@@ -173,6 +181,23 @@ Sync по умолчанию пишет OKX USDT Swap OHLCV/funding/OI/L/S, Coin
 cd /opt/deltagrid
 sudo sh scripts/install-market-sync-cron.sh
 tail -100 /var/log/deltagrid-market-sync.log
+```
+
+Для preview/dev стека используются отдельные cron-файлы и логи, чтобы не смешивать его с production и не запускать core/candidate symbols одним большим burst:
+
+```bash
+cd /opt/deltagrid-preview
+sudo SCHEDULE="*/15 * * * *" PROJECT_DIR=/opt/deltagrid-preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview \
+  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync-core \
+  LOG_FILE=/var/log/deltagrid-preview-market-sync-core.log \
+  SYMBOLS=BTC,ETH,SOL \
+  sh scripts/install-market-sync-cron.sh
+
+sudo SCHEDULE="5,20,35,50 * * * *" PROJECT_DIR=/opt/deltagrid-preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview \
+  CRON_FILE=/etc/cron.d/deltagrid-preview-market-sync-candidates \
+  LOG_FILE=/var/log/deltagrid-preview-market-sync-candidates.log \
+  SYMBOLS=HYPE,XRP,DOGE,ADA,LINK \
+  sh scripts/install-market-sync-cron.sh
 ```
 
 На сервере используйте `docker compose`, `.env.production` и `docker-compose.prod.yml` из `/opt/deltagrid`. Старый SQLite-файл `deltagrid.db` не используется в production runtime.
@@ -301,10 +326,45 @@ tail -100 /var/log/deltagrid-market-sync.log
 | `GET /api/v1/data/funding?symbol=BTC&exchange=okx&start=...&end=...` | Чтение истории funding rate из PostgreSQL, максимум 1000 строк. |
 | `GET /api/v1/data/coverage?symbols=BTC,ETH,SOL&exchange=okx&range=7d` | Coverage matrix по историческим потокам: rows/expected, coverage %, latest timestamp и reason для OHLCV/funding/OI/long-short/liquidations/basis/spot-perp price. |
 | `GET /api/v1/data/universe?symbols=BTC,ETH,SOL&exchange=okx` | Production universe readiness поверх coverage/freshness: `complete_history`, `core_perp_ready`, `partial_history`, `not_ready`, `ui_universe` и `deferred_symbols`. |
+| `GET /api/v1/data/provider-inventory?symbols=BTC,ETH,SOL,HYPE&exchange=okx` | Read-only inventory кандидатов на расширение universe поверх persisted coverage/freshness: `promotion_candidate`, `chart_ready_candidates`, `policy.gates`, `next_action`, readiness status, 24h/7d summaries, `coverage_blockers_7d`, `freshness_blockers`, `promotion_blockers`, summary-разбивку blocker'ов по stream и `freshness_scope=requested_symbols` без внешних API-вызовов. |
 | `GET /api/v1/data/health` | Health snapshot data-layer: статусы провайдеров, последние sync, row counts, data quality score, freshness SLA, coverage matrix, universe readiness, health по `sync_type` и cron/data-sync diagnostics. |
 
 Для sparse event streams вроде `liquidations` `/data/health` различает возраст последнего события и свежесть sync-run: отсутствие новых событий не считается stale, если `coinglass/liquidations` sync свежий и успешный.
 `/data/coverage` и блок `coverage` внутри `/data/health` используют ту же семантику для sparse streams: свежий успешный sync-run подтверждает provider coverage даже при отсутствии новых liquidation events.
+
+`/data/health` остаётся production SLA snapshot для текущего UI universe `BTC/ETH/SOL`. Для кандидатов на расширение используйте `/data/provider-inventory`: он считает freshness по запрошенным symbols, но сам не расширяет UI universe и не запускает внешние provider calls.
+В provider inventory `chart_ready_candidates` — это только готовность для preview `/charts` и `/assets`; `promotion_candidates` для full analytics universe требуют `complete_history`, поэтому `core_perp_ready` с partial snapshot/enrichment streams не считается full promotion.
+
+### Provider Discovery CLI
+
+Read-only discovery перед расширением universe:
+
+```bash
+cd backend
+python -m app.adapters.data.discover_provider_universe --env-file ../.env.providers.local --format markdown
+```
+
+На preview/VPS тот же CLI запускается внутри backend container:
+
+```bash
+cd /opt/deltagrid-preview
+docker compose --env-file .env.preview -p deltagrid-preview -f docker-compose.prod.yml exec -T backend \
+  python -m app.adapters.data.discover_provider_universe --format markdown
+```
+
+CLI не пишет в PostgreSQL и не меняет sync/UI-конфигурацию. Он проверяет OKX, CoinGlass, CoinGecko и legacy Binance, после чего выдаёт `eligible_for_24h_sync_dry_run`, `okx_core_only_review` или `do_not_expand_sync_yet`.
+
+Idempotent seed aliases для core symbols и первой малой expansion group:
+
+```bash
+cd backend
+python - <<'PY'
+from app.adapters.data.symbol_mapper import SymbolMapper
+SymbolMapper().seed_defaults()
+PY
+```
+
+На preview эта команда выполняется внутри backend container перед sync dry-run. Она не расширяет UI universe сама по себе.
 
 ## Roadmap
 

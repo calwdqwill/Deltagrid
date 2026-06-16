@@ -13,6 +13,130 @@ from app.domain.models import Base, Instrument, InstrumentAlias
 from app.persistence.database_url import is_sqlite_database_url, to_sync_database_url
 
 
+DEFAULT_PERP_INSTRUMENTS = [
+    {
+        "canonical": "BTC",
+        "base": "BTC",
+        "quote": "USDT",
+        "type": "perp",
+        "exchange": "binance",
+        "aliases": [
+            ("binance", "BTCUSDT", "ticker", True),
+            ("coinglass", "BTC", "ticker", True),
+            ("coingecko", "bitcoin", "cg_id", True),
+            ("coingecko", "btc", "cg_symbol", False),
+            ("bybit", "BTCUSDT", "ticker", True),
+            ("okx", "BTC-USDT-SWAP", "ticker", True),
+            ("hyperliquid", "BTC", "ticker", True),
+        ],
+    },
+    {
+        "canonical": "ETH",
+        "base": "ETH",
+        "quote": "USDT",
+        "type": "perp",
+        "exchange": "binance",
+        "aliases": [
+            ("binance", "ETHUSDT", "ticker", True),
+            ("coinglass", "ETH", "ticker", True),
+            ("coingecko", "ethereum", "cg_id", True),
+            ("coingecko", "eth", "cg_symbol", False),
+            ("bybit", "ETHUSDT", "ticker", True),
+            ("okx", "ETH-USDT-SWAP", "ticker", True),
+            ("hyperliquid", "ETH", "ticker", True),
+        ],
+    },
+    {
+        "canonical": "SOL",
+        "base": "SOL",
+        "quote": "USDT",
+        "type": "perp",
+        "exchange": "binance",
+        "aliases": [
+            ("binance", "SOLUSDT", "ticker", True),
+            ("coinglass", "SOL", "ticker", True),
+            ("coingecko", "solana", "cg_id", True),
+            ("coingecko", "sol", "cg_symbol", False),
+            ("bybit", "SOLUSDT", "ticker", True),
+            ("okx", "SOL-USDT-SWAP", "ticker", True),
+            ("hyperliquid", "SOL", "ticker", True),
+        ],
+    },
+    {
+        "canonical": "HYPE",
+        "base": "HYPE",
+        "quote": "USDT",
+        "type": "perp",
+        "exchange": "binance",
+        "aliases": [
+            ("binance", "HYPEUSDT", "ticker", True),
+            ("coinglass", "HYPE", "ticker", True),
+            ("coingecko", "hyperliquid", "cg_id", True),
+            ("coingecko", "hype", "cg_symbol", False),
+            ("bybit", "HYPEUSDT", "ticker", True),
+            ("okx", "HYPE-USDT-SWAP", "ticker", True),
+            ("hyperliquid", "HYPE", "ticker", True),
+        ],
+    },
+    {
+        "canonical": "XRP",
+        "base": "XRP",
+        "quote": "USDT",
+        "type": "perp",
+        "exchange": "binance",
+        "aliases": [
+            ("binance", "XRPUSDT", "ticker", True),
+            ("coinglass", "XRP", "ticker", True),
+            ("coingecko", "ripple", "cg_id", True),
+            ("coingecko", "xrp", "cg_symbol", False),
+            ("okx", "XRP-USDT-SWAP", "ticker", True),
+        ],
+    },
+    {
+        "canonical": "DOGE",
+        "base": "DOGE",
+        "quote": "USDT",
+        "type": "perp",
+        "exchange": "binance",
+        "aliases": [
+            ("binance", "DOGEUSDT", "ticker", True),
+            ("coinglass", "DOGE", "ticker", True),
+            ("coingecko", "dogecoin", "cg_id", True),
+            ("coingecko", "doge", "cg_symbol", False),
+            ("okx", "DOGE-USDT-SWAP", "ticker", True),
+        ],
+    },
+    {
+        "canonical": "ADA",
+        "base": "ADA",
+        "quote": "USDT",
+        "type": "perp",
+        "exchange": "binance",
+        "aliases": [
+            ("binance", "ADAUSDT", "ticker", True),
+            ("coinglass", "ADA", "ticker", True),
+            ("coingecko", "cardano", "cg_id", True),
+            ("coingecko", "ada", "cg_symbol", False),
+            ("okx", "ADA-USDT-SWAP", "ticker", True),
+        ],
+    },
+    {
+        "canonical": "LINK",
+        "base": "LINK",
+        "quote": "USDT",
+        "type": "perp",
+        "exchange": "binance",
+        "aliases": [
+            ("binance", "LINKUSDT", "ticker", True),
+            ("coinglass", "LINK", "ticker", True),
+            ("coingecko", "chainlink", "cg_id", True),
+            ("coingecko", "link", "cg_symbol", False),
+            ("okx", "LINK-USDT-SWAP", "ticker", True),
+        ],
+    },
+]
+
+
 # ------------------------------------------------------------------
 # SymbolMapper
 # ------------------------------------------------------------------
@@ -158,99 +282,57 @@ class SymbolMapper:
     # -- Seeding -----------------------------------------------------
 
     def seed_defaults(self) -> None:
-        """Seed top perpetuals with cross-provider aliases."""
-        from datetime import datetime
-
-        defaults = [
-            {
-                "canonical": "BTC",
-                "base": "BTC",
-                "quote": "USDT",
-                "type": "perp",
-                "exchange": "binance",
-                "aliases": [
-                    ("binance", "BTCUSDT", "ticker", True),
-                    ("coinglass", "BTC", "ticker", True),
-                    ("coingecko", "bitcoin", "cg_id", True),
-                    ("coingecko", "btc", "cg_symbol", False),
-                    ("bybit", "BTCUSDT", "ticker", True),
-                    ("okx", "BTC-USDT-SWAP", "ticker", True),
-                    ("hyperliquid", "BTC", "ticker", True),
-                ],
-            },
-            {
-                "canonical": "ETH",
-                "base": "ETH",
-                "quote": "USDT",
-                "type": "perp",
-                "exchange": "binance",
-                "aliases": [
-                    ("binance", "ETHUSDT", "ticker", True),
-                    ("coinglass", "ETH", "ticker", True),
-                    ("coingecko", "ethereum", "cg_id", True),
-                    ("coingecko", "eth", "cg_symbol", False),
-                    ("bybit", "ETHUSDT", "ticker", True),
-                    ("okx", "ETH-USDT-SWAP", "ticker", True),
-                    ("hyperliquid", "ETH", "ticker", True),
-                ],
-            },
-            {
-                "canonical": "SOL",
-                "base": "SOL",
-                "quote": "USDT",
-                "type": "perp",
-                "exchange": "binance",
-                "aliases": [
-                    ("binance", "SOLUSDT", "ticker", True),
-                    ("coinglass", "SOL", "ticker", True),
-                    ("coingecko", "solana", "cg_id", True),
-                    ("coingecko", "sol", "cg_symbol", False),
-                    ("bybit", "SOLUSDT", "ticker", True),
-                    ("okx", "SOL-USDT-SWAP", "ticker", True),
-                    ("hyperliquid", "SOL", "ticker", True),
-                ],
-            },
-            {
-                "canonical": "HYPE",
-                "base": "HYPE",
-                "quote": "USDT",
-                "type": "perp",
-                "exchange": "binance",
-                "aliases": [
-                    ("binance", "HYPEUSDT", "ticker", True),
-                    ("coinglass", "HYPE", "ticker", True),
-                    ("coingecko", "hyperliquid", "cg_id", True),
-                    ("coingecko", "hype", "cg_symbol", False),
-                    ("bybit", "HYPEUSDT", "ticker", True),
-                    ("okx", "HYPE-USDT-SWAP", "ticker", True),
-                    ("hyperliquid", "HYPE", "ticker", True),
-                ],
-            },
-        ]
+        """Seed default perpetual aliases idempotently."""
 
         session = self.Session()
         try:
-            for item in defaults:
-                instr = Instrument(
-                    canonical_symbol=item["canonical"],
-                    base_asset=item["base"],
-                    quote_asset=item["quote"],
-                    instrument_type=item["type"],
-                    exchange=item["exchange"],
+            for item in DEFAULT_PERP_INSTRUMENTS:
+                instr = (
+                    session.query(Instrument)
+                    .filter(Instrument.canonical_symbol == item["canonical"])
+                    .filter(Instrument.exchange == item["exchange"])
+                    .filter(Instrument.instrument_type == item["type"])
+                    .one_or_none()
                 )
-                session.add(instr)
-                session.flush()
+                if instr is None:
+                    instr = Instrument(
+                        canonical_symbol=item["canonical"],
+                        base_asset=item["base"],
+                        quote_asset=item["quote"],
+                        instrument_type=item["type"],
+                        exchange=item["exchange"],
+                    )
+                    session.add(instr)
+                    session.flush()
+                else:
+                    instr.base_asset = item["base"]
+                    instr.quote_asset = item["quote"]
+                    instr.is_active = True
 
                 for provider, alias, alias_type, is_primary in item["aliases"]:
-                    session.add(
-                        InstrumentAlias(
-                            instrument_id=instr.id,
-                            provider=provider,
-                            alias=alias,
-                            alias_type=alias_type,
-                            is_primary=is_primary,
-                        )
+                    existing_alias = (
+                        session.query(InstrumentAlias)
+                        .filter(InstrumentAlias.provider == provider)
+                        .filter(InstrumentAlias.alias == alias)
+                        .one_or_none()
                     )
+                    if existing_alias is not None:
+                        if existing_alias.instrument_id != instr.id:
+                            raise ValueError(
+                                f"Alias {provider}:{alias} already belongs to another instrument"
+                            )
+                        existing_alias.alias_type = alias_type
+                        existing_alias.is_primary = is_primary
+                    else:
+                        session.add(
+                            InstrumentAlias(
+                                instrument_id=instr.id,
+                                provider=provider,
+                                alias=alias,
+                                alias_type=alias_type,
+                                is_primary=is_primary,
+                            )
+                        )
             session.commit()
         except Exception:
             session.rollback()

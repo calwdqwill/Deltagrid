@@ -65,7 +65,12 @@ git checkout "$BRANCH"
 git pull --ff-only "$REMOTE" "$BRANCH"
 
 compose config >/dev/null
-compose up -d --build backend frontend
+
+# Build before stopping running services; then recreate app containers explicitly
+# to avoid Docker Compose rename conflicts during backend/frontend deploys.
+compose build backend frontend
+compose rm -sf backend frontend
+compose up -d --no-build backend frontend
 
 wait_for_service postgres 120
 wait_for_service backend 180

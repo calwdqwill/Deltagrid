@@ -18,6 +18,7 @@ import {
   ChartInterval,
   ChartRange,
   getLiveChartsWorkspace,
+  symbolScopeLabel,
   TRACKED_SYMBOLS,
 } from "@/lib/terminal/live-streams";
 
@@ -44,10 +45,15 @@ function chartTooltip(label: string, formatter: (value: number) => string) {
   return (point: { label: string; value: number }) => `${label} ${point.label}: ${formatter(point.value)}`;
 }
 
-export default async function ChartsPage({ searchParams }: { searchParams?: { symbol?: string; interval?: string; range?: string } }) {
-  const symbol = normalizeSymbol(searchParams?.symbol);
-  const interval = normalizeInterval(searchParams?.interval);
-  const range = normalizeRange(searchParams?.range);
+type ChartsPageProps = {
+  searchParams?: Promise<{ symbol?: string; interval?: string; range?: string }>;
+};
+
+export default async function ChartsPage({ searchParams }: ChartsPageProps) {
+  const params = await searchParams;
+  const symbol = normalizeSymbol(params?.symbol);
+  const interval = normalizeInterval(params?.interval);
+  const range = normalizeRange(params?.range);
   const live = await getLiveChartsWorkspace(symbol, interval, range);
 
   return (
@@ -65,8 +71,9 @@ export default async function ChartsPage({ searchParams }: { searchParams?: { sy
         </div>
 
         <TerminalPanel>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
             <SelectPill label="Asset" value={live.symbol} />
+            <SelectPill label="Scope" value={symbolScopeLabel(live.symbol)} />
             <SelectPill label="Exchange" value={live.exchangeLabel} />
             <SelectPill label="Market" value="USDT Swap" />
             <SelectPill label="Interval" value={live.interval} />

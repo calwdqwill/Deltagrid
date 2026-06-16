@@ -1,8 +1,126 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Текущая ops-задача — поднять отдельный preview/dev stack без риска для production.
-**Last Updated**: 2026-06-14
+**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` подготовлен поверх preview для provider gate diagnostics, frontend audit repair и release preflight.
+**Last Updated**: 2026-06-16
+
+## Обновление 2026-06-16 — Policy gate для chart-ready candidates
+
+- Добавлен `scripts/release-preflight.sh` для подготовки `v1.3.1`: проверяет `VERSION`, frontend package version, lockfile root version, ожидаемую ветку и чистоту git-дерева.
+- Версия поднята до `1.3.1` в `VERSION`, `frontend/package.json` и `frontend/package-lock.json`.
+- В provider inventory добавлена summary-разбивка blocker'ов по stream: `coverage_blockers_by_stream`, `freshness_blockers_by_stream`, `promotion_blockers_by_stream`.
+- Для текущего candidate gate это позволяет сразу увидеть, что full promotion блокируют partial `open_interest:1h`, `basis_premium:snapshot`, `spot_perp_price:snapshot`, без ручного разбора всех per-symbol rows.
+- В provider inventory зафиксировано разделение двух gate: `chart_ready_candidates` подходят только для preview `/charts` и `/assets`, а `promotion_candidates` относятся к full analytics universe.
+- `promotion_candidate` теперь требует `complete_history`; статус `core_perp_ready` больше не считается full promotion, если `open_interest`, `basis_premium` или `spot_perp_price` остаются partial.
+- В `policy.gates` добавлено машинно-читаемое описание правил для `chart_ready` и `promotion_candidate`, чтобы API сам объяснял, почему symbol можно смотреть на графиках, но нельзя продвигать в полный analytics universe.
+- Добавлен regression test для chart-ready candidate с полной 7d OHLCV/funding/long-short coverage и partial snapshot/enrichment streams.
+- После push CI выявил свежий high advisory `form-data@4.0.5` во frontend lockfile; выполнен `npm audit fix` без `--force`, lockfile обновлён до `form-data@4.0.6`, `npm audit --audit-level=high` и `npm run build` локально проходят.
+- Следующий безопасный шаг: отдельно решить, нужно ли добирать 7d snapshot/enrichment историю для full promotion или оставить candidates в chart/asset режиме до следующего набора data requirements.
+
+## Обновление 2026-06-15 — OKX rate-limit retry для preview cron
+
+- Первый реальный scheduled preview core cron после установки split cron подтвердил, что один split не полностью закрывает проблему: OKX `long_short_ratio` для `SOL` вернул HTTP `429`, sync завершился `errors=1`.
+- Причина на уровне кода: `resp.raise_for_status()` поднимал `httpx.HTTPStatusError`, который не попадал в существующий `RetryPolicy`; поэтому transient `429` превращался в `partial` run без retry.
+- `OkxAdapter` теперь переводит HTTP `429` и OKX rate-limit payload в `RateLimitExceeded`; этот тип уже поддержан общим retry/backoff.
+- OKX default pacing в `GlobalRateLimiter` снижен до `capacity=5`, `refill_rate=2 req/sec`, чтобы cron-path меньше давил на публичные derived endpoints.
+- Добавлен regression test на классификацию OKX HTTP `429`; локально из `backend` прошёл `backend\venv\Scripts\python.exe -m pytest tests\test_okx_adapter.py` (`6 passed`), также прошли `py_compile` и `git diff --check`.
+- CI `27539771597` и `Deploy Preview` `27539817178` завершились успешно; `/opt/deltagrid-preview` обновился до `725387d`, контейнеры preview healthy.
+- Контрольный scheduled core cron в `2026-06-15 10:30 UTC` подтвердил fix: OKX вернул `429` на `SOL long_short_ratio`, adapter сделал retry, повторный запрос вернул `200 OK`, итог cron-run `fetched=462`, `inserted=461`, `errors=0`.
+- Финальный preview `/api/v1/data/health`: cron diagnostics `healthy`, latest `okx/long_short_ratio` `completed`, `recent_error_classes.rate_limit=2` остаётся только как 24h история старых partial-run до фикса.
+
+## Обновление 2026-06-15 — Preview market sync cron path
+
+- Причина stale/degraded freshness на preview: регулярный host cron был установлен только для production `/opt/deltagrid` и синкал `BTC/ETH/SOL`; отдельного `/etc/cron.d/deltagrid-preview-market-sync` не было.
+- `scripts/install-market-sync-cron.sh` обновлён: cron-команда теперь может явно пробрасывать `ENV_FILE`, `COMPOSE_FILE` и `COMPOSE_PROJECT_NAME`.
+- Для preview зафиксирован безопасный split contract: отдельный cron/log для core symbols и отдельный cron/log для candidates со сдвигом минут, чтобы снизить риск OKX `429` на derived streams.
+- Production cron не менялся и не переустанавливался в рамках кодовой правки.
+- На preview VPS установлены `/etc/cron.d/deltagrid-preview-market-sync-core` и `/etc/cron.d/deltagrid-preview-market-sync-candidates`; production `/etc/cron.d/deltagrid-market-sync` остался прежним.
+- Ручной preview sync по split-path прошёл `errors=0` для core и `errors=0` для candidates. Provider inventory после проверки: `chart_ready_candidates=5`, `promotion_candidates=0`, `coverage_blockers=15`, `freshness_blockers=5`, `promotion_blockers=20`.
+- Оставшийся freshness blocker у candidates — `funding_rates:8h:stale`; full promotion по-прежнему блокируют 15 coverage blockers по `open_interest`, `basis_premium`, `spot_perp_price`.
+
+## Обновление 2026-06-15 — Promotion blocker diagnostics
+
+- Provider inventory теперь возвращает явные blocker-поля для full analytics promotion: `coverage_blockers_7d`, `freshness_blockers` и объединённый `promotion_blockers` на уровне каждого symbol.
+- В `summary` добавлены счётчики `coverage_blockers`, `freshness_blockers` и `promotion_blockers`, чтобы видеть масштаб причин блокировки без ручного разбора coverage/freshness rows.
+- Диагностика использует только persisted data из уже рассчитанных coverage/freshness reports и не вызывает внешние provider API.
+- Regression tests обновлены для symbol без coverage и fresh-but-partial candidate; локально через `backend/venv` пройдено `20 passed`.
+- Статус full promotion не менялся: `HYPE/XRP/DOGE/ADA/LINK` остаются preview chart/asset candidates, а следующий продуктовый выбор — закрывать partial `open_interest`, `basis_premium`, `spot_perp_price` или формально утвердить разделение `chart_ready` и full analytics universe.
+
+## Обновление 2026-06-15 — Candidate gate diagnostics batch
+
+- Provider inventory получил additive-поля `chart_ready_candidates` в `summary` и `policy`, чтобы не смешивать chart/asset readiness с full analytics promotion.
+- `/charts` и `/assets` теперь показывают компактный scope выбранного актива: `Core` или `Preview Candidate`.
+- Добавлен `scripts/preview-candidate-smoke.sh` для ручной проверки preview candidate paths и core-only границы.
+- Скрипт проверен против текущего preview VPS: candidate charts/assets и 7d OHLCV windows прошли, `/market-matrix`, `/arbitrage-scanner`, `/perp-dex` остались core-only.
+- Локально: `python -m compileall backend\app` и `npm run build` прошли; локальный `pytest` недоступен в Windows-сессии из-за отсутствующего пакета `pytest`, финальный backend test прогон должен пройти в GitHub CI.
+
+## Обновление 2026-06-15 — Deploy SSH diagnostics follow-up
+
+- Docs commit `e8ddb1f` прошёл CI, но `Deploy Preview` run `27533723576` упал на диагностическом шаге `Test preview SSH login`; deploy step не дошёл до выполнения.
+- Preview VPS в этот момент оставался healthy, локальный SSH к `root@2.25.143.143` проходил, `/opt/deltagrid-preview` оставался на рабочем commit `57e743a`.
+- `deploy-preview.yml` и `deploy-production.yml` обновлены: `Test SSH login` и `Check app directory` теперь warning-only diagnostics, а реальным gate остаётся deploy step.
+- Deploy step теперь делает 3 попытки вместо 2 и использует нарастающую паузу между попытками.
+
+## Обновление 2026-06-15 — Preview chart candidates scope
+
+- В preview frontend разделены `CORE_SYMBOLS=BTC/ETH/SOL` и `CANDIDATE_SYMBOLS=HYPE/XRP/DOGE/ADA/LINK`.
+- `/charts` и `/assets` теперь допускают candidate symbols, чтобы смотреть 7d OHLCV и asset deep dive на preview без изменения production.
+- `Market Matrix`, `Arbitrage Scanner` и `Perp DEX` оставлены scoped к `BTC/ETH/SOL`, потому текущий strict gate для full promotion показывает `promotion_candidates=0`, `ready_for_ui_review=0`, `history_completion_required=5`.
+- Причина блокировки full promotion: у всех 5 candidates есть `chart_ready=true`, но 7d history остаётся partial для snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- CI/CD проверен: commit `57e743a`, CI `success`, `Deploy Preview` run `27533404025` `success`, `/opt/deltagrid-preview` на `57e743a`, backend/frontend/PostgreSQL healthy.
+- Smoke-check preview: `/charts?symbol=HYPE&interval=1m&range=7d`, `/assets?symbol=ADA`, `/market-matrix`, `/arbitrage-scanner`, `/perp-dex` возвращают HTTP `200`; candidates видны только в chart/asset paths.
+- Следующий шаг: закрыть policy/history gap для `open_interest`, `basis_premium`, `spot_perp_price` или явно утвердить правило, что chart-ready candidates можно держать отдельно от full analytics universe.
+
+## Обновление 2026-06-15 — Preview deploy SSH hardening
+
+- Последний flaky `Deploy Preview` падал на шаге `Test preview SSH login`, хотя preview stack на VPS оставался healthy.
+- В `deploy-preview.yml` и `deploy-production.yml` добавлены более строгие SSH options, явные `timeout` и controlled retries для login, app-dir check и deploy.
+- GitHub Actions проверка: CI commit `4c3dec0` прошёл успешно, `Deploy Preview` run `27532247102` завершился `success`.
+- `/opt/deltagrid-preview` автоматически обновился до `4c3dec0`; backend/frontend/PostgreSQL healthy.
+- Следующий шаг по продукту закрыт частично и безопасно: `HYPE/XRP/DOGE/ADA/LINK` включены как preview chart/asset candidates, full analytics universe promotion ждёт закрытия history gate.
+
+## Обновление 2026-06-15 — 72h/7d preview backfill первой группы
+
+- 72h backfill `HYPE/XRP/DOGE/ADA/LINK` на preview завершён: `fetched=27065`, `inserted=26902`, `errors=0`.
+- 7d backfill той же группы завершён: `fetched=63125`, `inserted=62858`, `errors=0`.
+- OHLCV gaps по `1m/5m/1h` для всех 5 symbols равны `0`; chart window проверен: `HYPE 1m 7d = 10080` свечей, `LINK 5m 7d = 2016` свечей.
+- 7d coverage: `covered=30`, `partial=15`, `missing=0`; partial остаётся только у snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price`.
+- Для chart path группа готова: OHLCV gaps `0`, `HYPE 1m 7d = 10080` свечей, `LINK 5m 7d = 2016` свечей.
+- Full promotion gate при повторной проверке показывает `history_completion_required=5` из-за partial `open_interest`, `basis_premium`, `spot_perp_price`; поэтому candidates включены только в `/charts` и `/assets`.
+
+## Обновление 2026-06-15 — Candidate freshness scope
+
+- `/api/v1/data/provider-inventory` теперь считает freshness по запрошенным candidate symbols и явно возвращает `scope.freshness_scope=requested_symbols`.
+- `/api/v1/data/health` не расширялся и остаётся production SLA snapshot для текущего UI universe `BTC/ETH/SOL`.
+- Preview deploy проверен на `HYPE/XRP/DOGE/ADA/LINK`: `freshness_tracking_required=0`, все 5 symbols имеют `freshness.worst_status=fresh`.
+- По readiness все 5 symbols пока остаются `history_completion_required`, потому 7d coverage ещё partial.
+- Следующий шаг: выполнить 72h/7d preview backfill первой группы и проверить gaps/coverage перед UI universe expansion.
+
+## Обновление 2026-06-15 — Alias expansion и 24h preview dry-run
+
+- `SymbolMapper.seed_defaults()` стал идемпотентным и расширен aliases для `HYPE/XRP/DOGE/ADA/LINK`.
+- Preview DB засеяна aliases; OKX/CoinGlass/CoinGecko mappings проверены внутри backend container.
+- 24h sync dry-run `HYPE/XRP/DOGE/ADA/LINK` на preview завершён без расширения UI: `fetched=9035`, `inserted=8986`, `errors=0`.
+- OHLCV gaps по `1m/5m/1h` для всех 5 symbols равны `0`.
+- `/api/v1/data/coverage?symbols=HYPE,XRP,DOGE,ADA,LINK&exchange=okx&range=24h` показывает `covered=30`, `partial=15`, `missing=0`.
+- До отдельного candidate freshness scope `/api/v1/data/provider-inventory` оставлял symbols вне promotion candidates с `next_action=freshness_tracking_required`, потому freshness SLA формально покрывал только `BTC/ETH/SOL`.
+- Следующий шаг закрыт отдельной итерацией candidate freshness scope; далее нужен 72h/7d preview backfill и проверка gaps/coverage перед UI universe expansion.
+
+## Обновление 2026-06-15 — Provider discovery v1
+
+- Добавлен CLI `python -m app.adapters.data.discover_provider_universe` для read-only live discovery по OKX, CoinGlass, CoinGecko и legacy Binance.
+- Preview/VPS discovery выполнен внутри `deltagrid-preview-backend`: OKX/CoinGlass/CoinGecko `healthy`, Binance legacy `blocked_http_451`.
+- Все `20/20` candidate symbols получили `eligible_for_24h_sync_dry_run`.
+- Discovery не пишет в PostgreSQL, не расширяет sync и не меняет UI.
+- Следующий шаг: `SymbolMapper`/alias expansion plan для `HYPE/XRP/DOGE/ADA/LINK`, затем 24h sync dry-run на preview и проверка errors/gaps/coverage.
+
+## Обновление 2026-06-15 — Provider inventory v0
+
+- Добавлен `GET /api/v1/data/provider-inventory` для кандидатов на расширение universe за пределы `BTC/ETH/SOL`.
+- Endpoint использует только persisted coverage/freshness и не вызывает OKX, CoinGlass, CoinGecko или legacy Binance.
+- Default candidate set: `BTC/ETH/SOL/HYPE/XRP/DOGE/BNB/ADA/LINK/AVAX/SUI/TON/TRX/DOT/LTC/BCH/AAVE/UNI/APT/ARB`.
+- Для каждого symbol возвращаются readiness status, `promotion_candidate`, `next_action`, coverage summaries и freshness tracking.
+- Следующий шаг: внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper`, sync-конфига и UI selector'ов.
 
 ## Обновление 2026-06-14 — Release baseline и CI/CD
 
@@ -108,7 +226,16 @@
 - [x] P1: задеплоить OHLCV window endpoint и переключение `/charts`.
 - [x] P1: добавить coverage matrix для BTC/ETH/SOL по OHLCV/funding/OI/long-short/liquidations/basis/spot-perp.
 - [x] P1: сформировать production universe v1 на основе coverage matrix.
-- [ ] P1: провести provider inventory для расширения universe за пределы BTC/ETH/SOL.
+- [x] P1: провести provider inventory v0 для расширения universe за пределы BTC/ETH/SOL через read-only persisted-data endpoint.
+- [x] P1: провести внешний provider discovery по OKX/CoinGlass/CoinGecko/legacy Binance перед расширением `SymbolMapper` и sync universe.
+- [x] P1: подготовить `SymbolMapper`/alias expansion plan для первой малой группы `HYPE/XRP/DOGE/ADA/LINK`.
+- [x] P1: выполнить 24h sync dry-run первой малой группы на preview без расширения UI.
+- [x] P1: расширить freshness SLA scope для первой малой группы или явно отделить candidate freshness от current UI universe freshness.
+- [x] P1: выполнить 72h/7d preview backfill первой малой группы и проверить gaps/coverage перед UI universe expansion.
+- [x] OPS/P1: стабилизировать preview deploy SSH retry path и подтвердить успешный `Deploy Preview` после CI.
+- [x] P1: включить первую малую группу как preview chart/asset candidates и проверить HTTP smoke `/charts`/`/assets` на preview.
+- [x] P1: закрыть `history_completion_required=5` для `HYPE/XRP/DOGE/ADA/LINK` или явно зафиксировать policy-разделение `chart_ready` и full analytics universe promotion.
+- [ ] P1: отдельно оценить backfill/ingestion для 7d `open_interest`, `basis_premium`, `spot_perp_price`, если решим продвигать candidates в full analytics universe.
 - [ ] P2: backtest engine и scheduler делать только после стабилизации исторических рядов.
 
 ## PostgreSQL MVP Summary — 2026-06-05

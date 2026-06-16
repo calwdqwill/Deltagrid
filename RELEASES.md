@@ -38,15 +38,27 @@ v1.4.0-rc.1  release candidate на preview
 
 1. Внести изменения в feature-ветке или напрямую в `preview` для маленькой безопасной итерации.
 2. Прогнать локально backend tests и frontend build.
-3. Закоммитить изменения и запушить в `preview`.
-4. CI на GitHub должен пройти.
-5. После проверки dev/staging стенда выполнить merge `preview` в `main`.
-6. Production deploy выполняется из `main`.
-7. Создать annotated tag:
+3. Перед релизным bump проверить согласованность версии:
 
 ```bash
-git tag -a v1.3.0 -m "DeltaGrid v1.3.0"
-git push origin v1.3.0
+ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.3.1
+```
+
+4. Закоммитить изменения и запушить в `preview`.
+5. CI на GitHub должен пройти.
+6. После проверки dev/staging стенда выполнить merge `preview` в `main`.
+7. Production deploy выполняется из `main`.
+8. На чистом дереве повторить preflight без `ALLOW_DIRTY`:
+
+```bash
+RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.3.1
+```
+
+9. Создать annotated tag:
+
+```bash
+git tag -a v1.3.1 -m "DeltaGrid v1.3.1"
+git push origin v1.3.1
 ```
 
 ## Документация релиза
@@ -59,4 +71,4 @@ git push origin v1.3.0
 
 ## Текущий baseline
 
-`v1.3.0` — production baseline после MVP1 Data Quality Gate, OKX primary provider, interactive charts v0, coverage matrix и production universe v1.
+`v1.3.1` — patch release поверх `v1.3.0`: provider inventory promotion gate, blocker breakdown, frontend audit repair и release preflight.

@@ -44,6 +44,29 @@ UNIVERSE_RANGES = ("24h", "7d")
 UNIVERSE_CHART_STREAMS = {"ohlcv"}
 WATCHED_PROVIDERS = ("okx", "binance", "coinglass", "coingecko")
 WATCHED_SYMBOLS = ("BTC", "ETH", "SOL")
+PROVIDER_INVENTORY_SYMBOLS = (
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE",
+    "XRP",
+    "DOGE",
+    "BNB",
+    "ADA",
+    "LINK",
+    "AVAX",
+    "SUI",
+    "TON",
+    "TRX",
+    "DOT",
+    "LTC",
+    "BCH",
+    "AAVE",
+    "UNI",
+    "APT",
+    "ARB",
+)
+PROVIDER_INVENTORY_PROMOTION_STATUSES = {"complete_history"}
 PRIMARY_PERP_EXCHANGE = "okx"
 CRON_EXPECTED_INTERVAL_MINUTES = 15
 RECENT_SYNC_WINDOW_HOURS = 24
@@ -186,9 +209,9 @@ def _normalize_exchange(exchange: str) -> str:
     return exchange.strip().lower()
 
 
-def _parse_symbols(symbols: Optional[str]) -> tuple[str, ...]:
+def _parse_symbols(symbols: Optional[str], default: tuple[str, ...] = WATCHED_SYMBOLS) -> tuple[str, ...]:
     if symbols is None or not symbols.strip():
-        return WATCHED_SYMBOLS
+        return default
     parsed = tuple(dict.fromkeys(item.strip().upper() for item in symbols.split(",") if item.strip()))
     if not parsed:
         raise HTTPException(
@@ -560,7 +583,10 @@ def _sparse_event_status(
     )
 
 
-def _build_freshness_report(db: Session) -> dict[str, Any]:
+def _build_freshness_report(
+    db: Session,
+    symbols: tuple[str, ...] = WATCHED_SYMBOLS,
+) -> dict[str, Any]:
     now = _utc_now()
     now_ms = _milliseconds_now()
     streams: list[dict[str, Any]] = []
@@ -570,7 +596,7 @@ def _build_freshness_report(db: Session) -> dict[str, Any]:
     for spec in FRESHNESS_SPECS:
         stream_name = spec["stream"]
         stream_summary = {"fresh": 0, "stale": 0, "degraded": 0}
-        for symbol in WATCHED_SYMBOLS:
+        for symbol in symbols:
             for interval in spec["intervals"]:
                 latest_ts = _latest_timestamp(
                     db,
@@ -631,7 +657,7 @@ def _build_freshness_report(db: Session) -> dict[str, Any]:
 
     return {
         "scope": {
-            "symbols": list(WATCHED_SYMBOLS),
+            "symbols": list(symbols),
             "primary_exchange": PRIMARY_PERP_EXCHANGE,
             "streams": [spec["stream"] for spec in FRESHNESS_SPECS],
         },
@@ -1076,6 +1102,75 @@ def _stream_interval_key(row: dict[str, Any]) -> str:
     return f"{row['stream']}:{row['interval']}"
 
 
+def _coverage_blockers_for_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    blocker_keys = (
+        "stream",
+        "interval",
+        "status",
+        "rows",
+        "expected_rows",
+        "coverage_pct",
+        "window_start_iso",
+        "window_end_iso",
+        "latest_timestamp_iso",
+        "window_source",
+        "coverage_mode",
+        "sync_provider",
+        "sync_type",
+        "sync_age_minutes",
+        "latest_successful_sync_at",
+        "reason",
+    )
+    return [
+        {
+            "blocker_type": "coverage",
+            "range": "7d",
+            **{key: row.get(key) for key in blocker_keys if key in row},
+        }
+        for row in rows
+        if row["status"] != "covered"
+    ]
+
+
+def _freshness_blockers_for_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    blocker_keys = (
+        "stream",
+        "interval",
+        "status",
+        "latest_timestamp_iso",
+        "age_minutes",
+        "expected_cadence_minutes",
+        "stale_after_minutes",
+        "degraded_after_minutes",
+        "freshness_mode",
+        "sync_provider",
+        "sync_type",
+        "sync_age_minutes",
+        "sync_stale_after_minutes",
+        "sync_degraded_after_minutes",
+        "latest_sync_status",
+        "latest_sync_at",
+        "latest_successful_sync_at",
+        "reason",
+    )
+    return [
+        {
+            "blocker_type": "freshness",
+            **{key: row.get(key) for key in blocker_keys if key in row},
+        }
+        for row in rows
+        if row["status"] != "fresh"
+    ]
+
+
+def _increment_blocker_counts(target: dict[str, int], blockers: list[dict[str, Any]]) -> None:
+    for blocker in blockers:
+        stream_name = blocker.get("stream") or "unknown"
+        interval = blocker.get("interval")
+        key = f"{stream_name}:{interval}" if interval else stream_name
+        target[key] = target.get(key, 0) + 1
+
+
 def _universe_status(
     coverage_7d_rows: list[dict[str, Any]],
     freshness_rows: list[dict[str, Any]],
@@ -1165,6 +1260,8 @@ def _build_universe_report(
             for row in coverage_by_range["7d"]
             if row["status"] == "covered"
         ]
+        coverage_blockers_7d = _coverage_blockers_for_rows(coverage_by_range["7d"])
+        freshness_blockers = _freshness_blockers_for_rows(symbol_freshness_rows)
 
         symbol_rows.append(
             {
@@ -1182,6 +1279,9 @@ def _build_universe_report(
                 "covered_streams_7d": covered_7d,
                 "partial_streams_7d": partial_7d,
                 "missing_streams_7d": missing_7d,
+                "coverage_blockers_7d": coverage_blockers_7d,
+                "freshness_blockers": freshness_blockers,
+                "promotion_blockers": coverage_blockers_7d + freshness_blockers,
                 "reason": reason,
             }
         )
@@ -1214,6 +1314,161 @@ def _build_universe_report(
             ),
         },
         "symbols": symbol_rows,
+    }
+
+
+def _provider_inventory_action(symbol_row: dict[str, Any]) -> tuple[str, str]:
+    if symbol_row["status"] in PROVIDER_INVENTORY_PROMOTION_STATUSES:
+        return "ready_for_ui_review", "symbol already passes the production universe readiness rule"
+    if symbol_row["missing_streams_7d"]:
+        return "backfill_required", "one or more tracked 7d streams are missing in persisted data"
+    if symbol_row["freshness"]["total"] == 0:
+        return "freshness_tracking_required", "coverage exists, but freshness SLA is not tracked for this symbol yet"
+    if symbol_row["partial_streams_7d"]:
+        return "history_completion_required", "all streams exist, but some 7d windows are still partial"
+    return "manual_review_required", "symbol does not match an automated inventory action"
+
+
+def _build_provider_inventory_report(
+    db: Session,
+    symbols: tuple[str, ...] = PROVIDER_INVENTORY_SYMBOLS,
+    exchange: str = PRIMARY_PERP_EXCHANGE,
+) -> dict[str, Any]:
+    normalized_exchange = _normalize_exchange(exchange)
+    coverage_7d = _build_coverage_report(db, symbols, normalized_exchange, "7d")
+    freshness = _build_freshness_report(db, symbols=symbols)
+    universe = _build_universe_report(
+        db,
+        symbols=symbols,
+        exchange=normalized_exchange,
+        coverage_7d=coverage_7d,
+        freshness=freshness,
+    )
+
+    summary = {
+        "total": 0,
+        "promotion_candidates": 0,
+        "chart_ready_candidates": 0,
+        "ready_for_ui_review": 0,
+        "backfill_required": 0,
+        "freshness_tracking_required": 0,
+        "history_completion_required": 0,
+        "manual_review_required": 0,
+        "coverage_blockers": 0,
+        "freshness_blockers": 0,
+        "promotion_blockers": 0,
+        "coverage_blockers_by_stream": {},
+        "freshness_blockers_by_stream": {},
+        "promotion_blockers_by_stream": {},
+    }
+    inventory_rows: list[dict[str, Any]] = []
+
+    for symbol_row in universe["symbols"]:
+        next_action, action_reason = _provider_inventory_action(symbol_row)
+        promotion_candidate = symbol_row["status"] in PROVIDER_INVENTORY_PROMOTION_STATUSES
+        summary["total"] += 1
+        if promotion_candidate:
+            summary["promotion_candidates"] += 1
+        if symbol_row["chart_ready"]:
+            summary["chart_ready_candidates"] += 1
+        summary[next_action] += 1
+        summary["coverage_blockers"] += len(symbol_row["coverage_blockers_7d"])
+        summary["freshness_blockers"] += len(symbol_row["freshness_blockers"])
+        summary["promotion_blockers"] += len(symbol_row["promotion_blockers"])
+        _increment_blocker_counts(
+            summary["coverage_blockers_by_stream"],
+            symbol_row["coverage_blockers_7d"],
+        )
+        _increment_blocker_counts(
+            summary["freshness_blockers_by_stream"],
+            symbol_row["freshness_blockers"],
+        )
+        _increment_blocker_counts(
+            summary["promotion_blockers_by_stream"],
+            symbol_row["promotion_blockers"],
+        )
+
+        inventory_rows.append(
+            {
+                **symbol_row,
+                "promotion_candidate": promotion_candidate,
+                "next_action": next_action,
+                "next_action_reason": action_reason,
+                "freshness_tracked": symbol_row["freshness"]["total"] > 0,
+            }
+        )
+
+    for key in (
+        "coverage_blockers_by_stream",
+        "freshness_blockers_by_stream",
+        "promotion_blockers_by_stream",
+    ):
+        summary[key] = dict(sorted(summary[key].items()))
+
+    return {
+        "scope": {
+            "symbols": list(symbols),
+            "exchange": normalized_exchange,
+            "ranges": list(UNIVERSE_RANGES),
+            "primary_range": "7d",
+            "inventory_mode": "persisted_data_only",
+            "external_provider_calls": False,
+            "freshness_scope": "requested_symbols",
+        },
+        "summary": summary,
+        "policy": {
+            "promotion_candidates": [
+                row["symbol"]
+                for row in inventory_rows
+                if row["promotion_candidate"]
+            ],
+            "chart_ready_candidates": [
+                row["symbol"]
+                for row in inventory_rows
+                if row["chart_ready"]
+            ],
+            "deferred_symbols": [
+                row["symbol"]
+                for row in inventory_rows
+                if not row["promotion_candidate"]
+            ],
+            "gates": {
+                "chart_ready": {
+                    "field": "chart_ready",
+                    "candidate_list": "chart_ready_candidates",
+                    "purpose": "preview charts/assets eligibility",
+                    "rule": "chart-critical streams are covered; this does not grant full analytics promotion",
+                },
+                "promotion_candidate": {
+                    "field": "promotion_candidate",
+                    "candidate_list": "promotion_candidates",
+                    "purpose": "full analytics universe review",
+                    "required_statuses": sorted(PROVIDER_INVENTORY_PROMOTION_STATUSES),
+                    "rule": "all tracked streams must have complete 7d persisted history and fresh SLA signals",
+                    "blocker_fields": [
+                        "coverage_blockers_7d",
+                        "freshness_blockers",
+                        "promotion_blockers",
+                    ],
+                },
+            },
+            "rule": (
+                "chart_ready_candidates can be used only for preview charts/assets; promotion_candidates "
+                "require complete_history for full analytics universe review"
+            ),
+        },
+        "symbols": inventory_rows,
+        "coverage": {
+            "7d": {
+                "summary": coverage_7d["summary"],
+                "by_symbol": coverage_7d["by_symbol"],
+                "by_stream": coverage_7d["by_stream"],
+            },
+        },
+        "notes": [
+            "This endpoint is read-only and does not call OKX, CoinGlass, CoinGecko or legacy Binance.",
+            "Symbols outside the current freshness scope remain blocked until sync and SLA tracking are added.",
+        ],
     }
 
 
@@ -1648,6 +1903,30 @@ async def get_data_universe(
     report = _build_universe_report(
         db,
         symbols=_parse_symbols(symbols),
+        exchange=exchange,
+    )
+    return ApiResponse(
+        data=report,
+        meta={
+            "timestamp": _utc_now().isoformat(),
+            "read_only": True,
+        },
+    )
+
+
+@router.get("/provider-inventory", response_model=ApiResponse)
+async def get_provider_inventory(
+    symbols: Optional[str] = Query(
+        None,
+        description="Comma-separated canonical symbols; defaults to MVP1 expansion candidates",
+    ),
+    exchange: str = Query(PRIMARY_PERP_EXCHANGE, min_length=1),
+    db: Session = Depends(get_db),
+):
+    """Inventory expansion candidates from persisted coverage and freshness signals."""
+    report = _build_provider_inventory_report(
+        db,
+        symbols=_parse_symbols(symbols, default=PROVIDER_INVENTORY_SYMBOLS),
         exchange=exchange,
     )
     return ApiResponse(
