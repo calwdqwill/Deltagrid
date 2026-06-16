@@ -10,6 +10,7 @@
 - `promotion_candidate` теперь требует `complete_history`; статус `core_perp_ready` больше не считается full promotion, если `open_interest`, `basis_premium` или `spot_perp_price` остаются partial.
 - В `policy.gates` добавлено машинно-читаемое описание правил для `chart_ready` и `promotion_candidate`, чтобы API сам объяснял, почему symbol можно смотреть на графиках, но нельзя продвигать в полный analytics universe.
 - Добавлен regression test для chart-ready candidate с полной 7d OHLCV/funding/long-short coverage и partial snapshot/enrichment streams.
+- После push CI выявил свежий high advisory `form-data@4.0.5` во frontend lockfile; выполнен `npm audit fix` без `--force`, lockfile обновлён до `form-data@4.0.6`, `npm audit --audit-level=high` и `npm run build` локально проходят.
 - Следующий безопасный шаг: отдельно решить, нужно ли добирать 7d snapshot/enrichment историю для full promotion или оставить candidates в chart/asset режиме до следующего набора data requirements.
 
 ## Обновление 2026-06-15 — OKX rate-limit retry для preview cron

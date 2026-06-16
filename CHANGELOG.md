@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-16] - [SECURITY] - Frontend audit repair for `form-data`
+- После push commit `2b561bb` GitHub Actions показал `Frontend build` failure, при этом `Backend tests` прошли успешно.
+- Причина failure воспроизведена локально: `npm audit --audit-level=high` нашёл новый high advisory для транзитивного `form-data@4.0.5` через `axios`.
+- Выполнен production-safe `npm audit fix` без `--force`: `frontend/package-lock.json` обновлён до `form-data@4.0.6` и `hasown@2.0.4`.
+- Повторная локальная проверка: `npm audit --audit-level=high` проходит; остаётся только известный moderate `postcss` внутри Next.js, который не блокирует текущий CI gate. `npm run build` проходит на Next.js `15.5.19`.
+
 ## [2026-06-16] - [DATA] - Provider inventory policy gate для chart-ready candidates
 - `GET /api/v1/data/provider-inventory` теперь явно разделяет `chart_ready_candidates` и `promotion_candidates` через `policy.gates`.
 - `promotion_candidate` для full analytics universe требует `complete_history`; статус `core_perp_ready` с partial snapshot/enrichment streams больше не считается full promotion.

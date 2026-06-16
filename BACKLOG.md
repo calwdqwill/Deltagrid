@@ -62,6 +62,7 @@
 - [x] P1: Закрыть `history_completion_required=5` для `HYPE/XRP/DOGE/ADA/LINK` по partial snapshot/enrichment streams `open_interest`, `basis_premium`, `spot_perp_price` или явно утвердить policy-разделение `chart_ready` и full analytics universe: provider inventory теперь допускает `chart_ready_candidates` только для preview `/charts`/`/assets`, а `promotion_candidates` требует `complete_history`.
 - [ ] P1: Отдельно оценить backfill/ingestion для 7d `open_interest`, `basis_premium`, `spot_perp_price`, если candidates нужно продвигать в full analytics universe, а не держать в chart/asset режиме.
 - [x] P1: Добавить CI audit gate `npm audit --audit-level=high`, чтобы high/critical frontend advisory снова не прошли в `preview/main`.
+- [x] P1: Закрыть свежий frontend high advisory `form-data@4.0.5` через lockfile update до `form-data@4.0.6` без `npm audit fix --force`.
 - [ ] P1: Дождаться stable Next.js с bundled `postcss >=8.5.10` или другого upstream patch; `next@canary` не использовать в production path без отдельного решения.
 - [ ] P2: Подготовить настоящий backtest engine после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
 
