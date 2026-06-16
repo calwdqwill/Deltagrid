@@ -21,6 +21,8 @@
 - Frontend security baseline обновлён до Next.js `15.5.19`; critical/high advisory из `next@14.1.0` закрыты, App Router страницы мигрированы на async `searchParams`.
 - Подготовлены runbook'и для следующего ops-шагa: `deploy/github-actions-secrets.md` для GitHub deploy secrets и `deploy/dns/preview.deltagrid.pro.md` для публикации preview-домена через Nginx/SSL.
 
+- Patch release `v1.3.1` подготовлен поверх `preview`: provider inventory promotion gate, blocker breakdown, frontend audit repair и release preflight.
+
 ## Что уже готово
 
 - Frontend MVP terminal shell и MVP1 data-layer baseline `v1.3.0`.

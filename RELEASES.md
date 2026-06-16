@@ -71,4 +71,4 @@ git push origin v1.3.1
 
 ## Текущий baseline
 
-`v1.3.0` — production baseline после MVP1 Data Quality Gate, OKX primary provider, interactive charts v0, coverage matrix и production universe v1.
+`v1.3.1` — patch release поверх `v1.3.0`: provider inventory promotion gate, blocker breakdown, frontend audit repair и release preflight.

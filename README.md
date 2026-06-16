@@ -2,7 +2,7 @@
 
 Production-ready crypto research terminal для анализа spot/perp рынков CEX и DEX, RWA, treasury, funding, market matrix и strategy research workflows.
 
-**Текущая версия**: `v1.3.0`
+**Текущая версия**: `v1.3.1`
 
 ## Архитектура
 

@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [v1.3.1] - 2026-06-16 - Patch release
+- Уточнён MVP1 provider inventory gate: `promotion_candidate` для full analytics universe теперь требует `complete_history`, а `chart_ready_candidates` остаются только для preview `/charts` и `/assets`.
+- Добавлена summary-разбивка blocker'ов по stream для `/api/v1/data/provider-inventory`, чтобы быстро видеть, какие persisted streams блокируют full promotion.
+- Закрыт свежий frontend high advisory `form-data@4.0.5` через lockfile update до `form-data@4.0.6`; `npm audit --audit-level=high` снова проходит.
+- Добавлен `scripts/release-preflight.sh` и обновлён release flow для проверки согласованности `VERSION`, frontend package version и lockfile root version.
+- Версия проекта поднята до `1.3.1` в `VERSION`, `frontend/package.json` и `frontend/package-lock.json`.
+
 ## [2026-06-16] - [RELEASE] - Release preflight для patch-релизов
 - Добавлен `scripts/release-preflight.sh` для проверки согласованности `VERSION`, `frontend/package.json` и root version в `frontend/package-lock.json`.
 - Скрипт поддерживает ожидаемую версию аргументом или через `EXPECTED_VERSION`, проверку ветки через `RELEASE_BRANCH` и строгую проверку чистого git-дерева; для проверки во время незакоммиченного release bump можно использовать `ALLOW_DIRTY=1`.
