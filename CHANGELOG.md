@@ -1,5 +1,13 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [RELEASE] - v1.4.0 release candidate
+- Версия поднята до `1.4.0` в `VERSION`, `frontend/package.json` и root package entry в `frontend/package-lock.json`.
+- Release scope: release/deploy runway v1.4, зелёный preview deploy path, reusable release smoke, production backup tooling, Perp DEX Source Status rollup/compare contract, direct venue `availability_summary`, provider error taxonomy, depth freshness evidence, Lighter/Aster fee schedule evidence и provider state empty/error states.
+- Preview baseline перед RC: `preview@104b487` прошёл GitHub CI `27782417781`, `Deploy Preview` `27782466540`, `/opt/deltagrid-preview` был обновлён и remote `scripts/release-smoke.sh` на `8011/3012` прошёл.
+- Проверка перед RC commit/push: release preflight для `1.4.0-rc.1`, backend compileall, targeted backend pytest, frontend build, `npm audit --audit-level=high`, preview HTTP release smoke, Browser QA desktop/mobile через SSH tunnel и post-commit preflight без `ALLOW_DIRTY` прошли.
+- Known limitations: public `preview.deltagrid.pro` всё ещё ждёт DNS/SSL, production auto-deploy зависит от ручного добавления GitHub secrets `PROD_*`, GMX carry conversion и numeric route-cost model остаются decision-gated.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-18] - [PRODUCT/UI] - Perp DEX provider state empty/error states v0
 - `Perp DEX` получил compact state rows перед таблицами `Direct Perp DEX Market Snapshots`, `Depth Diagnostics` и `CoinGlass Perp DEX Enrichment`: venue/source status, rows, matched/missing symbols, provider issue, depth freshness и read-only boundary теперь видны даже при пустых detail rows.
 - UI использует уже загруженные `availability_summary` direct venues и `coverage_summary` CoinGlass, а для старого snapshot shape имеет frontend fallback; новых backend endpoints, provider calls, БД-записей и production signals не добавлено.

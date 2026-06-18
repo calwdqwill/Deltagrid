@@ -50,6 +50,8 @@ RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/releas
 BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/release-smoke.sh
 ```
 
+Перед RC commit/push для `v1.4.0-rc.1` дополнительно выполнить Browser QA preview через SSH tunnel для `/perp-dex`, `/charts`, `/data-health` и ключевых terminal screens на desktop/mobile: runtime errors, console errors и page-level horizontal overflow должны отсутствовать.
+
 Для compact preview/prod diff `Perp DEX Source Status` можно отдельно выполнить:
 
 ```bash
@@ -90,3 +92,5 @@ Preview release runway для `v1.4.0` подтверждён на `preview@b257
 Следующий production target: `v1.4.0` — minor release с зелёным deploy path, Perp DEX read-only research cockpit и production rollout на `deltagrid.pro`.
 
 На 2026-06-18 Perp DEX research cockpit для `v1.4.0` дополнен provider state empty/error states: Direct/Depth/CoinGlass panels показывают compact provider/source rows поверх `availability_summary`/`coverage_summary`, чтобы preview/prod QA видела provider unavailable, partial data, missing symbols и CoinGlass unavailable без включения route ranking, route selection, numeric route cost bps или execution.
+
+`v1.4.0` release candidate готовится в `preview`: version files подняты до `1.4.0`, release notes добавлены, но promotion в `main`, production deploy и annotated tag должны выполняться только после зелёного release preflight/regression/preview deploy gate и свежего PostgreSQL backup.

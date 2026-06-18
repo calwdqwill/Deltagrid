@@ -154,13 +154,14 @@
 
 #### Итерация 3 — `v1.4.0` release candidate и production rollout
 
-- [ ] Поднять версию до `1.4.0`.
-- [ ] Подготовить `CHANGELOG.md` release block для `v1.4.0`.
-- [ ] Пройти release preflight на `preview`.
-- [ ] Выполнить full local regression/build/audit pass.
-- [ ] Выполнить HTTP smoke на preview backend.
-- [ ] Выполнить Browser QA preview desktop/mobile.
+- [x] Поднять версию до `1.4.0`.
+- [x] Подготовить `CHANGELOG.md` release block для `v1.4.0`.
+- [x] Пройти release preflight на `preview` с `ALLOW_DIRTY=1` перед RC commit.
+- [x] Выполнить full local regression/build/audit pass.
+- [x] Выполнить HTTP smoke на preview backend.
+- [x] Выполнить Browser QA preview desktop/mobile.
 - [ ] Закоммитить и запушить `v1.4.0` release candidate в `preview`.
+- [x] Повторить release preflight на чистом `preview` без `ALLOW_DIRTY` после RC commit.
 - [ ] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
 - [ ] Выполнить финальный preview smoke после deploy.
 - [ ] Merge/push `preview` в `main`.

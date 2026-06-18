@@ -68,6 +68,7 @@
 - Perp DEX depth freshness evidence v0 готов: `availability_summary.depth_diagnostics.freshness` показывает timestamp, observed_at, age, display max-age policy, stale-depth action и blocked numeric/slippage flags для Lighter/Aster depth diagnostics без slippage bps, route ranking или execution.
 - Perp DEX provider state empty/error states v0 готов: Direct/Depth/CoinGlass panels показывают compact provider/source state rows перед detail tables, чтобы provider unavailable, partial data, missing symbols, no-depth и CoinGlass unavailable были видны без route ranking, route selection, numeric route cost bps или execution.
 - Preview runtime после depth freshness подтверждён ручным deploy и release smoke на `/opt/deltagrid-preview`; GitHub Deploy Preview требует повторного follow-up gate из-за transient runner/SSH failure, а не из-за product smoke failure.
+- `v1.4.0` release candidate подготовка начата на `preview`: версия поднята до `1.4.0`, release block добавлен в `CHANGELOG.md`, production rollout/tag остаются gated до release preflight, full regression, зелёного GitHub CI/Deploy Preview и свежего production backup.
 
 ## Аудит production data — 2026-06-13
 
@@ -354,7 +355,7 @@
 
 - Итерация 1: release runway и deploy hardening — зелёный GitHub `Deploy Preview` получен на follow-up `b257cc8`, deploy diagnostics усилены, `PROD_*` checklist подготовлен, production backup выполнен через новый script, release smoke checklist зафиксирован.
 - Итерация 2: Perp DEX research cockpit v1.4 read-only — source status rollup, provider availability/error taxonomy, GMX helper/source follow-up, Lighter/Aster depth/fee evidence layers и улучшенные UI empty/error states без route scoring.
-- Итерация 3: `v1.4.0` release candidate и production rollout — version bump, full regression/smoke/build/audit pass, preview deploy gate, merge в `main`, production backup/deploy, production smoke и annotated tag `v1.4.0`.
+- Итерация 3: `v1.4.0` release candidate и production rollout — version bump выполнен, pre-commit release preflight, full regression/build/audit, preview release smoke и Browser QA desktop/mobile прошли; дальше RC commit/push, чистый preflight, preview deploy gate, merge в `main`, production backup/deploy, production smoke и annotated tag `v1.4.0`.
 - Граница `v1.4.0`: trading, execution, route ranking, route selection и numeric route cost bps не включаются без отдельного явного решения; итог релиза — production-ready research/observability слой и зелёный deploy path.
 
 ## Критерии готовности к деплою

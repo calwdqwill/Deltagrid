@@ -4,6 +4,18 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` оформлен и задеплоен вручную на production; `main` находится на `0716f6a`, tag `v1.3.1` указывает на этот commit. Production deploy hardening уже есть в `main`, но `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` и `PROD_APP_DIR` пока отсутствуют.
 **Last Updated**: 2026-06-18
 
+## Обновление 2026-06-18 — v1.4.0 release candidate подготовка
+
+- Версия поднята до `1.4.0` в `VERSION`, `frontend/package.json` и root entry `frontend/package-lock.json`.
+- `CHANGELOG.md` получил release block для `v1.4.0`: release runway, Perp DEX read-only cockpit, preview deploy baseline, production blockers и known limitations.
+- `README.md` обновлён на текущую версию `v1.4.0`.
+- Preview baseline перед RC зафиксирован как `preview@104b487`: CI `27782417781` и `Deploy Preview` `27782466540` зелёные, remote release smoke на `8011/3012` прошёл.
+- Проверка перед RC commit/push: `RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.4.0`, backend `compileall app`, targeted backend pytest, frontend `npm run build`, `npm audit --audit-level=high`, remote preview `scripts/release-smoke.sh` и Browser QA через SSH tunnel прошли.
+- После RC commit `scripts/release-preflight.sh 1.4.0` повторён без `ALLOW_DIRTY` через Git Bash и прошёл на чистом `preview`.
+- Browser QA preview проверил desktop/mobile `/perp-dex?view=venues`, `/charts?symbol=BTC&interval=1m&range=24h`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets?symbol=ETH`: runtime/console errors и page-level horizontal overflow не найдены.
+- Следующий шаг: push RC в GitHub и дождаться зелёных GitHub CI/`Deploy Preview`.
+- Граница сохраняется: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## Обновление 2026-06-18 — Perp DEX provider state empty/error states v0
 
 - Frontend `Perp DEX` теперь показывает compact state rows перед `Direct Perp DEX Market Snapshots`, `Depth Diagnostics` и `CoinGlass Perp DEX Enrichment`.
@@ -884,13 +896,14 @@
 
 ### Итерация 3 — `v1.4.0` release candidate и production rollout
 
-- [ ] Поднять версию до `1.4.0` в `VERSION`, `frontend/package.json`, `frontend/package-lock.json`.
-- [ ] Подготовить `CHANGELOG.md` release block для `v1.4.0`: release runway, Perp DEX source status, deploy/backup, known limitations.
-- [ ] Пройти `scripts/release-preflight.sh 1.4.0` на `preview` с `ALLOW_DIRTY=1`, затем без `ALLOW_DIRTY` после commit.
-- [ ] Выполнить full local regression: backend compileall, targeted backend tests, frontend build, `npm audit --audit-level=high`.
-- [ ] Выполнить HTTP smoke на preview backend: direct venues, policy/model, CoinGlass coverage, health/readiness/data-health.
-- [ ] Выполнить Browser QA preview desktop/mobile для `/perp-dex`, `/charts`, `/data-health` и ключевых terminal screens.
+- [x] Поднять версию до `1.4.0` в `VERSION`, `frontend/package.json`, `frontend/package-lock.json`.
+- [x] Подготовить `CHANGELOG.md` release block для `v1.4.0`: release runway, Perp DEX source status, deploy/backup, known limitations.
+- [x] Пройти `scripts/release-preflight.sh 1.4.0` на `preview` с `ALLOW_DIRTY=1` перед RC commit.
+- [x] Выполнить full local regression: backend compileall, targeted backend tests, frontend build, `npm audit --audit-level=high`.
+- [x] Выполнить HTTP smoke на preview backend: direct venues, policy/model, CoinGlass coverage, health/readiness/data-health.
+- [x] Выполнить Browser QA preview desktop/mobile для `/perp-dex`, `/charts`, `/data-health` и ключевых terminal screens.
 - [ ] Закоммитить `v1.4.0` release candidate в `preview` и push в GitHub.
+- [x] Повторить `scripts/release-preflight.sh 1.4.0` на чистом `preview` без `ALLOW_DIRTY` после RC commit.
 - [ ] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
 - [ ] Выполнить финальный preview smoke после deploy: backend/frontend health, Perp DEX policy/direct smoke, data-health.
 - [ ] Merge/push `preview` в `main` только после зелёного preview gate.
