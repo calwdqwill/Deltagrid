@@ -50,8 +50,11 @@ import {
   LivePerpDexGmxRateMappingReviewItem,
   LivePerpDexGmxRateSemantics,
   LivePerpDexGmxRateSideAwareFixtureExpectation,
+  LivePerpDexRouteConstraints,
+  LivePerpDexRouteModel,
   LivePerpDexRouteModelRequiredInput,
   LivePerpDexVenueMarket,
+  LivePerpDexVenueSnapshot,
   LiveMatrixRow,
   CORE_SYMBOLS_LABEL,
 } from "@/lib/terminal/live-streams";
@@ -68,6 +71,18 @@ const perpDexViews = [
 ] as const;
 
 type PerpDexView = (typeof perpDexViews)[number]["view"];
+type SourceStatusTone = "positive" | "warning" | "negative" | "neutral";
+
+type PerpDexSourceStatusRow = {
+  source: string;
+  layer: string;
+  status: string;
+  tone: SourceStatusTone;
+  rows: string;
+  evidence: string;
+  boundary: string;
+  lastCheck: string;
+};
 
 function normalizeView(value?: string): PerpDexView {
   return perpDexViews.some((item) => item.view === value) ? (value as PerpDexView) : "overview";
@@ -82,6 +97,130 @@ function formatSyncTime(value: unknown): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "No sync";
   return date.toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" });
+}
+
+function sourceStatusTone(status: string): SourceStatusTone {
+  if (["live", "passed", "research_only"].includes(status)) return "positive";
+  if (["partial", "inputs_required", "research_enrichment", "diagnostic_only"].includes(status)) return "warning";
+  if (["unavailable", "failed"].includes(status)) return "negative";
+  return "neutral";
+}
+
+function sourceStatusLabel(status: string): string {
+  if (status === "passed") return "Passed";
+  return policyStatusLabel(status);
+}
+
+function venueSnapshotSourceRow(snapshot: LivePerpDexVenueSnapshot, layer: string, boundary: string): PerpDexSourceStatusRow {
+  return {
+    source: snapshot.venue_name,
+    layer,
+    status: snapshot.status,
+    tone: sourceStatusTone(snapshot.status),
+    rows: snapshot.markets.length ? `${snapshot.markets.length} rows` : "No rows",
+    evidence: snapshot.normalization_status
+      ? policyStatusLabel(snapshot.normalization_status)
+      : snapshot.source.replaceAll("_", " "),
+    boundary,
+    lastCheck: formatSyncTime(snapshot.fetched_at),
+  };
+}
+
+function buildPerpDexSourceStatusRows(
+  snapshots: LivePerpDexVenueSnapshot[],
+  coinglass: LivePerpDexVenueSnapshot,
+  routePolicy: LivePerpDexRouteConstraints,
+  routeModel: LivePerpDexRouteModel
+): PerpDexSourceStatusRow[] {
+  const normalizedSnapshots = snapshots.filter((snapshot) => snapshot.venue_id !== "gmx");
+  const normalizedLive = normalizedSnapshots.filter((snapshot) => snapshot.status === "live" && snapshot.markets.length > 0).length;
+  const normalizedRows = normalizedSnapshots.reduce((sum, snapshot) => sum + snapshot.markets.length, 0);
+  const gmxSnapshot = snapshots.find((snapshot) => snapshot.venue_id === "gmx");
+
+  const rows: PerpDexSourceStatusRow[] = [
+    {
+      source: "Direct Venues",
+      layer: "Runtime snapshots",
+      status: normalizedLive > 0 ? "live" : "unavailable",
+      tone: normalizedLive > 0 ? "positive" : "negative",
+      rows: `${normalizedRows} rows`,
+      evidence: `${normalizedLive}/${normalizedSnapshots.length} normalized live`,
+      boundary: "Read-only market context; no venue ranking",
+      lastCheck: "Current render",
+    },
+    ...normalizedSnapshots.map((snapshot) =>
+      venueSnapshotSourceRow(snapshot, "Direct public API", "Display-only venue rows; no execution path")
+    ),
+  ];
+
+  if (gmxSnapshot) {
+    rows.push(venueSnapshotSourceRow(gmxSnapshot, "Raw fixed-point API", "GMX diagnostics only; no liquidity ranking"));
+  }
+
+  rows.push(
+    {
+      source: "CoinGlass PerpDEX",
+      layer: "Research enrichment",
+      status: coinglass.markets.length > 0 ? "research_enrichment" : coinglass.status,
+      tone: coinglass.markets.length > 0 ? "warning" : sourceStatusTone(coinglass.status),
+      rows: coinglass.markets.length ? `${coinglass.markets.length} rows` : "No rows",
+      evidence: coinglass.coverage_summary
+        ? `${coinglass.coverage_summary.exchanges_with_matches}/${coinglass.coverage_summary.requested_exchanges.length} venues matched`
+        : "No coverage summary",
+      boundary: "Screening hints only; not route input",
+      lastCheck: formatSyncTime(coinglass.fetched_at),
+    },
+    {
+      source: "Route Policy",
+      layer: "Backend contract",
+      status: routePolicy.status,
+      tone: sourceStatusTone(routePolicy.status),
+      rows: `${routePolicy.capabilities.length} capabilities`,
+      evidence: `${routePolicy.blockers.length} blockers`,
+      boundary: routePolicy.ui_policy.may_rank_by_liquidity ? "Ranking unexpectedly enabled" : "Ranking and execution blocked",
+      lastCheck: "Current render",
+    },
+    {
+      source: "Route Model",
+      layer: "Backend contract",
+      status: routeModel.status,
+      tone: sourceStatusTone(routeModel.status),
+      rows: `${routeModel.venue_readiness.length} venue checks`,
+      evidence: `${routeModel.required_inputs.length} required inputs`,
+      boundary: routeModel.output_policy.may_estimate_cost_bps ? "Cost bps unexpectedly enabled" : "Numeric total bps blocked",
+      lastCheck: "Current render",
+    },
+    {
+      source: "Release Smoke",
+      layer: "Preview runway",
+      status: "passed",
+      tone: "positive",
+      rows: "health / policy / direct / CoinGlass",
+      evidence: "release-smoke checklist passed",
+      boundary: "Read-only safety gates confirmed",
+      lastCheck: "2026-06-18",
+    }
+  );
+
+  return rows;
+}
+
+function sourceStatusCells(row: PerpDexSourceStatusRow) {
+  return [
+    <span key="source" className="font-semibold text-cyan-200">
+      {row.source}
+    </span>,
+    row.layer,
+    <span key="status" className={toneText(row.tone)}>
+      {sourceStatusLabel(row.status)}
+    </span>,
+    <span key="rows" className="font-mono text-slate-100">
+      {row.rows}
+    </span>,
+    row.evidence,
+    row.boundary,
+    row.lastCheck,
+  ];
 }
 
 function lastSyncTime(lastSync: Record<string, unknown> | null): string {
@@ -309,6 +448,13 @@ function coinGlassMarketCells(market: LivePerpDexVenueMarket) {
 }
 
 function policyStatusLabel(status: string): string {
+  if (status === "live") return "Live";
+  if (status === "unavailable") return "Unavailable";
+  if (status === "research_only") return "Research Only";
+  if (status === "raw_fixed_point") return "Raw Fixed-point";
+  if (status === "lighter_public_market_details") return "Lighter Public Data";
+  if (status === "aster_public_futures_market_data") return "Aster Public Data";
+  if (status === "coinglass_coin_market_enrichment") return "CoinGlass Enrichment";
   if (status === "partial_ready") return "Partial Ready";
   if (status === "partial_ready_display_only") return "Display Only";
   if (status === "partial_ready_top_orders_only") return "Top Orders Only";
@@ -2088,6 +2234,12 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
   const gmxRows = gmx.markets.length;
   const gmxRaw = gmx.status === "partial" && gmxRows > 0;
   const coinglassPerpDexRows = coinglassPerpDex.markets.length;
+  const sourceStatusRows = buildPerpDexSourceStatusRows(
+    [hyperliquid, dydx, lighter, aster, gmx],
+    coinglassPerpDex,
+    routePolicy,
+    routeModel
+  );
   const visibleVenueLabels = [
     hyperliquidRows > 0 ? "Hyperliquid" : null,
     dydxRows > 0 ? "dYdX" : null,
@@ -3238,6 +3390,18 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
         </TerminalPanel>
 
         <KpiStrip metrics={kpis} />
+
+        {(activeView === "overview" || activeView === "venues") && (
+          <TerminalPanel
+            title="Perp DEX Source Status"
+            caption="Compact source, enrichment and contract status for the current read-only research cockpit"
+          >
+            <TerminalTable
+              columns={["Source", "Layer", "Status", "Rows", "Evidence", "Boundary", "Last Check"]}
+              rows={sourceStatusRows.map(sourceStatusCells)}
+            />
+          </TerminalPanel>
+        )}
 
         {(activeView === "overview" || activeView === "open-interest" || activeView === "liquidity") && (
           <TerminalPanel title="Perp Universe Readiness" caption="Live persisted streams currently available for presentation">

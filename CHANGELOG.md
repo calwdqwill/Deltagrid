@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [PRODUCT/UI] - Perp DEX Source Status rollup v0
+- `Perp DEX` получил панель `Perp DEX Source Status` для compact read-only обзора direct venues, GMX raw, CoinGlass enrichment, route policy/model contract и last release smoke.
+- Панель строится из уже загруженных frontend snapshots и backend policy/model responses; новых provider calls, backend endpoints, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build` прошёл; Browser QA локального `/perp-dex` с preview backend через SSH tunnel прошёл на desktop и mobile без runtime errors, console errors и page-level horizontal overflow.
+- Граница сохранена: venue sorting, route ranking, route selection, numeric route cost bps, diagnostic carry bps и execution не включались.
+
 ## [2026-06-18] - [OPS] - v1.4.0 release runway и deploy diagnostics
 - `v1.3.2` follow-up сохранён отдельным docs-коммитом: зафиксированы зелёный CI, ручной preview deploy и красный GitHub `Deploy Preview` run `27744161749`.
 - Причина красного `Deploy Preview` классифицирована как transient SSH reachability из GitHub runner: secrets/fingerprint/value checks были настроены, но SSH port/login/app-dir/deploy attempts были нестабильны; ручной SSH deploy тем же script прошёл.

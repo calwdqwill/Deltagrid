@@ -59,6 +59,7 @@
 - Perp DEX GMX carry-readiness audit v0 готов: backend `gmx_rate_mapping_review_v0.carry_readiness_summary` и `carry_input_checklist`, UI `GMX Rate Carry Readiness Summary`/`GMX Rate Carry Input Checklist`, compact smoke `gmx_rate_carry_*` и tests фиксируют carry horizon/notional/sign/source/display gates без diagnostic carry bps, route scoring или execution.
 - Perp DEX GMX carry-source evidence gate v0 готов: backend `gmx_rate_mapping_review_v0.carry_source_evidence_summary` и `carry_source_evidence_checklist`, UI `GMX Rate Carry Evidence Summary`/`GMX Rate Carry Evidence Checklist`, compact smoke `gmx_rate_carry_evidence_*` и tests фиксируют source/fixture/runtime/manual evidence gates без diagnostic carry bps, route scoring или execution.
 - Perp DEX GMX live helper source review v0 готов: backend `gmx_rate_mapping_review_v0.live_helper_source_summary` и `live_helper_source_checklist`, UI `GMX Rate Live Helper Source Review`, compact smoke `gmx_rate_live_helper_*` и tests фиксируют live `/markets/info` rate output evidence, missing helper source inputs, side-aware expectations и manual review gates без diagnostic carry bps, route scoring или execution.
+- Perp DEX source status rollup v0 готов: UI-панель `Perp DEX Source Status` собирает direct venue snapshots, GMX raw, CoinGlass enrichment, route policy/model contract и last release smoke в compact read-only таблицу без новых provider calls, venue sorting, route ranking, numeric route cost bps или execution.
 
 ## Аудит production data — 2026-06-13
 
