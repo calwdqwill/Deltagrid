@@ -10,6 +10,8 @@
 - Follow-up retry commit `647f7f3` также получил зелёный CI (`27785222823`), но `Deploy Preview` run `27785273679` снова упал на GitHub runner SSH reachability до remote deploy script.
 - Ручной SSH deploy тем же `scripts/deploy-compose-stack.sh` обновил `/opt/deltagrid-preview` до `647f7f3`, `VERSION=1.4.0`; backend/frontend containers healthy, server smoke и `scripts/release-smoke.sh` прошли.
 - Добавляется hardening: frontend `/version` отдаёт read-only package version, а GitHub `Deploy Preview` после SSH deploy failure сможет проверить публичный preview HTTP `/version` и `/api/v1/health` через `Host: preview.deltagrid.pro`; fallback проходит только если публичный preview уже показывает ожидаемую версию из `VERSION`.
+- Ops-only workflow commit `main@3a8a497` нужен, потому что `workflow_run` берёт `deploy-preview.yml` с default branch; GitHub CI `27787523085` прошёл, `Deploy Production` `27787569689` завершился safe-skip/success, production runtime остался `0716f6a`/`VERSION=1.3.1`.
+- Final preview retry `preview@e1be7a3` прошёл GitHub CI `27787569356` и `Deploy Preview` `27787622699`; `/opt/deltagrid-preview` обновлён до `e1be7a3`, `VERSION=1.4.0`, containers healthy, public `/version` возвращает `1.4.0`, финальный `scripts/release-smoke.sh` прошёл.
 - Версия поднята до `1.4.0` в `VERSION`, `frontend/package.json` и root entry `frontend/package-lock.json`.
 - `CHANGELOG.md` получил release block для `v1.4.0`: release runway, Perp DEX read-only cockpit, preview deploy baseline, production blockers и known limitations.
 - `README.md` обновлён на текущую версию `v1.4.0`.
@@ -17,7 +19,7 @@
 - Проверка перед RC commit/push: `RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.4.0`, backend `compileall app`, targeted backend pytest, frontend `npm run build`, `npm audit --audit-level=high`, remote preview `scripts/release-smoke.sh` и Browser QA через SSH tunnel прошли.
 - После RC commit `scripts/release-preflight.sh 1.4.0` повторён без `ALLOW_DIRTY` через Git Bash и прошёл на чистом `preview`.
 - Browser QA preview проверил desktop/mobile `/perp-dex?view=venues`, `/charts?symbol=BTC&interval=1m&range=24h`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets?symbol=ETH`: runtime/console errors и page-level horizontal overflow не найдены.
-- Следующий шаг: push RC в GitHub и дождаться зелёных GitHub CI/`Deploy Preview`.
+- Следующий шаг: готовить promotion `preview -> main` только после подтверждения свежего production backup и production rollout checklist.
 - Граница сохраняется: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
 
 ## Обновление 2026-06-18 — Perp DEX provider state empty/error states v0
@@ -906,12 +908,12 @@
 - [x] Выполнить full local regression: backend compileall, targeted backend tests, frontend build, `npm audit --audit-level=high`.
 - [x] Выполнить HTTP smoke на preview backend: direct venues, policy/model, CoinGlass coverage, health/readiness/data-health.
 - [x] Выполнить Browser QA preview desktop/mobile для `/perp-dex`, `/charts`, `/data-health` и ключевых terminal screens.
-- [ ] Закоммитить `v1.4.0` release candidate в `preview` и push в GitHub.
+- [x] Закоммитить `v1.4.0` release candidate в `preview` и push в GitHub.
 - [x] Повторить `scripts/release-preflight.sh 1.4.0` на чистом `preview` без `ALLOW_DIRTY` после RC commit.
 - [x] После повторного SSH runner failure вручную обновить preview до `647f7f3` и пройти полный `scripts/release-smoke.sh`.
 - [x] Добавить `/version` и GitHub `Deploy Preview` public HTTP fallback для уже доставленного preview.
-- [ ] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
-- [ ] Выполнить финальный preview smoke после deploy: backend/frontend health, Perp DEX policy/direct smoke, data-health.
+- [x] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
+- [x] Выполнить финальный preview smoke после deploy: backend/frontend health, Perp DEX policy/direct smoke, data-health.
 - [ ] Merge/push `preview` в `main` только после зелёного preview gate.
 - [ ] Запустить production deploy для `main` через GitHub Actions или согласованный ручной SSH fallback; перед deploy обязательно сделать PostgreSQL backup.
 - [ ] После production deploy проверить `https://deltagrid.pro`: health/readiness/data-health, frontend, `/perp-dex`, route safety flags, затем создать annotated tag `v1.4.0` и обновить docs итоговым production follow-up.

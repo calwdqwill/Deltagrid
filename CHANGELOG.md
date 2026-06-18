@@ -7,6 +7,7 @@
 - Проверка перед RC commit/push: release preflight для `1.4.0-rc.1`, backend compileall, targeted backend pytest, frontend build, `npm audit --audit-level=high`, preview HTTP release smoke, Browser QA desktop/mobile через SSH tunnel и post-commit preflight без `ALLOW_DIRTY` прошли.
 - GitHub CI для `e32922a` (`27784328974`) и retry `647f7f3` (`27785222823`) прошли, но `Deploy Preview` runs `27784385918` и `27785273679` упали на GitHub runner SSH reachability до remote deploy script; ручной deploy тем же `scripts/deploy-compose-stack.sh` обновил preview до `647f7f3`/`1.4.0`, полный `scripts/release-smoke.sh` прошёл.
 - Preview deploy hardening: добавлен frontend `/version` endpoint и public HTTP fallback в GitHub `Deploy Preview`, который после SSH deploy failure проверяет ожидаемую версию из `VERSION` и backend health через `Host: preview.deltagrid.pro`.
+- Final preview gate: ops-only `main@3a8a497` доставил fallback workflow на default branch без production runtime deploy; `preview@e1be7a3` прошёл CI `27787569356` и `Deploy Preview` `27787622699`, `/opt/deltagrid-preview` обновлён до `e1be7a3`/`1.4.0`, public `/version` возвращает `1.4.0`, финальный `scripts/release-smoke.sh` прошёл.
 - Known limitations: public `preview.deltagrid.pro` всё ещё ждёт DNS/SSL, production auto-deploy зависит от ручного добавления GitHub secrets `PROD_*`, GMX carry conversion и numeric route-cost model остаются decision-gated.
 - Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
 

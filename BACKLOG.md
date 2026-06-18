@@ -160,12 +160,12 @@
 - [x] Выполнить full local regression/build/audit pass.
 - [x] Выполнить HTTP smoke на preview backend.
 - [x] Выполнить Browser QA preview desktop/mobile.
-- [ ] Закоммитить и запушить `v1.4.0` release candidate в `preview`.
+- [x] Закоммитить и запушить `v1.4.0` release candidate в `preview`.
 - [x] Повторить release preflight на чистом `preview` без `ALLOW_DIRTY` после RC commit.
 - [x] После повторного GitHub runner SSH failure вручную обновить preview до `647f7f3` и пройти полный release smoke.
 - [x] Добавить `/version` и public HTTP fallback в `Deploy Preview` для проверки уже доставленного preview.
-- [ ] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
-- [ ] Выполнить финальный preview smoke после deploy.
+- [x] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
+- [x] Выполнить финальный preview smoke после deploy.
 - [ ] Merge/push `preview` в `main`.
 - [ ] Запустить production deploy для `main` после обязательного PostgreSQL backup.
 - [ ] Проверить production `https://deltagrid.pro`, создать annotated tag `v1.4.0` и обновить итоговые docs.

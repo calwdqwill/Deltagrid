@@ -95,4 +95,4 @@ Preview release runway для `v1.4.0` подтверждён на `preview@b257
 
 На 2026-06-18 Perp DEX research cockpit для `v1.4.0` дополнен provider state empty/error states: Direct/Depth/CoinGlass panels показывают compact provider/source rows поверх `availability_summary`/`coverage_summary`, чтобы preview/prod QA видела provider unavailable, partial data, missing symbols и CoinGlass unavailable без включения route ranking, route selection, numeric route cost bps или execution.
 
-`v1.4.0` release candidate готовится в `preview`: version files подняты до `1.4.0`, release notes добавлены, но promotion в `main`, production deploy и annotated tag должны выполняться только после зелёного release preflight/regression/preview deploy gate и свежего PostgreSQL backup.
+`v1.4.0` release candidate готов в `preview`: `preview@e1be7a3` прошёл CI `27787569356`, `Deploy Preview` `27787622699`, финальный preview `scripts/release-smoke.sh` и public `/version=1.4.0`. Promotion в `main`, production deploy и annotated tag должны выполняться только после подтверждения свежего PostgreSQL backup и production rollout checklist.
