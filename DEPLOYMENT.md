@@ -69,6 +69,12 @@ GitHub Actions:
 Если SSH secrets ещё не заведены, deploy workflow завершится успешным skip и не будет ломать CI.
 Подробный чеклист создания dedicated SSH key и заполнения repository secrets: `deploy/github-actions-secrets.md`.
 
+Deploy diagnostics:
+
+- `scripts/deploy-compose-stack.sh` печатает этапы `git fetch`, `compose config`, `postgres backup`, `compose build`, `wait for backend/frontend` и `server smoke`;
+- при падении deploy script выводит короткий git/compose/disk/logs snapshot без печати env-файла и secrets;
+- `Deploy Preview` и `Deploy Production` после failed deploy attempt пытаются собрать remote diagnostic snapshot через SSH; если сам SSH transport недоступен, workflow явно пишет, что причина ближе к reachability, а не к app deploy logic.
+
 Опциональные secrets позволяют явно переопределить env-файл, Compose project и smoke URLs:
 
 - preview: `PREVIEW_ENV_FILE`, `PREVIEW_COMPOSE_PROJECT_NAME`, `PREVIEW_SMOKE_BASE_URL`, `PREVIEW_SMOKE_FRONTEND_URL`;
@@ -88,7 +94,14 @@ BRANCH=main ENV_FILE=.env.production COMPOSE_PROJECT_NAME=deltagrid sh scripts/d
 BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh scripts/deploy-compose-stack.sh
 ```
 
-Скрипт сначала собирает `backend` и `frontend`, и только после успешного build явно пересоздаёт app containers через `compose rm -sf backend frontend` и `compose up -d --no-build backend frontend`. PostgreSQL container и volume при этом не удаляются.
+Для `BRANCH=main` скрипт перед deploy по умолчанию создаёт PostgreSQL backup через `scripts/backup-postgres.sh` в `backups/deploy/`. Для preview backup по умолчанию выключен, чтобы не плодить дампы на каждом dev/staging push. Поведение можно переопределить:
+
+```bash
+BACKUP_BEFORE_DEPLOY=0 BRANCH=main ENV_FILE=.env.production COMPOSE_PROJECT_NAME=deltagrid sh scripts/deploy-compose-stack.sh
+BACKUP_BEFORE_DEPLOY=1 BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh scripts/deploy-compose-stack.sh
+```
+
+Скрипт сначала делает backup, затем собирает `backend` и `frontend`, и только после успешного build явно пересоздаёт app containers через `compose rm -sf backend frontend` и `compose up -d --no-build backend frontend`. PostgreSQL container и volume при этом не удаляются.
 
 Фактический preview rollout от 2026-06-14:
 
@@ -98,6 +111,8 @@ BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh s
 - backend доступен только локально на `127.0.0.1:8011`, frontend — на `127.0.0.1:3012`;
 - 7d BTC/ETH/SOL sync в preview БД завершён без ошибок, local smoke-check проходит;
 - DNS/Nginx для `preview.deltagrid.pro` ещё не настроены, но подготовлены `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh` и `deploy/dns/preview.deltagrid.pro.md`.
+
+Фактический preview deploy gate от 2026-06-18: после transient SSH failure в `Deploy Preview` run `27744161749` workflow и deploy script получили stage-aware diagnostics; follow-up `preview@b257cc8` прошёл CI `27746664616` и `Deploy Preview` `27746714283`, `/opt/deltagrid-preview` обновлён до `b257cc8`, release smoke на `127.0.0.1:8011/3012` прошёл.
 
 ## Подготовка env
 
@@ -415,12 +430,35 @@ sh scripts/server-smoke.sh
 BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh
 ```
 
+Для release smoke перед preview/main rollout используйте:
+
+```bash
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/release-smoke.sh
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/release-smoke.sh
+```
+
+`release-smoke` объединяет backend health, readiness, `/data/health`, frontend, Perp DEX route policy, direct venue smoke и CoinGlass Perp DEX coverage. Если CoinGlass временно недоступен и проверка нужна только для non-CoinGlass release gate, задайте `RUN_COINGLASS=0` и отдельно зафиксируйте риск в release notes.
+
 Для ручной проверки preview chart/asset candidates на VPS:
 
 ```bash
 cd /opt/deltagrid-preview
 BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 MIN_CANDIDATE_OHLCV_ROWS=1000 sh scripts/preview-candidate-smoke.sh
 ```
+
+Для проверки CoinGlass Perp DEX coverage на стенде с настроенным CoinGlass API key:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 sh scripts/coinglass-perp-dex-coverage-smoke.sh
+```
+
+```bash
+cd /opt/deltagrid
+BASE_URL=http://127.0.0.1:8000 sh scripts/coinglass-perp-dex-coverage-smoke.sh
+```
+
+Скрипт выводит только compact summary по coverage, candidate hints и field groups; raw provider payload и секреты не печатаются.
 
 Фактический production rollout от 2026-06-05, обновлённый baseline от 2026-06-14:
 
@@ -449,17 +487,24 @@ $env:FRONTEND_URL="https://deltagrid.pro"
 Перед каждым деплоем и перед рискованными миграциями сделайте backup:
 
 ```bash
-mkdir -p backups
-docker compose --env-file .env.production -f docker-compose.prod.yml exec -T postgres pg_dump -U deltagrid deltagrid > backups/deltagrid_$(date +%F_%H%M).sql
+sh scripts/backup-postgres.sh
+```
+
+По умолчанию скрипт читает `.env.production`, использует `docker-compose.prod.yml`, сервис `postgres`, значения `POSTGRES_USER`/`POSTGRES_DB` из env-файла и сохраняет сжатый dump в `backups/deltagrid_YYYYMMDDTHHMMSSZ.sql.gz`.
+
+Для preview/dev стенда используйте явные параметры:
+
+```bash
+ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview BACKUP_PREFIX=deltagrid-preview sh scripts/backup-postgres.sh
 ```
 
 Восстановление из backup:
 
 ```bash
-cat backups/deltagrid_YYYY-MM-DD_HHMM.sql | docker compose --env-file .env.production -f docker-compose.prod.yml exec -T postgres psql -U deltagrid deltagrid
+gzip -dc backups/deltagrid_YYYYMMDDTHHMMSSZ.sql.gz | docker compose --env-file .env.production -f docker-compose.prod.yml exec -T postgres psql -U deltagrid deltagrid
 ```
 
-Если в `.env.production` используются другие `POSTGRES_USER` или `POSTGRES_DB`, замените `deltagrid` в командах.
+Если `COMPRESS=0`, скрипт создаст обычный `.sql`, тогда восстановление можно выполнить через `cat backups/file.sql | ... psql ...`. Если в `.env.production` используются другие `POSTGRES_USER` или `POSTGRES_DB`, скрипт прочитает их автоматически.
 
 ## Rollback
 

@@ -1,0 +1,15 @@
+{
+  "markets_info": {
+    "markets": [
+      {
+        "name": "ETH/USD [WETH-USDC]",
+        "fundingRateLong": "100",
+        "borrowingRateLong": "7",
+        "netRateLong": "107",
+        "fundingRateShort": "-25",
+        "borrowingRateShort": "0",
+        "netRateShort": "-25"
+      }
+    ]
+  }
+}

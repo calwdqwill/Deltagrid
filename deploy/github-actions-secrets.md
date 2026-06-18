@@ -55,7 +55,12 @@ PROD_SMOKE_FRONTEND_URL=http://127.0.0.1:3001
 - preview deploy probe `fdb08ec` подтвердил safe-skip без обязательных secrets.
 - preview auto-deploy от 2026-06-14 проверен end-to-end: `PREVIEW_*` secrets, fingerprint deploy key, SSH login, `/opt/deltagrid-preview`, deploy step и server smoke прошли.
 - после flaky GitHub runner preview workflow усилен: TCP port probe не блокирует deploy, а SSH login использует явные timeout/keepalive и retry; контрольный probe после hardening дошёл до `/opt/deltagrid-preview`.
-- production auto-deploy пока не считается подтверждённым: hardening `Deploy Production` подготовлен в `preview`, но перенос в `main` и проверка `PROD_*` выполняются отдельной production-итерацией.
+- `Deploy Preview` run `27744161749` от 2026-06-18 упал на шаге `Deploy preview` из-за transient SSH reachability из GitHub runner: обязательные `PREVIEW_*` secrets, fingerprint и expected value checks были настроены, но SSH port/login/app-dir/deploy attempts были нестабильны. Ручной запуск того же deploy script по SSH после run успешно обновил `/opt/deltagrid-preview` до `d3de35e`.
+- После этого workflow усилен remote diagnostic snapshot: при failed deploy attempt он печатает git status, последний commit, disk usage, `docker compose ps` и хвост backend/frontend logs, если SSH доступен; если SSH недоступен, лог явно фиксирует transport/reachability failure.
+- Follow-up `preview@b257cc8` подтвердил preview auto-deploy end-to-end: GitHub CI `27746664616` и `Deploy Preview` `27746714283` прошли успешно, `/opt/deltagrid-preview` обновлён до `b257cc8`.
+- production deploy hardening перенесён в `main`; real auto-deploy пока не считается подтверждённым, потому что обязательные `PROD_*` repository secrets ещё не заведены.
+- production preflight от 2026-06-16: GitHub Actions run `27619159104` для `main@0716f6a` завершился успешным safe-skip. Шаги `Production secret SSH_HOST missing`, `SSH_USER missing`, `SSH_KEY missing`, `APP_DIR missing` прошли, а `Deploy production` был skipped.
+- локальный read-only preflight от 2026-06-16 подтвердил deploy contract: fingerprint ключа `SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg`, SSH к `root@2.25.143.143`, `/opt/deltagrid` на `main@0716f6a`, production containers healthy и `scripts/server-smoke.sh` зелёный.
 - deploy workflows логируют только readiness-состояние обязательных secrets как `configured/missing`; сами значения secrets в логах не печатаются.
 
 На локальной машине:
@@ -74,6 +79,45 @@ type outputs\deploy-keys\github-actions-deltagrid-deploy.pub | ssh root@2.25.143
 Private key из файла `outputs\deploy-keys\github-actions-deltagrid-deploy` нужно вставить в GitHub secrets как `PREVIEW_SSH_KEY` и `PROD_SSH_KEY`.
 
 Не коммитьте private key. Директория `outputs/` игнорируется Git.
+
+## Текущий production шаг
+
+Для перевода `Deploy Production` из safe-skip в реальный deploy добавьте в GitHub repository secrets:
+
+```text
+PROD_SSH_HOST=2.25.143.143
+PROD_SSH_USER=root
+PROD_APP_DIR=/opt/deltagrid
+PROD_SSH_KEY=<private key from outputs/deploy-keys/github-actions-deltagrid-deploy>
+```
+
+Опциональные `PROD_ENV_FILE`, `PROD_COMPOSE_PROJECT_NAME`, `PROD_SMOKE_BASE_URL`, `PROD_SMOKE_FRONTEND_URL` можно не задавать: workflow использует production-safe defaults.
+
+После добавления secrets запустите контрольный `Deploy Production` вручную:
+
+```text
+GitHub -> Actions -> Deploy Production -> Run workflow -> Branch: main
+```
+
+Workflow также продолжит запускаться автоматически после успешного `CI` на `main`.
+
+Контрольный `Deploy Production` должен пройти следующие признаки:
+
+- `Production secret ... configured` для `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `APP_DIR`;
+- `Validate production deploy key fingerprint` — success;
+- expected value checks для `2.25.143.143`, `root`, `/opt/deltagrid` — success;
+- `Test production SSH login` и `Check production app directory` — success или понятный warning с последующим успешным deploy;
+- `Deploy production` — success, не skipped.
+
+Перед реальным production deploy выполните свежий backup на сервере:
+
+```bash
+cd /opt/deltagrid
+sh scripts/backup-postgres.sh
+gzip -t backups/*.sql.gz
+```
+
+Если backup script ещё не попал в `/opt/deltagrid`, сначала доставьте его через merge/pull `main` или согласованный ручной copy из проверенного commit; private key и `.env.production` при этом не печатать в logs.
 
 ## Где завести secrets
 

@@ -1,0 +1,39 @@
+{
+  "markets_info": {
+    "markets": [
+      {
+        "name": "BTC/USD [WBTC.b-USDC]",
+        "marketTokenAddress": "0xbtc-market",
+        "indexTokenAddress": "0xbtc",
+        "longTokenAddress": "0xwbtc",
+        "shortTokenAddress": "0xusdc",
+        "openInterestLong": "123456789000000000000000000000000000000",
+        "openInterestShort": "234567890000000000000000000000000000000",
+        "availableLiquidityLong": "345678900000000000000000000000000000000",
+        "availableLiquidityShort": "456789000000000000000000000000000000000",
+        "poolAmountLong": "100000000",
+        "poolAmountShort": "200000000",
+        "fundingRateLong": "123456789012345678",
+        "fundingRateShort": "-123456789012345678",
+        "borrowingRateLong": "500000000000000",
+        "borrowingRateShort": "600000000000000",
+        "netRateLong": "122956789012345678",
+        "netRateShort": "-124056789012345678",
+        "isDisabled": false,
+        "listingDate": "2024-01-01"
+      },
+      {
+        "name": "DOGE/USD [ETH-USDC]",
+        "openInterestLong": "999"
+      }
+    ]
+  },
+  "tokens": {
+    "tokens": [
+      {"symbol": "BTC", "address": "0xbtc", "decimals": 8, "synthetic": true},
+      {"symbol": "WBTC.b", "address": "0xwbtc", "decimals": 8},
+      {"symbol": "USDC", "address": "0xusdc", "decimals": 6},
+      {"symbol": "ETH", "address": "0xeth", "decimals": 18}
+    ]
+  }
+}

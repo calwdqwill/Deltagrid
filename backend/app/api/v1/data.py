@@ -190,6 +190,11 @@ COVERAGE_SPECS: tuple[dict[str, Any], ...] = (
     },
 )
 
+HISTORY_BACKFILL_STREAMS = {"ohlcv", "funding_rates", "long_short_ratio"}
+SNAPSHOT_ACCUMULATION_STREAMS = {"open_interest", "basis_premium", "spot_perp_price"}
+SPARSE_PROVIDER_SYNC_STREAMS = {"liquidations"}
+SNAPSHOT_ACCUMULATION_WINDOW_HOURS = COVERAGE_RANGES_MS["7d"] // (60 * 60_000)
+
 
 def _iso(value: Any) -> Any:
     if isinstance(value, datetime):
@@ -1102,6 +1107,89 @@ def _stream_interval_key(row: dict[str, Any]) -> str:
     return f"{row['stream']}:{row['interval']}"
 
 
+def _coverage_resolution_for_row(row: dict[str, Any]) -> dict[str, Any]:
+    stream_name = row.get("stream")
+
+    if stream_name in SNAPSHOT_ACCUMULATION_STREAMS:
+        return {
+            "resolution_strategy": "snapshot_accumulation_required",
+            "historical_backfill_supported": False,
+            "minimum_collection_window_hours": SNAPSHOT_ACCUMULATION_WINDOW_HOURS,
+            "resolution_action": (
+                "keep scheduled snapshot sync healthy until the 7d window accumulates, "
+                "or add a historical provider before full promotion"
+            ),
+            "resolution_reason": (
+                "current ingestion stores provider snapshots; --lookback-hours cannot create historical rows"
+            ),
+        }
+
+    if row.get("coverage_mode") == "sparse_event" or stream_name in SPARSE_PROVIDER_SYNC_STREAMS:
+        return {
+            "resolution_strategy": "provider_sync_required",
+            "historical_backfill_supported": True,
+            "minimum_collection_window_hours": None,
+            "resolution_action": "run provider sync for the target window and verify a recent successful sync-run",
+            "resolution_reason": "sparse event coverage can be confirmed by a successful provider sync-run",
+        }
+
+    if stream_name in HISTORY_BACKFILL_STREAMS:
+        return {
+            "resolution_strategy": "history_backfill_supported",
+            "historical_backfill_supported": True,
+            "minimum_collection_window_hours": None,
+            "resolution_action": "run historical sync/backfill for the missing 7d window and re-check coverage",
+            "resolution_reason": "current ingestion has a historical fetch path for this stream",
+        }
+
+    return {
+        "resolution_strategy": "manual_review_required",
+        "historical_backfill_supported": False,
+        "minimum_collection_window_hours": None,
+        "resolution_action": "inspect stream ingestion and provider availability before changing promotion policy",
+        "resolution_reason": "no automated resolution policy is registered for this stream",
+    }
+
+
+def _freshness_resolution_for_row(row: dict[str, Any]) -> dict[str, Any]:
+    stream_name = row.get("stream")
+
+    if stream_name in SNAPSHOT_ACCUMULATION_STREAMS:
+        return {
+            "resolution_strategy": "snapshot_sync_repair_required",
+            "historical_backfill_supported": False,
+            "minimum_collection_window_hours": None,
+            "resolution_action": "restore scheduled snapshot sync and confirm the latest row is inside the SLA window",
+            "resolution_reason": "freshness depends on new snapshots from the regular sync path",
+        }
+
+    if row.get("freshness_mode") == "sparse_event" or stream_name in SPARSE_PROVIDER_SYNC_STREAMS:
+        return {
+            "resolution_strategy": "provider_sync_required",
+            "historical_backfill_supported": True,
+            "minimum_collection_window_hours": None,
+            "resolution_action": "restore provider sync and verify latest_successful_sync_at is inside the SLA window",
+            "resolution_reason": "sparse event freshness is gated by recent successful provider sync",
+        }
+
+    if stream_name in HISTORY_BACKFILL_STREAMS:
+        return {
+            "resolution_strategy": "freshness_sync_required",
+            "historical_backfill_supported": True,
+            "minimum_collection_window_hours": None,
+            "resolution_action": "run the regular sync/backfill job and confirm the latest row is fresh",
+            "resolution_reason": "freshness blocker is resolved by restoring the current historical sync path",
+        }
+
+    return {
+        "resolution_strategy": "manual_review_required",
+        "historical_backfill_supported": False,
+        "minimum_collection_window_hours": None,
+        "resolution_action": "inspect stream ingestion and provider availability before changing freshness policy",
+        "resolution_reason": "no automated freshness resolution policy is registered for this stream",
+    }
+
+
 def _coverage_blockers_for_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     blocker_keys = (
         "stream",
@@ -1126,6 +1214,7 @@ def _coverage_blockers_for_rows(rows: list[dict[str, Any]]) -> list[dict[str, An
             "blocker_type": "coverage",
             "range": "7d",
             **{key: row.get(key) for key in blocker_keys if key in row},
+            **_coverage_resolution_for_row(row),
         }
         for row in rows
         if row["status"] != "covered"
@@ -1157,6 +1246,7 @@ def _freshness_blockers_for_rows(rows: list[dict[str, Any]]) -> list[dict[str, A
         {
             "blocker_type": "freshness",
             **{key: row.get(key) for key in blocker_keys if key in row},
+            **_freshness_resolution_for_row(row),
         }
         for row in rows
         if row["status"] != "fresh"
@@ -1169,6 +1259,12 @@ def _increment_blocker_counts(target: dict[str, int], blockers: list[dict[str, A
         interval = blocker.get("interval")
         key = f"{stream_name}:{interval}" if interval else stream_name
         target[key] = target.get(key, 0) + 1
+
+
+def _increment_blocker_strategy_counts(target: dict[str, int], blockers: list[dict[str, Any]]) -> None:
+    for blocker in blockers:
+        strategy = blocker.get("resolution_strategy") or "unknown"
+        target[strategy] = target.get(strategy, 0) + 1
 
 
 def _universe_status(
@@ -1360,6 +1456,9 @@ def _build_provider_inventory_report(
         "coverage_blockers_by_stream": {},
         "freshness_blockers_by_stream": {},
         "promotion_blockers_by_stream": {},
+        "coverage_blockers_by_resolution_strategy": {},
+        "freshness_blockers_by_resolution_strategy": {},
+        "promotion_blockers_by_resolution_strategy": {},
     }
     inventory_rows: list[dict[str, Any]] = []
 
@@ -1387,6 +1486,18 @@ def _build_provider_inventory_report(
             summary["promotion_blockers_by_stream"],
             symbol_row["promotion_blockers"],
         )
+        _increment_blocker_strategy_counts(
+            summary["coverage_blockers_by_resolution_strategy"],
+            symbol_row["coverage_blockers_7d"],
+        )
+        _increment_blocker_strategy_counts(
+            summary["freshness_blockers_by_resolution_strategy"],
+            symbol_row["freshness_blockers"],
+        )
+        _increment_blocker_strategy_counts(
+            summary["promotion_blockers_by_resolution_strategy"],
+            symbol_row["promotion_blockers"],
+        )
 
         inventory_rows.append(
             {
@@ -1402,6 +1513,9 @@ def _build_provider_inventory_report(
         "coverage_blockers_by_stream",
         "freshness_blockers_by_stream",
         "promotion_blockers_by_stream",
+        "coverage_blockers_by_resolution_strategy",
+        "freshness_blockers_by_resolution_strategy",
+        "promotion_blockers_by_resolution_strategy",
     ):
         summary[key] = dict(sorted(summary[key].items()))
 
@@ -1450,7 +1564,25 @@ def _build_provider_inventory_report(
                         "freshness_blockers",
                         "promotion_blockers",
                     ],
+                    "resolution_fields": [
+                        "resolution_strategy",
+                        "historical_backfill_supported",
+                        "minimum_collection_window_hours",
+                        "resolution_action",
+                        "resolution_reason",
+                    ],
                 },
+            },
+            "blocker_resolution_strategies": {
+                "history_backfill_supported": "current ingestion can fetch historical rows for the 7d window",
+                "snapshot_accumulation_required": (
+                    "current ingestion writes snapshots only; keep sync healthy for the 7d window "
+                    "or add a historical provider"
+                ),
+                "freshness_sync_required": "restore regular sync so latest persisted rows meet freshness SLA",
+                "snapshot_sync_repair_required": "restore regular snapshot sync so latest snapshots meet freshness SLA",
+                "provider_sync_required": "restore provider sync-run; sparse streams can be covered by fresh sync",
+                "manual_review_required": "no automated resolution policy is registered for this stream",
             },
             "rule": (
                 "chart_ready_candidates can be used only for preview charts/assets; promotion_candidates "

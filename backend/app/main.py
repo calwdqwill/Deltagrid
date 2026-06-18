@@ -18,6 +18,7 @@ from app.api.v1 import (
     notifications,
     paper,
     performance,
+    perp_dex,
     preferences,
     risk,
     rwa,
@@ -137,6 +138,7 @@ app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(paper.router, prefix="/api/v1")
 app.include_router(performance.router, prefix="/api/v1")
+app.include_router(perp_dex.router, prefix="/api/v1")
 app.include_router(billing.router, prefix="/api/v1")
 app.include_router(market.router, prefix="/api/v1")
 app.include_router(exchange_accounts.router, prefix="/api/v1")

@@ -38,27 +38,43 @@ v1.4.0-rc.1  release candidate на preview
 
 1. Внести изменения в feature-ветке или напрямую в `preview` для маленькой безопасной итерации.
 2. Прогнать локально backend tests и frontend build.
-3. Перед релизным bump проверить согласованность версии:
+3. Перед релизным bump проверить согласованность текущей версии и целевого preview release candidate:
 
 ```bash
-ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.3.1
+RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
-4. Закоммитить изменения и запушить в `preview`.
-5. CI на GitHub должен пройти.
-6. После проверки dev/staging стенда выполнить merge `preview` в `main`.
-7. Production deploy выполняется из `main`.
-8. На чистом дереве повторить preflight без `ALLOW_DIRTY`:
+4. Перед promotion выполнить release smoke на preview:
 
 ```bash
-RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.3.1
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/release-smoke.sh
 ```
 
-9. Создать annotated tag:
+Перед RC commit/push для `v1.4.0-rc.1` дополнительно выполнить Browser QA preview через SSH tunnel для `/perp-dex`, `/charts`, `/data-health` и ключевых terminal screens на desktop/mobile: runtime errors, console errors и page-level horizontal overflow должны отсутствовать.
+
+Если GitHub-hosted runner не может завершить SSH deploy, но тот же `scripts/deploy-compose-stack.sh` уже вручную доставил commit на preview и `scripts/release-smoke.sh` прошёл, `Deploy Preview` может использовать public HTTP fallback: `/version` через `Host: preview.deltagrid.pro` должен вернуть ожидаемую версию из `VERSION`, а `/api/v1/health` должен быть доступен. Этот fallback не включает production promotion и не заменяет production backup/deploy gate.
+
+Для compact preview/prod diff `Perp DEX Source Status` можно отдельно выполнить:
 
 ```bash
-git tag -a v1.3.1 -m "DeltaGrid v1.3.1"
-git push origin v1.3.1
+BASE_URL=http://127.0.0.1:8011 COMPARE_BASE_URL=http://127.0.0.1:8000 sh scripts/perp-dex-source-status-smoke.sh
+```
+
+5. Закоммитить изменения и запушить в `preview`.
+6. CI на GitHub и `Deploy Preview` должны пройти.
+7. После проверки dev/staging стенда выполнить merge `preview` в `main`.
+8. Production deploy выполняется из `main`; перед deploy нужен свежий PostgreSQL backup.
+9. На чистом дереве повторить preflight без `ALLOW_DIRTY`:
+
+```bash
+RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.4.0
+```
+
+10. Создать annotated tag:
+
+```bash
+git tag -a v1.4.0 -m "DeltaGrid v1.4.0"
+git push origin v1.4.0
 ```
 
 ## Документация релиза
@@ -71,4 +87,12 @@ git push origin v1.3.1
 
 ## Текущий baseline
 
-`v1.3.1` — patch release поверх `v1.3.0`: provider inventory promotion gate, blocker breakdown, frontend audit repair и release preflight.
+`v1.3.2` — preview release stabilization: Perp DEX route-model observability, GMX carry/source evidence gates, GMX live helper source review, production deploy hardening, production healthcheck и PostgreSQL backup tooling.
+
+Preview release runway для `v1.4.0` подтверждён на `preview@b257cc8`: CI `27746664616`, `Deploy Preview` `27746714283`, server release smoke на `8011/3012` зелёный. После Perp DEX depth freshness commit `4433f0b` GitHub CI `27761405255` зелёный, `Deploy Preview` `27761467202` упал на step `Deploy preview`, но ручной deploy тем же script и полный preview release smoke на `8011/3012` прошли. `main`, production deploy и tag `v1.3.2` не трогались.
+
+Следующий production target: `v1.4.0` — minor release с зелёным deploy path, Perp DEX read-only research cockpit и production rollout на `deltagrid.pro`.
+
+На 2026-06-18 Perp DEX research cockpit для `v1.4.0` дополнен provider state empty/error states: Direct/Depth/CoinGlass panels показывают compact provider/source rows поверх `availability_summary`/`coverage_summary`, чтобы preview/prod QA видела provider unavailable, partial data, missing symbols и CoinGlass unavailable без включения route ranking, route selection, numeric route cost bps или execution.
+
+`v1.4.0` release candidate готов в `preview`: `preview@e1be7a3` прошёл CI `27787569356`, `Deploy Preview` `27787622699`, финальный preview `scripts/release-smoke.sh` и public `/version=1.4.0`. Promotion в `main`, production deploy и annotated tag должны выполняться только после подтверждения свежего PostgreSQL backup и production rollout checklist.
