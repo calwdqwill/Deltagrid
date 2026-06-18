@@ -102,6 +102,8 @@ Frontend runs at `http://127.0.0.1:3000`
 
 `Perp DEX Source Status` в `overview` и `venues` даёт compact rollup по текущему read-only cockpit: direct venue snapshots, GMX raw diagnostics, CoinGlass enrichment, route policy/model contract и last release smoke. Панель использует уже загруженные frontend snapshots и backend policy/model responses, не делает дополнительных provider calls, не сортирует venues и не превращает coverage hints в route ranking.
 
+Direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX дополнительно отдают `availability_summary`: rows, requested/matched/missing symbols, status counts, depth diagnostics availability, read-only safety flags, `provider_error_class` и `safe_use`. Error path остаётся compact: provider failures классифицируются как `timeout`, `rate_limit`, `empty_response`, `schema_drift`, `unavailable_endpoint`, `provider_unavailable` или `provider_http_error`, но raw provider payload и секреты не выводятся. Этот summary нужен для release smoke и UI/readiness диагностики; он не включает route ranking, route selection, numeric route cost bps или execution.
+
 CoinGlass Perp DEX enrichment доступен отдельно через `GET /api/v1/perp-dex/venues/coinglass/markets`: это third-party futures `coins-markets` aggregate rows для DEX-like venues (`Aster`, `Lighter`, `EdgeX`, `Drift` по умолчанию). В UI эти rows показаны отдельной таблицей `CoinGlass Perp DEX Enrichment` и не смешиваются с direct venue snapshots. Response также возвращает `coverage_summary`: per-venue matched rows/symbols, available field groups и `direct_adapter_candidate_hints`. Контракт явно возвращает `ranking_enabled=false`, `production_signal_enabled=false`, `execution_enabled=false`; coverage hints не являются liquidity ranking.
 
 Для server-side проверки CoinGlass Perp DEX coverage используйте reusable smoke-скрипт. Он печатает compact coverage summary и не выводит raw payload или секреты:
@@ -116,7 +118,7 @@ cd /opt/deltagrid
 BASE_URL=http://127.0.0.1:8000 sh scripts/coinglass-perp-dex-coverage-smoke.sh
 ```
 
-Для server-side проверки direct Perp DEX venue endpoints используйте отдельный smoke-скрипт. Он вызывает Hyperliquid, dYdX, Lighter, Aster и GMX market endpoints, печатает compact summary по rows/depth/read-only flags, проверяет `read_only=true`, `execution_enabled=false` и отсутствие включённых `ranking_enabled` / `production_signal_enabled`, не выводя raw payload:
+Для server-side проверки direct Perp DEX venue endpoints используйте отдельный smoke-скрипт. Он вызывает Hyperliquid, dYdX, Lighter, Aster и GMX market endpoints, печатает compact `availability_summary` по rows/depth/read-only flags/provider error classes, проверяет `read_only=true`, `execution_enabled=false` и отсутствие включённых `ranking_enabled` / `production_signal_enabled`, не выводя raw payload:
 
 ```bash
 cd /opt/deltagrid-preview

@@ -137,10 +137,10 @@
 #### Итерация 2 — Perp DEX research cockpit v1.4 read-only
 
 - [x] Добавить compact Perp DEX source status rollup.
-- [ ] Добавить backend summary по direct venue availability и provider error classes.
+- [x] Добавить backend summary по direct venue availability и provider error classes.
 - [x] Добавить UI-панель `Perp DEX Source Status`.
-- [ ] Расширить provider error taxonomy для direct venues.
-- [ ] Добавить smoke/test coverage на provider error taxonomy без raw payload.
+- [x] Расширить provider error taxonomy для direct venues.
+- [x] Добавить smoke/test coverage на provider error taxonomy без raw payload.
 - [ ] Добавить GMX helper/source follow-up rows по missing inputs/manual approvals.
 - [ ] Добавить Lighter/Aster depth freshness evidence layer без slippage bps.
 - [ ] Добавить fee schedule evidence layer для Lighter/Aster без fee bps total.

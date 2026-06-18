@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [PRODUCT/API] - Perp DEX direct availability summary v0
+- Direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX получили `availability_summary`: rows, requested/matched/missing symbols, market/provider status counts, depth diagnostics availability, read-only flags и `safe_use`.
+- Provider failures получили compact taxonomy `provider_error_class`: `timeout`, `rate_limit`, `empty_response`, `schema_drift`, `unavailable_endpoint`, `provider_unavailable`, `provider_http_error`.
+- `scripts/perp-dex-direct-smoke.sh` теперь читает backend summary, считает provider error classes и проверяет, что direct venues остаются read-only без ranking, production signal и execution.
+- Добавлены targeted backend tests для success summary, schema-drift snapshot и error taxonomy; raw payload/secrets в smoke не выводятся.
+- Граница сохранена: availability summary не включает route ranking, route selection, numeric route cost bps, diagnostic carry bps или execution.
+
 ## [2026-06-18] - [PRODUCT/UI] - Perp DEX Source Status rollup v0
 - `Perp DEX` получил панель `Perp DEX Source Status` для compact read-only обзора direct venues, GMX raw, CoinGlass enrichment, route policy/model contract и last release smoke.
 - Панель строится из уже загруженных frontend snapshots и backend policy/model responses; новых provider calls, backend endpoints, БД-изменений и production signals не добавлено.

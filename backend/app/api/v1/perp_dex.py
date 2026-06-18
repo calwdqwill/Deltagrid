@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -23,6 +23,22 @@ DEFAULT_GMX_SYMBOLS = ("BTC", "ETH", "SOL")
 DEFAULT_LIGHTER_SYMBOLS = ("BTC", "ETH", "SOL")
 DEFAULT_ASTER_SYMBOLS = ("BTC", "ETH", "SOL")
 DEFAULT_COINGLASS_SYMBOLS = ("BTC", "ETH", "SOL")
+DIRECT_VENUE_PROVIDER_ERROR_CLASSES = {
+    "timeout",
+    "rate_limit",
+    "empty_response",
+    "schema_drift",
+    "unavailable_endpoint",
+    "provider_unavailable",
+    "provider_http_error",
+}
+DIRECT_VENUE_SCHEMA_DRIFT_REASONS = {
+    "unexpected_payload",
+    "missing_universe",
+    "missing_markets",
+    "missing_order_books",
+    "missing_exchange_info",
+}
 
 PERP_DEX_ROUTE_CONSTRAINTS = {
     "status": "research_only",
@@ -2902,6 +2918,160 @@ def _parse_coinglass_exchanges(exchanges: Optional[str]) -> tuple[str, ...]:
     return tuple(parsed)
 
 
+def _dedupe_strings(values: list[str]) -> list[str]:
+    return list(dict.fromkeys(value for value in values if value))
+
+
+def _provider_error_class_from_exception(exc: Exception) -> str:
+    if isinstance(exc, httpx.TimeoutException):
+        return "timeout"
+    if isinstance(exc, httpx.HTTPStatusError):
+        status_code = exc.response.status_code if exc.response is not None else None
+        if status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+            return "rate_limit"
+        if status_code in (status.HTTP_404_NOT_FOUND, status.HTTP_410_GONE):
+            return "unavailable_endpoint"
+        if status_code == status.HTTP_408_REQUEST_TIMEOUT:
+            return "timeout"
+        if status_code is not None and status_code >= 500:
+            return "provider_unavailable"
+        return "provider_http_error"
+    if isinstance(exc, (httpx.ConnectError, httpx.NetworkError, httpx.RemoteProtocolError)):
+        return "provider_unavailable"
+    if isinstance(exc, ValueError):
+        return "schema_drift"
+    return "provider_unavailable"
+
+
+def _provider_error_class_from_snapshot(snapshot: dict[str, Any]) -> str | None:
+    markets = snapshot.get("markets") if isinstance(snapshot.get("markets"), list) else []
+    reason = str(snapshot.get("reason") or "")
+    if reason in DIRECT_VENUE_SCHEMA_DRIFT_REASONS:
+        return "schema_drift"
+    if snapshot.get("status") == "empty" or not markets:
+        return "empty_response"
+    return None
+
+
+def _build_direct_venue_availability_summary(
+    snapshot: dict[str, Any],
+    *,
+    source: str,
+    requested_symbols: tuple[str, ...],
+    provider_error_class: str | None = None,
+) -> dict[str, Any]:
+    markets = snapshot.get("markets") if isinstance(snapshot.get("markets"), list) else []
+    matched_symbols = _dedupe_strings(
+        [
+            str(market.get("symbol") or "").upper()
+            for market in markets
+            if isinstance(market, dict)
+        ]
+    )
+    requested = list(requested_symbols)
+    missing_symbols = [symbol for symbol in requested if symbol not in matched_symbols]
+    market_status_counts: dict[str, int] = {}
+    provider_status_counts: dict[str, int] = {}
+    depth_statuses: list[str] = []
+    for market in markets:
+        if not isinstance(market, dict):
+            continue
+        market_status = str(market.get("status") or "unknown")
+        provider_status = str(market.get("provider_status") or "unknown")
+        market_status_counts[market_status] = market_status_counts.get(market_status, 0) + 1
+        provider_status_counts[provider_status] = provider_status_counts.get(provider_status, 0) + 1
+        depth_status = market.get("orderbook_depth_status")
+        if depth_status:
+            depth_statuses.append(str(depth_status))
+
+    error_class = provider_error_class or _provider_error_class_from_snapshot(snapshot)
+    if error_class is not None and error_class not in DIRECT_VENUE_PROVIDER_ERROR_CLASSES:
+        error_class = "provider_unavailable"
+
+    return {
+        "venue_id": snapshot.get("venue_id") or source,
+        "venue_name": snapshot.get("venue_name") or source,
+        "source": snapshot.get("source"),
+        "status": snapshot.get("status") or "unavailable",
+        "provider_error_class": error_class,
+        "rows": len(markets),
+        "requested_symbols": requested,
+        "matched_symbols": matched_symbols,
+        "missing_symbols": missing_symbols,
+        "market_status_counts": market_status_counts,
+        "provider_status_counts": provider_status_counts,
+        "read_only": snapshot.get("read_only") is True,
+        "execution_enabled": snapshot.get("execution_enabled") is True,
+        "ranking_enabled": snapshot.get("ranking_enabled") is True,
+        "production_signal_enabled": snapshot.get("production_signal_enabled") is True,
+        "normalization_status": snapshot.get("normalization_status"),
+        "depth_diagnostics": {
+            "available": bool(depth_statuses),
+            "market_count": len(depth_statuses),
+            "statuses": sorted(set(depth_statuses)),
+        },
+        "fetched_at": snapshot.get("fetched_at"),
+        "reason": snapshot.get("reason"),
+        "safe_use": "direct public market context only; do not route, rank liquidity or submit orders",
+    }
+
+
+def _with_direct_venue_availability_summary(
+    snapshot: dict[str, Any],
+    *,
+    source: str,
+    requested_symbols: tuple[str, ...],
+) -> dict[str, Any]:
+    result = dict(snapshot)
+    result["availability_summary"] = _build_direct_venue_availability_summary(
+        result,
+        source=source,
+        requested_symbols=requested_symbols,
+    )
+    return result
+
+
+def _direct_venue_provider_error_detail(
+    *,
+    source: str,
+    requested_symbols: tuple[str, ...],
+    exc: Exception,
+) -> dict[str, Any]:
+    provider_error_class = _provider_error_class_from_exception(exc)
+    http_status = (
+        exc.response.status_code
+        if isinstance(exc, httpx.HTTPStatusError) and exc.response is not None
+        else None
+    )
+    snapshot = {
+        "venue_id": source,
+        "venue_name": source,
+        "source": source,
+        "status": "unavailable",
+        "requested_symbols": list(requested_symbols),
+        "markets": [],
+        "read_only": True,
+        "execution_enabled": False,
+        "reason": provider_error_class,
+    }
+    return {
+        "message": f"{source} market snapshot request failed",
+        "source": source,
+        "provider_error_class": provider_error_class,
+        "provider_http_status": http_status,
+        "read_only": True,
+        "execution_enabled": False,
+        "ranking_enabled": False,
+        "production_signal_enabled": False,
+        "availability_summary": _build_direct_venue_availability_summary(
+            snapshot,
+            source=source,
+            requested_symbols=requested_symbols,
+            provider_error_class=provider_error_class,
+        ),
+    }
+
+
 @router.get("/route-constraints", response_model=ApiResponse)
 async def get_route_constraints():
     """Read-only Perp DEX route and execution constraints policy."""
@@ -2976,10 +3146,19 @@ async def get_aster_markets(
 
     try:
         snapshot = await client.fetch_market_snapshot(parsed_symbols)
-    except httpx.HTTPError as exc:
+        snapshot = _with_direct_venue_availability_summary(
+            snapshot,
+            source="aster",
+            requested_symbols=parsed_symbols,
+        )
+    except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Aster market snapshot request failed: {exc}",
+            detail=_direct_venue_provider_error_detail(
+                source="aster",
+                requested_symbols=parsed_symbols,
+                exc=exc,
+            ),
         ) from exc
 
     return ApiResponse(
@@ -2990,6 +3169,7 @@ async def get_aster_markets(
             "source": "aster",
             "requested_symbols": list(parsed_symbols),
             "normalization_status": "aster_public_futures_market_data",
+            "availability_summary": snapshot.get("availability_summary"),
         },
     )
 
@@ -3004,10 +3184,19 @@ async def get_lighter_markets(
 
     try:
         snapshot = await client.fetch_market_snapshot(parsed_symbols)
-    except httpx.HTTPError as exc:
+        snapshot = _with_direct_venue_availability_summary(
+            snapshot,
+            source="lighter",
+            requested_symbols=parsed_symbols,
+        )
+    except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Lighter market snapshot request failed: {exc}",
+            detail=_direct_venue_provider_error_detail(
+                source="lighter",
+                requested_symbols=parsed_symbols,
+                exc=exc,
+            ),
         ) from exc
 
     return ApiResponse(
@@ -3018,6 +3207,7 @@ async def get_lighter_markets(
             "source": "lighter",
             "requested_symbols": list(parsed_symbols),
             "normalization_status": "lighter_public_market_details",
+            "availability_summary": snapshot.get("availability_summary"),
         },
     )
 
@@ -3034,10 +3224,19 @@ async def get_hyperliquid_markets(
 
     try:
         snapshot = await client.fetch_market_snapshot(parsed_symbols, dex=normalized_dex)
-    except httpx.HTTPError as exc:
+        snapshot = _with_direct_venue_availability_summary(
+            snapshot,
+            source="hyperliquid",
+            requested_symbols=parsed_symbols,
+        )
+    except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Hyperliquid market snapshot request failed: {exc}",
+            detail=_direct_venue_provider_error_detail(
+                source="hyperliquid",
+                requested_symbols=parsed_symbols,
+                exc=exc,
+            ),
         ) from exc
 
     return ApiResponse(
@@ -3047,6 +3246,7 @@ async def get_hyperliquid_markets(
             "external_provider_calls": True,
             "source": "hyperliquid",
             "requested_symbols": list(parsed_symbols),
+            "availability_summary": snapshot.get("availability_summary"),
         },
     )
 
@@ -3061,10 +3261,19 @@ async def get_gmx_markets(
 
     try:
         snapshot = await client.fetch_market_snapshot(parsed_symbols)
-    except httpx.HTTPError as exc:
+        snapshot = _with_direct_venue_availability_summary(
+            snapshot,
+            source="gmx",
+            requested_symbols=parsed_symbols,
+        )
+    except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"GMX market snapshot request failed: {exc}",
+            detail=_direct_venue_provider_error_detail(
+                source="gmx",
+                requested_symbols=parsed_symbols,
+                exc=exc,
+            ),
         ) from exc
 
     return ApiResponse(
@@ -3082,6 +3291,7 @@ async def get_gmx_markets(
             "rate_relation_summary": snapshot.get("rate_relation_summary"),
             "rate_source_fields_status": snapshot.get("rate_source_fields_status"),
             "rate_source_fields_summary": snapshot.get("rate_source_fields_summary"),
+            "availability_summary": snapshot.get("availability_summary"),
         },
     )
 
@@ -3096,10 +3306,19 @@ async def get_dydx_markets(
 
     try:
         snapshot = await client.fetch_market_snapshot(parsed_symbols)
-    except httpx.HTTPError as exc:
+        snapshot = _with_direct_venue_availability_summary(
+            snapshot,
+            source="dydx",
+            requested_symbols=parsed_symbols,
+        )
+    except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"dYdX market snapshot request failed: {exc}",
+            detail=_direct_venue_provider_error_detail(
+                source="dydx",
+                requested_symbols=parsed_symbols,
+                exc=exc,
+            ),
         ) from exc
 
     return ApiResponse(
@@ -3109,5 +3328,6 @@ async def get_dydx_markets(
             "external_provider_calls": True,
             "source": "dydx",
             "requested_symbols": list(parsed_symbols),
+            "availability_summary": snapshot.get("availability_summary"),
         },
     )

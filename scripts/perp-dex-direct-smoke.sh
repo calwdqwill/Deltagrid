@@ -43,9 +43,19 @@ summary = {
     "requested_venues": venues,
     "total_rows": 0,
     "depth_venues": 0,
+    "provider_error_classes": {},
     "execution_enabled_venues": [],
     "unsafe_signal_venues": [],
     "venues": {},
+}
+known_provider_error_classes = {
+    "timeout",
+    "rate_limit",
+    "empty_response",
+    "schema_drift",
+    "unavailable_endpoint",
+    "provider_unavailable",
+    "provider_http_error",
 }
 
 failures = []
@@ -67,7 +77,13 @@ for venue in venues:
 
     data = payload.get("data") if isinstance(payload, dict) else {}
     data = data if isinstance(data, dict) else {}
+    detail = payload.get("detail") if isinstance(payload, dict) else {}
+    detail = detail if isinstance(detail, dict) else {}
     markets = data.get("markets") if isinstance(data.get("markets"), list) else []
+    availability = data.get("availability_summary") if isinstance(data.get("availability_summary"), dict) else {}
+    if not availability and isinstance(detail.get("availability_summary"), dict):
+        availability = detail["availability_summary"]
+    provider_error_class = availability.get("provider_error_class") or detail.get("provider_error_class")
     depth_statuses = sorted(
         {
             str(row.get("orderbook_depth_status"))
@@ -87,11 +103,17 @@ for venue in venues:
         summary["execution_enabled_venues"].append(venue)
     if ranking_enabled is True or production_signal_enabled is True:
         summary["unsafe_signal_venues"].append(venue)
+    if provider_error_class:
+        summary["provider_error_classes"][provider_error_class] = (
+            summary["provider_error_classes"].get(provider_error_class, 0) + 1
+        )
 
     summary["venues"][venue] = {
         "http_status": status_code,
         "success": bool(payload.get("success")) if isinstance(payload, dict) else False,
         "snapshot_status": data.get("status"),
+        "availability_status": availability.get("status"),
+        "provider_error_class": provider_error_class,
         "rows": rows,
         "read_only": read_only,
         "execution_enabled": execution_enabled,
@@ -99,6 +121,13 @@ for venue in venues:
         "production_signal_enabled": production_signal_enabled,
         "normalization_status": data.get("normalization_status"),
         "depth_statuses": depth_statuses,
+        "availability_summary": {
+            "rows": availability.get("rows"),
+            "matched_symbols": availability.get("matched_symbols"),
+            "missing_symbols": availability.get("missing_symbols"),
+            "depth_diagnostics": availability.get("depth_diagnostics"),
+            "safe_use": availability.get("safe_use"),
+        } if availability else None,
         "markets": [
             {
                 "symbol": row.get("symbol"),
@@ -113,6 +142,19 @@ for venue in venues:
 
     if status_code != 200 or not payload.get("success"):
         failures.append(f"{venue}: request_failed")
+    if not availability:
+        failures.append(f"{venue}: missing_availability_summary")
+    if provider_error_class and provider_error_class not in known_provider_error_classes:
+        failures.append(f"{venue}: unknown_provider_error_class:{provider_error_class}")
+    if availability:
+        if availability.get("read_only") is not True:
+            failures.append(f"{venue}: availability_read_only_not_true")
+        if availability.get("execution_enabled") is True:
+            failures.append(f"{venue}: availability_execution_enabled_true")
+        if availability.get("ranking_enabled") is True:
+            failures.append(f"{venue}: availability_ranking_enabled_true")
+        if availability.get("production_signal_enabled") is True:
+            failures.append(f"{venue}: availability_production_signal_enabled_true")
     if read_only is not True:
         failures.append(f"{venue}: read_only_not_true")
     if execution_enabled is not False:

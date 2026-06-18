@@ -4,6 +4,14 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` оформлен и задеплоен вручную на production; `main` находится на `0716f6a`, tag `v1.3.1` указывает на этот commit. Production deploy hardening уже есть в `main`, но `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` и `PROD_APP_DIR` пока отсутствуют.
 **Last Updated**: 2026-06-18
 
+## Обновление 2026-06-18 — Perp DEX direct availability summary v0
+
+- Backend direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX получили `availability_summary`: rows, requested/matched/missing symbols, market/provider status counts, depth diagnostics availability, read-only/execution/ranking/production-signal flags и `safe_use`.
+- Provider failures теперь классифицируются в machine-readable `provider_error_class`: `timeout`, `rate_limit`, `empty_response`, `schema_drift`, `unavailable_endpoint`, `provider_unavailable`, `provider_http_error`. Error path остаётся HTTP `502`, но `detail` содержит compact summary без raw payload.
+- `scripts/perp-dex-direct-smoke.sh` читает backend `availability_summary`, печатает compact summary, считает provider error classes и проверяет, что direct snapshots остаются read-only без ranking/production signal/execution.
+- Проверка: `backend` targeted pytest по Perp DEX direct availability, provider clients и policy contract прошёл; `compileall` для изменённых backend файлов прошёл.
+- Граница сохранена: summary и taxonomy являются observability layer, а не route ranking, route selection, numeric route cost bps, diagnostic carry bps или execution.
+
 ## Обновление 2026-06-18 — Perp DEX Source Status rollup v0
 
 - Frontend `Perp DEX` получил панель `Perp DEX Source Status` в `overview` и `venues`: direct venues, GMX raw, CoinGlass enrichment, route policy/model contract и last release smoke сведены в compact read-only таблицу.
@@ -813,10 +821,10 @@
 ### Итерация 2 — Perp DEX research cockpit v1.4 read-only
 
 - [x] Добавить compact Perp DEX source status rollup: direct venues, CoinGlass enrichment, GMX raw, policy/model contract, last successful smoke.
-- [ ] Добавить backend summary по direct venue availability: rows, partial/live status, read-only flags, depth diagnostics availability, provider error class.
+- [x] Добавить backend summary по direct venue availability: rows, partial/live status, read-only flags, depth diagnostics availability, provider error class.
 - [x] Добавить UI-панель `Perp DEX Source Status` без сортировки venues и без production signal.
-- [ ] Расширить provider error taxonomy для direct venues: timeout, rate limit, empty response, schema drift, unavailable endpoint.
-- [ ] Добавить smoke/test coverage на provider error taxonomy без live secrets и без raw payload dumps.
+- [x] Расширить provider error taxonomy для direct venues: timeout, rate limit, empty response, schema drift, unavailable endpoint.
+- [x] Добавить smoke/test coverage на provider error taxonomy без live secrets и без raw payload dumps.
 - [ ] Добавить GMX helper/source follow-up rows: какие source helper inputs всё ещё отсутствуют, какие manual approvals блокируют carry conversion.
 - [ ] Добавить Lighter/Aster depth freshness evidence layer: timestamp/source-age policy как readiness, без slippage bps.
 - [ ] Добавить fee schedule evidence layer для Lighter/Aster: account tier/order intent/manual approval gates, без fee bps total.
