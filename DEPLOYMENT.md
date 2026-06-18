@@ -69,6 +69,12 @@ GitHub Actions:
 Если SSH secrets ещё не заведены, deploy workflow завершится успешным skip и не будет ломать CI.
 Подробный чеклист создания dedicated SSH key и заполнения repository secrets: `deploy/github-actions-secrets.md`.
 
+Deploy diagnostics:
+
+- `scripts/deploy-compose-stack.sh` печатает этапы `git fetch`, `compose config`, `postgres backup`, `compose build`, `wait for backend/frontend` и `server smoke`;
+- при падении deploy script выводит короткий git/compose/disk/logs snapshot без печати env-файла и secrets;
+- `Deploy Preview` и `Deploy Production` после failed deploy attempt пытаются собрать remote diagnostic snapshot через SSH; если сам SSH transport недоступен, workflow явно пишет, что причина ближе к reachability, а не к app deploy logic.
+
 Опциональные secrets позволяют явно переопределить env-файл, Compose project и smoke URLs:
 
 - preview: `PREVIEW_ENV_FILE`, `PREVIEW_COMPOSE_PROJECT_NAME`, `PREVIEW_SMOKE_BASE_URL`, `PREVIEW_SMOKE_FRONTEND_URL`;
@@ -421,6 +427,15 @@ sh scripts/server-smoke.sh
 ```bash
 BASE_URL=https://deltagrid.pro FRONTEND_URL=https://deltagrid.pro sh scripts/server-smoke.sh
 ```
+
+Для release smoke перед preview/main rollout используйте:
+
+```bash
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/release-smoke.sh
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/release-smoke.sh
+```
+
+`release-smoke` объединяет backend health, readiness, `/data/health`, frontend, Perp DEX route policy, direct venue smoke и CoinGlass Perp DEX coverage. Если CoinGlass временно недоступен и проверка нужна только для non-CoinGlass release gate, задайте `RUN_COINGLASS=0` и отдельно зафиксируйте риск в release notes.
 
 Для ручной проверки preview chart/asset candidates на VPS:
 

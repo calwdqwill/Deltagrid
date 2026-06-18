@@ -206,11 +206,11 @@ GitHub Actions:
 Перед релизным bump используйте `scripts/release-preflight.sh`, чтобы проверить согласованность `VERSION`, `frontend/package.json` и `frontend/package-lock.json`:
 
 ```bash
-ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.3.2
+RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
 Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
-На 2026-06-15 `Deploy Preview` проверен end-to-end: GitHub Actions деплоит ветку `preview` в `/opt/deltagrid-preview`, контейнеры становятся `healthy`, server smoke проходит на ports `8011/3012`. Для ручной проверки preview chart/asset candidates добавлен `scripts/preview-candidate-smoke.sh`; он проверяет `/charts`, `/assets`, OHLCV window endpoint для `HYPE/XRP/DOGE/ADA/LINK` и отсутствие candidate symbols на core-only страницах `Market Matrix`, `Arbitrage Scanner`, `Perp DEX`.
+На 2026-06-18 `Deploy Preview` для `preview@d3de35e` показал transient SSH reachability failure из GitHub runner: SSH port/login/app-dir diagnostics были нестабильны, а ручной запуск того же `scripts/deploy-compose-stack.sh` по SSH успешно обновил `/opt/deltagrid-preview` до `VERSION=1.3.2`. Workflow и deploy script усилены stage-aware diagnostics: при падении deploy выводит текущий этап, git/compose snapshot и последние backend/frontend logs без печати secrets. Для ручной проверки preview chart/asset candidates добавлен `scripts/preview-candidate-smoke.sh`; он проверяет `/charts`, `/assets`, OHLCV window endpoint для `HYPE/XRP/DOGE/ADA/LINK` и отсутствие candidate symbols на core-only страницах `Market Matrix`, `Arbitrage Scanner`, `Perp DEX`.
 Production auto-deploy пока не считается подтверждённым: hardening `Deploy Production` уже перенесён в `main`, а run `27619159104` для `main@0716f6a` подтвердил safe-skip из-за отсутствующих `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`. Read-only preflight к `/opt/deltagrid` зелёный; workflow поддерживает ручной `Run workflow` на ветке `main`, поэтому после добавления `PROD_*` можно проверить deploy без пустого push.
 Подробный чеклист secrets: [deploy/github-actions-secrets.md](deploy/github-actions-secrets.md).
 
@@ -222,6 +222,15 @@ Production auto-deploy пока не считается подтверждённ
 Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview. Для `BRANCH=main` он по умолчанию создаёт PostgreSQL backup в `backups/deploy/` перед пересозданием backend/frontend containers; для preview backup включается только явно через `BACKUP_BEFORE_DEPLOY=1`.
 
 Текущее preview-состояние от 2026-06-14: stack поднят на VPS, GitHub Actions auto-deploy проверен, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Preview Nginx HTTP site `deltagrid-preview` уже включён и проверен через `Host: preview.deltagrid.pro`; внешний HTTPS-домен ждёт DNS-запись `preview -> 2.25.143.143` и выпуск SSL по чеклисту [deploy/dns/preview.deltagrid.pro.md](deploy/dns/preview.deltagrid.pro.md).
+
+Для release smoke на preview или production используйте общий wrapper:
+
+```bash
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/release-smoke.sh
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/release-smoke.sh
+```
+
+Он последовательно запускает `server-smoke`, `perp-dex-policy-smoke`, `perp-dex-direct-smoke` и `coinglass-perp-dex-coverage-smoke`. Raw provider payload и secrets не печатаются.
 
 Для ручной загрузки свежих market data в production PostgreSQL:
 

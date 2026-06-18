@@ -164,8 +164,33 @@ jobs:
       - name: Deploy production
         if: ${{ env.SSH_HOST != '' && env.SSH_USER != '' && env.SSH_KEY != '' && env.APP_DIR != '' }}
         run: |
+          remote_diagnostic() {
+            reason="$1"
+            echo "::group::Production remote diagnostic: $reason"
+            if timeout 60 ssh -i ~/.ssh/deltagrid_prod_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "
+              set +e
+              echo 'remote utc:' \$(date -u)
+              echo 'app dir: $APP_DIR'
+              cd '$APP_DIR' || exit 0
+              echo 'git status:'
+              git status --short --branch || true
+              git --no-pager log -1 --oneline || true
+              echo 'disk:'
+              df -h . || true
+              echo 'compose ps:'
+              ENV_FILE='${APP_ENV_FILE:-.env.production}' docker compose -p '${COMPOSE_PROJECT_NAME:-deltagrid}' --env-file '${APP_ENV_FILE:-.env.production}' -f docker-compose.prod.yml ps || true
+              echo 'recent app logs:'
+              ENV_FILE='${APP_ENV_FILE:-.env.production}' docker compose -p '${COMPOSE_PROJECT_NAME:-deltagrid}' --env-file '${APP_ENV_FILE:-.env.production}' -f docker-compose.prod.yml logs --tail=30 backend frontend || true
+            "; then
+              echo "Production remote diagnostic completed"
+            else
+              echo "::warning::Production remote diagnostic unavailable; likely SSH transport/reachability failed"
+            fi
+            echo "::endgroup::"
+          }
+
           for attempt in 1 2 3; do
-            echo "Production deploy attempt $attempt"
+            echo "::group::Production deploy attempt $attempt"
             if timeout 1200 ssh -i ~/.ssh/deltagrid_prod_key $SSH_COMMON_OPTIONS "$SSH_USER@$SSH_HOST" "
               set -e
               cd '$APP_DIR'
@@ -176,9 +201,14 @@ jobs:
                 FRONTEND_URL='${SMOKE_FRONTEND_URL:-http://127.0.0.1:3001}' \
                 sh scripts/deploy-compose-stack.sh
             "; then
+              echo "::endgroup::"
               exit 0
             fi
-            echo "::warning::Production deploy failed on attempt $attempt"
+            status="$?"
+            echo "::endgroup::"
+            echo "::warning::Production deploy failed on attempt $attempt with status $status"
+            remote_diagnostic "after failed attempt $attempt"
             sleep $((attempt * 30))
           done
+          echo "::error::Production deploy failed after 3 attempts"
           exit 1

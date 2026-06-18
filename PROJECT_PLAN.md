@@ -16,6 +16,7 @@
 - Preview/dev stack поднят на VPS локально: отдельный Compose project `deltagrid-preview`, отдельная PostgreSQL БД, smoke-check зелёный, 7d BTC/ETH/SOL data sync выполнен без ошибок.
 - Preview auto-deploy через GitHub Actions проверен end-to-end: `PREVIEW_*` secrets, SSH login, deploy в `/opt/deltagrid-preview`, healthy containers и server smoke на ports `8011/3012`.
 - После flaky SSH login failure preview deploy workflow усилен явными SSH timeout/retry options; commit `4c3dec0` прошёл CI, `Deploy Preview` run `27532247102` завершился `success`, `/opt/deltagrid-preview` обновился автоматически и остался healthy.
+- После `v1.3.2` GitHub `Deploy Preview` run `27744161749` классифицирован как transient SSH reachability failure из GitHub runner: ручной deploy тем же script прошёл. Deploy workflows и `scripts/deploy-compose-stack.sh` усилены stage-aware diagnostics и remote diagnostic snapshot, добавлен `scripts/release-smoke.sh`, а `scripts/release-preflight.sh` получил `RELEASE_TARGET=1.4.0-rc.1` для preview RC target.
 - Preview Nginx HTTP site заранее включён на VPS и проверен через `Host: preview.deltagrid.pro`; публичный HTTPS ждёт DNS-запись `preview -> 2.25.143.143`.
 - Production deploy hardening перенесён в `main`: workflow проверяет `PROD_*`, fingerprint deploy key, ожидаемые значения production VPS и app dir перед deploy step.
 - Read-only preflight production auto-deploy от 2026-06-16 подтвердил, что deploy contract готов: local deploy key fingerprint совпадает, SSH к `/opt/deltagrid` проходит, production smoke зелёный. `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR` ещё отсутствуют.
@@ -336,6 +337,7 @@
 
 - `preview` находится на `d3de35e`, `VERSION=1.3.2`, GitHub CI run `27744113125` прошёл `success`.
 - GitHub `Deploy Preview` run `27744161749` завершился `failure` на шаге `Deploy preview`, но ручной запуск того же `scripts/deploy-compose-stack.sh` по SSH успешно обновил `/opt/deltagrid-preview` до `d3de35e`; backend/frontend containers healthy, server smoke прошёл.
+- Итерация release runway усилила diagnostics, добавила release smoke wrapper, выполнила preview smoke/Browser QA через SSH tunnel и создала production backup `/opt/deltagrid/backups/deltagrid-v140-runway_20260618T081912Z.sql.gz`.
 - `main`, production deploy и tag `v1.3.2` пока не трогались. Следующий production target — minor release `v1.4.0`.
 
 ### План новой версии `v1.4.0`

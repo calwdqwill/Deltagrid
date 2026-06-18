@@ -3,6 +3,7 @@ set -eu
 
 EXPECTED_VERSION="${1:-${EXPECTED_VERSION:-}}"
 EXPECTED_BRANCH="${RELEASE_BRANCH:-}"
+RELEASE_TARGET="${RELEASE_TARGET:-}"
 ALLOW_DIRTY="${ALLOW_DIRTY:-0}"
 
 cd "$(dirname "$0")/.."
@@ -18,6 +19,12 @@ read_trimmed_file() {
 
 require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "missing command: $1"
+}
+
+require_semver_target() {
+  value="$1"
+  printf '%s\n' "$value" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+(-rc[.][0-9]+)?$' ||
+    fail "release target must look like SemVer or rc target: $value"
 }
 
 require_command git
@@ -36,6 +43,10 @@ else
 fi
 
 root_version="$(read_trimmed_file VERSION)"
+
+if [ -n "$RELEASE_TARGET" ]; then
+  require_semver_target "$RELEASE_TARGET"
+fi
 
 if [ -n "$EXPECTED_VERSION" ] && [ "$root_version" != "$EXPECTED_VERSION" ]; then
   fail "VERSION is $root_version, expected $EXPECTED_VERSION"
@@ -61,6 +72,9 @@ if [ "$ALLOW_DIRTY" != "1" ] && [ -n "$(git status --porcelain)" ]; then
 fi
 
 printf 'DeltaGrid release preflight passed: version=%s' "$root_version"
+if [ -n "$RELEASE_TARGET" ]; then
+  printf ' target=%s' "$RELEASE_TARGET"
+fi
 if [ -n "$EXPECTED_BRANCH" ]; then
   printf ' branch=%s' "$EXPECTED_BRANCH"
 fi

@@ -38,23 +38,29 @@ v1.4.0-rc.1  release candidate на preview
 
 1. Внести изменения в feature-ветке или напрямую в `preview` для маленькой безопасной итерации.
 2. Прогнать локально backend tests и frontend build.
-3. Перед релизным bump проверить согласованность версии:
+3. Перед релизным bump проверить согласованность текущей версии и целевого preview release candidate:
 
 ```bash
-ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.4.0
+RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
-4. Закоммитить изменения и запушить в `preview`.
-5. CI на GitHub должен пройти.
-6. После проверки dev/staging стенда выполнить merge `preview` в `main`.
-7. Production deploy выполняется из `main`.
-8. На чистом дереве повторить preflight без `ALLOW_DIRTY`:
+4. Перед promotion выполнить release smoke на preview:
+
+```bash
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/release-smoke.sh
+```
+
+5. Закоммитить изменения и запушить в `preview`.
+6. CI на GitHub и `Deploy Preview` должны пройти.
+7. После проверки dev/staging стенда выполнить merge `preview` в `main`.
+8. Production deploy выполняется из `main`; перед deploy нужен свежий PostgreSQL backup.
+9. На чистом дереве повторить preflight без `ALLOW_DIRTY`:
 
 ```bash
 RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.4.0
 ```
 
-9. Создать annotated tag:
+10. Создать annotated tag:
 
 ```bash
 git tag -a v1.4.0 -m "DeltaGrid v1.4.0"

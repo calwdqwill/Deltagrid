@@ -4,6 +4,19 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` оформлен и задеплоен вручную на production; `main` находится на `0716f6a`, tag `v1.3.1` указывает на этот commit. Production deploy hardening уже есть в `main`, но `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` и `PROD_APP_DIR` пока отсутствуют.
 **Last Updated**: 2026-06-18
 
+## Обновление 2026-06-18 — v1.4.0 release runway и deploy diagnostics
+
+- Docs follow-up по `v1.3.2` сохранён коммитом `60a7f0c`: зафиксированы `preview@d3de35e`, зелёный CI run `27744113125`, failed `Deploy Preview` run `27744161749` и успешный ручной preview deploy.
+- GitHub `Deploy Preview` failure разобран через GitHub API/job page: обязательные `PREVIEW_*` secrets и fingerprint checks были настроены, но SSH port/login/app-dir/deploy attempts из GitHub runner были нестабильны. Ручной SSH deploy после run прошёл, поэтому причина классифицирована как transient SSH reachability, а не ошибка app deploy script.
+- Deploy diagnostics усилены: deploy script печатает stage markers и failure snapshot, а GitHub preview/production workflows после failed deploy attempt пытаются собрать remote git/compose/logs snapshot или явно показывают SSH transport failure.
+- Добавлен `scripts/release-smoke.sh` для preview/prod release smoke: health/readiness/data-health/frontend, Perp DEX policy, direct venues и CoinGlass coverage.
+- `scripts/release-preflight.sh` получил `RELEASE_TARGET`; проверка `RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh` проходит на текущей версии `1.3.2`.
+- Production backup выполнен без изменения production checkout: script запущен из `/opt/deltagrid-preview` против production Compose project `deltagrid`, backup создан в `/opt/deltagrid/backups/deltagrid-v140-runway_20260618T081912Z.sql.gz`.
+- Preview VPS smoke прошёл: `server-smoke`, `perp-dex-policy-smoke`, `perp-dex-direct-smoke`, `coinglass-perp-dex-coverage-smoke`.
+- Browser QA через SSH tunnel прошёл для `/perp-dex?view=opportunities`, `/charts?symbol=BTC&interval=1m&range=24h`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets`; runtime errors и console errors не найдены. Публичный `preview.deltagrid.pro` всё ещё не резолвится, поэтому QA выполнен через tunnel.
+- `PROD_*` GitHub secrets остаются ручным внешним blocker’ом для реального `Deploy Production`; checklist обновлён в `deploy/github-actions-secrets.md`.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps и numeric route cost bps не включались.
+
 ## Обновление 2026-06-18 — Perp DEX GMX live helper source review v0
 
 - Backend `gmx_rate_mapping_review_v0` получил `live_helper_source_summary`: compact summary по live GMX `/markets/info` rate output fields, missing helper inputs, fixture cases, expectation ids и manual approval ids.
@@ -775,18 +788,18 @@
 
 ### Итерация 1 — Release runway и deploy hardening
 
-- [ ] Разобрать причину красного GitHub `Deploy Preview` run `27744161749`: получить logs через UI/GitHub token или повторить run и сравнить с ручным SSH deploy.
+- [x] Разобрать причину красного GitHub `Deploy Preview` run `27744161749`: GitHub API/job page показали transient SSH reachability из runner; ручной SSH deploy тем же script прошёл.
 - [ ] Сделать GitHub `Deploy Preview` зелёным для текущего `preview@d3de35e` или маленького follow-up commit без продуктового scope.
-- [ ] Зафиксировать в docs фактическое состояние `v1.3.2`: CI зелёный, manual preview deploy зелёный, GitHub deploy run требует rerun/fix.
-- [ ] Обновить release/deploy scripts так, чтобы transient SSH/deploy failure давал более короткий diagnostic output и не скрывал причину в GitHub UI.
-- [ ] Добавить preview/prod release smoke checklist для `perp-dex-direct`, `perp-dex-policy`, `coinglass-perp-dex-coverage`, `/api/v1/health`, `/api/v1/data/health` и frontend.
-- [ ] Подготовить безопасный production backup run через `scripts/backup-postgres.sh` после попадания backup script на `/opt/deltagrid`.
-- [ ] Подготовить инструкцию и checklist для ручного добавления `PROD_*` secrets в GitHub без вывода private key в repo/logs.
+- [x] Зафиксировать в docs фактическое состояние `v1.3.2`: CI зелёный, manual preview deploy зелёный, GitHub deploy run требует rerun/fix.
+- [x] Обновить release/deploy scripts так, чтобы transient SSH/deploy failure давал более короткий diagnostic output и не скрывал причину в GitHub UI.
+- [x] Добавить preview/prod release smoke checklist для `perp-dex-direct`, `perp-dex-policy`, `coinglass-perp-dex-coverage`, `/api/v1/health`, `/api/v1/data/health` и frontend.
+- [x] Подготовить и выполнить безопасный production backup run через новый `scripts/backup-postgres.sh` из preview checkout против production Compose project, не пачкая production git checkout untracked script-файлом.
+- [x] Подготовить инструкцию и checklist для ручного добавления `PROD_*` secrets в GitHub без вывода private key в repo/logs.
 - [ ] Проверить `Deploy Production` manual workflow после добавления `PROD_*`: сначала secret readiness/fingerprint/app dir, затем deploy step.
-- [ ] Добавить release preflight target для `1.4.0-rc.1` на `preview` без преждевременного production bump.
-- [ ] Провести Browser QA smoke для preview `/perp-dex`, `/charts`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets`.
-- [ ] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md`, `README.md` и `DEPLOYMENT.md` по результатам deploy hardening.
-- [ ] Не включать новые trading/execution/ranking/cost-bps capabilities в этой итерации; итог итерации — зелёный release runway.
+- [x] Добавить release preflight target для `1.4.0-rc.1` на `preview` без преждевременного production bump.
+- [x] Провести Browser QA smoke для preview `/perp-dex`, `/charts`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets`.
+- [x] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md`, `README.md` и `DEPLOYMENT.md` по результатам deploy hardening.
+- [x] Не включать новые trading/execution/ranking/cost-bps capabilities в этой итерации; итог итерации — зелёный release runway.
 
 ### Итерация 2 — Perp DEX research cockpit v1.4 read-only
 

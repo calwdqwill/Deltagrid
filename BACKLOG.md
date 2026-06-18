@@ -121,18 +121,18 @@
 
 #### Итерация 1 — Release runway и deploy hardening
 
-- [ ] Разобрать причину красного GitHub `Deploy Preview` run `27744161749`.
+- [x] Разобрать причину красного GitHub `Deploy Preview` run `27744161749`: transient SSH reachability из GitHub runner.
 - [ ] Сделать GitHub `Deploy Preview` зелёным для текущего preview commit или маленького follow-up commit.
-- [ ] Зафиксировать `v1.3.2` follow-up в docs: CI зелёный, manual preview deploy зелёный, GitHub deploy run требует rerun/fix.
-- [ ] Усилить deploy diagnostics, чтобы transient SSH/deploy failure быстрее показывал причину.
-- [ ] Добавить release smoke checklist для direct/policy/coinglass/health/frontend checks.
-- [ ] Выполнить production backup через `scripts/backup-postgres.sh` после доставки script на сервер.
-- [ ] Подготовить checklist добавления `PROD_*` GitHub secrets.
+- [x] Зафиксировать `v1.3.2` follow-up в docs: CI зелёный, manual preview deploy зелёный, GitHub deploy run требует rerun/fix.
+- [x] Усилить deploy diagnostics, чтобы transient SSH/deploy failure быстрее показывал причину.
+- [x] Добавить release smoke checklist для direct/policy/coinglass/health/frontend checks.
+- [x] Выполнить production backup через новый `scripts/backup-postgres.sh` из preview checkout против production Compose project, не пачкая production git checkout untracked script-файлом.
+- [x] Подготовить checklist добавления `PROD_*` GitHub secrets.
 - [ ] Проверить manual `Deploy Production` readiness после добавления `PROD_*`.
-- [ ] Добавить release preflight target для `1.4.0-rc.1` на preview.
-- [ ] Провести Browser QA smoke для preview key screens.
-- [ ] Обновить русскую release/deploy документацию.
-- [ ] Сохранить запрет на trading/execution/ranking/cost-bps capabilities.
+- [x] Добавить release preflight target для `1.4.0-rc.1` на preview.
+- [x] Провести Browser QA smoke для preview key screens.
+- [x] Обновить русскую release/deploy документацию.
+- [x] Сохранить запрет на trading/execution/ranking/cost-bps capabilities.
 
 #### Итерация 2 — Perp DEX research cockpit v1.4 read-only
 
