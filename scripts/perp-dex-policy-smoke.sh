@@ -226,6 +226,16 @@ def compact_contract(policy, model):
         if isinstance(gmx_rate_mapping_review.get("live_helper_source_checklist"), list)
         else []
     )
+    gmx_helper_source_follow_up_summary = (
+        gmx_rate_mapping_review.get("helper_source_follow_up_summary")
+        if isinstance(gmx_rate_mapping_review.get("helper_source_follow_up_summary"), dict)
+        else {}
+    )
+    gmx_helper_source_follow_up_checklist = (
+        gmx_rate_mapping_review.get("helper_source_follow_up_checklist")
+        if isinstance(gmx_rate_mapping_review.get("helper_source_follow_up_checklist"), list)
+        else []
+    )
     return {
         "policy_status": policy.get("status"),
         "policy_read_only": policy.get("read_only"),
@@ -346,6 +356,19 @@ def compact_contract(policy, model):
         },
         "gmx_rate_live_helper_missing_source_inputs": gmx_live_helper_source_summary.get("missing_source_inputs", []),
         "gmx_rate_live_helper_manual_approval_ids": gmx_live_helper_source_summary.get("manual_approval_ids", []),
+        "gmx_rate_helper_follow_up_status": gmx_helper_source_follow_up_summary.get("status"),
+        "gmx_rate_helper_follow_up_ids": [
+            item.get("follow_up_id")
+            for item in gmx_helper_source_follow_up_checklist
+            if isinstance(item, dict)
+        ],
+        "gmx_rate_helper_follow_up_statuses": {
+            item.get("follow_up_id"): item.get("status")
+            for item in gmx_helper_source_follow_up_checklist
+            if isinstance(item, dict) and item.get("follow_up_id")
+        },
+        "gmx_rate_helper_follow_up_missing_source_inputs": gmx_helper_source_follow_up_summary.get("missing_source_inputs", []),
+        "gmx_rate_helper_follow_up_manual_approval_ids": gmx_helper_source_follow_up_summary.get("blocking_manual_approval_ids", []),
     }
 
 
@@ -1999,6 +2022,117 @@ def require_gmx_rate_mapping_review(model, failures):
             failures,
         )
         require(isinstance(helper_review.get("next_action"), str) and bool(helper_review.get("next_action")), f"{helper_prefix}: next_action missing", failures)
+    helper_follow_up_summary = review.get("helper_source_follow_up_summary")
+    require(isinstance(helper_follow_up_summary, dict) and bool(helper_follow_up_summary), f"{review_prefix}.helper_source_follow_up_summary: missing", failures)
+    expected_helper_follow_up_ids = [
+        "source_helper_inputs_missing",
+        "live_nonzero_mapping_approval",
+        "side_direction_approval",
+        "carry_runtime_policy_approvals",
+    ]
+    expected_helper_follow_up_statuses = [
+        "source_inputs_missing",
+        "mapping_review_required",
+        "fixture_required",
+        "manual_approval_required",
+    ]
+    expected_helper_follow_up_input_ids = [
+        "source_helper_inputs",
+        "rate_sign_convention",
+        "holding_period_hours",
+        "position_notional_usd",
+        "display_unit_decision",
+    ]
+    expected_helper_follow_up_review_ids = [
+        "helper_source_fields_presence",
+        "manual_live_helper_mapping_review",
+        "live_rate_output_fields_available",
+        "nonzero_borrowing_relation_evidence",
+        "side_direction_helper_fields",
+        "carry_conversion_boundary",
+    ]
+    expected_helper_follow_up_fixture_ids = [
+        "source_helper_inputs_presence",
+        "live_nonzero_borrowing_relation",
+        "live_zero_borrowing_ambiguity",
+        "longs_pay_shorts_direction",
+        "source_relation_raw_fields",
+    ]
+    expected_helper_follow_up_decision_ids = [
+        "source_helper_inputs_available",
+        "nonzero_borrowing_relation_reviewed",
+        "side_aware_direction_fixtures",
+        "carry_inputs_defined",
+        "display_unit_decision_recorded",
+    ]
+    expected_helper_follow_up_manual_approval_ids = [
+        "gmx_source_helper_input_review",
+        "gmx_live_helper_source_review",
+        "gmx_live_nonzero_borrowing_mapping_review",
+        "gmx_side_aware_sign_review",
+        "gmx_carry_horizon_notional_review",
+        "gmx_hourly_vs_annualized_display_decision",
+    ]
+    if isinstance(helper_follow_up_summary, dict):
+        follow_up_summary_prefix = f"{review_prefix}.helper_source_follow_up_summary"
+        require(helper_follow_up_summary.get("status") == "follow_up_required", f"{follow_up_summary_prefix}: status mismatch", failures)
+        require(helper_follow_up_summary.get("follow_up_count") == 4, f"{follow_up_summary_prefix}: follow up count mismatch", failures)
+        require(helper_follow_up_summary.get("blocked_follow_up_count") == 4, f"{follow_up_summary_prefix}: blocked follow up count mismatch", failures)
+        require(helper_follow_up_summary.get("follow_up_ids") == expected_helper_follow_up_ids, f"{follow_up_summary_prefix}: follow up ids mismatch", failures)
+        require(helper_follow_up_summary.get("follow_up_statuses") == expected_helper_follow_up_statuses, f"{follow_up_summary_prefix}: follow up statuses mismatch", failures)
+        require(helper_follow_up_summary.get("related_input_ids") == expected_helper_follow_up_input_ids, f"{follow_up_summary_prefix}: related input ids mismatch", failures)
+        require(helper_follow_up_summary.get("related_review_ids") == expected_helper_follow_up_review_ids, f"{follow_up_summary_prefix}: related review ids mismatch", failures)
+        require(helper_follow_up_summary.get("missing_source_inputs") == expected_source_inputs, f"{follow_up_summary_prefix}: missing source inputs mismatch", failures)
+        require(helper_follow_up_summary.get("required_fixture_case_ids") == expected_helper_follow_up_fixture_ids, f"{follow_up_summary_prefix}: fixture case ids mismatch", failures)
+        require(helper_follow_up_summary.get("required_expectation_ids") == expected_expectation_ids, f"{follow_up_summary_prefix}: expectation ids mismatch", failures)
+        require(helper_follow_up_summary.get("required_decision_check_ids") == expected_helper_follow_up_decision_ids, f"{follow_up_summary_prefix}: decision check ids mismatch", failures)
+        require(helper_follow_up_summary.get("blocking_manual_approval_ids") == expected_helper_follow_up_manual_approval_ids, f"{follow_up_summary_prefix}: manual approval ids mismatch", failures)
+        require(helper_follow_up_summary.get("blocked_outputs") == expected_blocked_outputs, f"{follow_up_summary_prefix}: blocked outputs mismatch", failures)
+        require(helper_follow_up_summary.get("may_emit_carry_bps") is False, f"{follow_up_summary_prefix}: carry bps must stay blocked", failures)
+        require(helper_follow_up_summary.get("may_estimate_cost_bps") is False, f"{follow_up_summary_prefix}: cost bps must stay blocked", failures)
+        require(helper_follow_up_summary.get("may_rank_routes") is False, f"{follow_up_summary_prefix}: route ranking must stay blocked", failures)
+        require(helper_follow_up_summary.get("may_submit_orders") is False, f"{follow_up_summary_prefix}: execution must stay blocked", failures)
+        require(
+            isinstance(helper_follow_up_summary.get("safe_use"), str) and "no percent, bps" in helper_follow_up_summary.get("safe_use"),
+            f"{follow_up_summary_prefix}: safe_use mismatch",
+            failures,
+        )
+        require(isinstance(helper_follow_up_summary.get("next_action"), str) and bool(helper_follow_up_summary.get("next_action")), f"{follow_up_summary_prefix}: next_action missing", failures)
+    helper_follow_up_checklist = review.get("helper_source_follow_up_checklist")
+    require(isinstance(helper_follow_up_checklist, list) and bool(helper_follow_up_checklist), f"{review_prefix}.helper_source_follow_up_checklist: missing", failures)
+    helper_follow_up_ids = [
+        item.get("follow_up_id")
+        for item in helper_follow_up_checklist
+        if isinstance(item, dict)
+    ] if isinstance(helper_follow_up_checklist, list) else []
+    require(helper_follow_up_ids == expected_helper_follow_up_ids, f"{review_prefix}.helper_source_follow_up_checklist: follow up id order mismatch", failures)
+    for follow_up, expected_status in zip(helper_follow_up_checklist if isinstance(helper_follow_up_checklist, list) else [], expected_helper_follow_up_statuses):
+        if not isinstance(follow_up, dict):
+            failures.append(f"{review_prefix}.helper_source_follow_up_checklist: row must be object")
+            continue
+        follow_up_prefix = f"{review_prefix}.helper_source_follow_up_checklist.{follow_up.get('follow_up_id')}"
+        require(follow_up.get("status") == expected_status, f"{follow_up_prefix}: status mismatch", failures)
+        require(isinstance(follow_up.get("follow_up_label"), str) and bool(follow_up.get("follow_up_label")), f"{follow_up_prefix}: label missing", failures)
+        require(isinstance(follow_up.get("follow_up_type"), str) and bool(follow_up.get("follow_up_type")), f"{follow_up_prefix}: type missing", failures)
+        require(isinstance(follow_up.get("related_input_ids"), list) and bool(follow_up.get("related_input_ids")), f"{follow_up_prefix}: related inputs missing", failures)
+        require(isinstance(follow_up.get("related_review_ids"), list) and bool(follow_up.get("related_review_ids")), f"{follow_up_prefix}: related reviews missing", failures)
+        require(isinstance(follow_up.get("missing_source_inputs"), list), f"{follow_up_prefix}: missing source inputs missing", failures)
+        require(isinstance(follow_up.get("required_fixture_case_ids"), list), f"{follow_up_prefix}: fixture case ids missing", failures)
+        require(isinstance(follow_up.get("required_expectation_ids"), list), f"{follow_up_prefix}: expectation ids missing", failures)
+        require(isinstance(follow_up.get("required_decision_check_ids"), list) and bool(follow_up.get("required_decision_check_ids")), f"{follow_up_prefix}: decision check ids missing", failures)
+        require(isinstance(follow_up.get("blocking_manual_approval_ids"), list) and bool(follow_up.get("blocking_manual_approval_ids")), f"{follow_up_prefix}: manual approvals missing", failures)
+        require(isinstance(follow_up.get("blocked_by"), list) and bool(follow_up.get("blocked_by")), f"{follow_up_prefix}: blockers missing", failures)
+        require(follow_up.get("blocked_outputs") == expected_blocked_outputs, f"{follow_up_prefix}: blocked outputs mismatch", failures)
+        require(follow_up.get("may_emit_carry_bps") is False, f"{follow_up_prefix}: carry bps must stay blocked", failures)
+        require(follow_up.get("may_estimate_cost_bps") is False, f"{follow_up_prefix}: cost bps must stay blocked", failures)
+        require(follow_up.get("may_rank_routes") is False, f"{follow_up_prefix}: route ranking must stay blocked", failures)
+        require(follow_up.get("may_submit_orders") is False, f"{follow_up_prefix}: execution must stay blocked", failures)
+        require(
+            isinstance(follow_up.get("safe_use"), str) and "no percent, bps" in follow_up.get("safe_use"),
+            f"{follow_up_prefix}: safe_use mismatch",
+            failures,
+        )
+        require(isinstance(follow_up.get("next_action"), str) and bool(follow_up.get("next_action")), f"{follow_up_prefix}: next_action missing", failures)
 
 
 failures = []

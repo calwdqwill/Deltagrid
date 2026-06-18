@@ -42,6 +42,8 @@ import {
   LivePerpDexGmxRateCarrySourceEvidenceCheck,
   LivePerpDexGmxRateCarrySourceEvidenceSummary,
   LivePerpDexGmxRateFixtureReadiness,
+  LivePerpDexGmxRateHelperSourceFollowUpItem,
+  LivePerpDexGmxRateHelperSourceFollowUpSummary,
   LivePerpDexGmxRateLiveHelperSourceReview,
   LivePerpDexGmxRateLiveHelperSourceSummary,
   LivePerpDexGmxRateMappingDecisionCheck,
@@ -2144,6 +2146,143 @@ function buildGmxRateMappingReview(
     safe_use: safeUse,
     next_action: "Complete live helper/source review before diagnostic GMX carry bps",
   };
+  const helperSourceFollowUpChecklist: LivePerpDexGmxRateHelperSourceFollowUpItem[] = [
+    {
+      follow_up_id: "source_helper_inputs_missing",
+      follow_up_label: "Source Helper Inputs Missing",
+      follow_up_type: "missing_source_input",
+      status: "source_inputs_missing",
+      related_input_ids: ["source_helper_inputs", "rate_sign_convention"],
+      related_review_ids: ["helper_source_fields_presence", "manual_live_helper_mapping_review"],
+      missing_source_inputs: sourceInputsRequired,
+      required_fixture_case_ids: ["source_helper_inputs_presence"],
+      required_expectation_ids: [],
+      required_decision_check_ids: ["source_helper_inputs_available"],
+      blocking_manual_approval_ids: ["gmx_source_helper_input_review", "gmx_live_helper_source_review"],
+      blocked_by: ["live /markets/info source helper inputs unavailable", "manual GMX live helper source review"],
+      blocked_outputs: blockedOutputs,
+      may_emit_carry_bps: false,
+      may_estimate_cost_bps: false,
+      may_rank_routes: false,
+      may_submit_orders: false,
+      safe_use: safeUse,
+      next_action: "Source missing helper inputs or equivalent fixtures before GMX carry conversion",
+    },
+    {
+      follow_up_id: "live_nonzero_mapping_approval",
+      follow_up_label: "Live Nonzero Mapping Approval",
+      follow_up_type: "manual_approval",
+      status: "mapping_review_required",
+      related_input_ids: ["source_helper_inputs", "rate_sign_convention"],
+      related_review_ids: ["live_rate_output_fields_available", "nonzero_borrowing_relation_evidence"],
+      missing_source_inputs: sourceInputsRequired,
+      required_fixture_case_ids: ["live_nonzero_borrowing_relation", "live_zero_borrowing_ambiguity"],
+      required_expectation_ids: [],
+      required_decision_check_ids: ["nonzero_borrowing_relation_reviewed", "source_helper_inputs_available"],
+      blocking_manual_approval_ids: ["gmx_live_nonzero_borrowing_mapping_review"],
+      blocked_by: [
+        "live /markets/info nonzero borrowing rate mapping review",
+        "live /markets/info source helper inputs unavailable",
+      ],
+      blocked_outputs: blockedOutputs,
+      may_emit_carry_bps: false,
+      may_estimate_cost_bps: false,
+      may_rank_routes: false,
+      may_submit_orders: false,
+      safe_use: safeUse,
+      next_action: "Resolve live funding+borrowing mapping before any carry conversion",
+    },
+    {
+      follow_up_id: "side_direction_approval",
+      follow_up_label: "Side Direction Approval",
+      follow_up_type: "fixture_manual_approval",
+      status: "fixture_required",
+      related_input_ids: ["rate_sign_convention"],
+      related_review_ids: ["side_direction_helper_fields"],
+      missing_source_inputs: ["fundingFactorPerSecond", "longsPayShorts"],
+      required_fixture_case_ids: ["longs_pay_shorts_direction"],
+      required_expectation_ids: sideAwareExpectationIds,
+      required_decision_check_ids: ["side_aware_direction_fixtures"],
+      blocking_manual_approval_ids: ["gmx_side_aware_sign_review"],
+      blocked_by: ["side-aware funding sign tests", "live /markets/info source helper inputs unavailable"],
+      blocked_outputs: blockedOutputs,
+      may_emit_carry_bps: false,
+      may_estimate_cost_bps: false,
+      may_rank_routes: false,
+      may_submit_orders: false,
+      safe_use: safeUse,
+      next_action: "Approve side-aware long/short funding direction only after fixtures exist",
+    },
+    {
+      follow_up_id: "carry_runtime_policy_approvals",
+      follow_up_label: "Carry Runtime And Policy Approvals",
+      follow_up_type: "carry_boundary_approval",
+      status: "manual_approval_required",
+      related_input_ids: ["holding_period_hours", "position_notional_usd", "display_unit_decision"],
+      related_review_ids: ["carry_conversion_boundary"],
+      missing_source_inputs: [],
+      required_fixture_case_ids: ["source_relation_raw_fields", "longs_pay_shorts_direction"],
+      required_expectation_ids: sideAwareExpectationIds,
+      required_decision_check_ids: ["carry_inputs_defined", "display_unit_decision_recorded"],
+      blocking_manual_approval_ids: [
+        "gmx_carry_horizon_notional_review",
+        "gmx_hourly_vs_annualized_display_decision",
+      ],
+      blocked_by: [
+        "holding_period_hours input",
+        "position_notional_usd input",
+        "production decision on hourly vs annualized display",
+      ],
+      blocked_outputs: blockedOutputs,
+      may_emit_carry_bps: false,
+      may_estimate_cost_bps: false,
+      may_rank_routes: false,
+      may_submit_orders: false,
+      safe_use: safeUse,
+      next_action: "Record runtime carry inputs and display policy before carry conversion",
+    },
+  ];
+  const helperSourceFollowUpIds: string[] = [];
+  const helperSourceFollowUpStatuses: string[] = [];
+  const helperSourceFollowUpInputIds: string[] = [];
+  const helperSourceFollowUpReviewIds: string[] = [];
+  const helperSourceFollowUpMissingInputs: string[] = [];
+  const helperSourceFollowUpFixtureCaseIds: string[] = [];
+  const helperSourceFollowUpExpectationIds: string[] = [];
+  const helperSourceFollowUpDecisionCheckIds: string[] = [];
+  const helperSourceFollowUpManualApprovalIds: string[] = [];
+  helperSourceFollowUpChecklist.forEach((item) => {
+    appendUnique(helperSourceFollowUpIds, item.follow_up_id);
+    appendUnique(helperSourceFollowUpStatuses, item.status);
+    item.related_input_ids.forEach((inputId) => appendUnique(helperSourceFollowUpInputIds, inputId));
+    item.related_review_ids.forEach((reviewId) => appendUnique(helperSourceFollowUpReviewIds, reviewId));
+    item.missing_source_inputs.forEach((sourceInput) => appendUnique(helperSourceFollowUpMissingInputs, sourceInput));
+    item.required_fixture_case_ids.forEach((caseId) => appendUnique(helperSourceFollowUpFixtureCaseIds, caseId));
+    item.required_expectation_ids.forEach((expectationId) => appendUnique(helperSourceFollowUpExpectationIds, expectationId));
+    item.required_decision_check_ids.forEach((checkId) => appendUnique(helperSourceFollowUpDecisionCheckIds, checkId));
+    item.blocking_manual_approval_ids.forEach((approvalId) => appendUnique(helperSourceFollowUpManualApprovalIds, approvalId));
+  });
+  const helperSourceFollowUpSummary: LivePerpDexGmxRateHelperSourceFollowUpSummary = {
+    status: "follow_up_required",
+    follow_up_count: helperSourceFollowUpChecklist.length,
+    blocked_follow_up_count: helperSourceFollowUpChecklist.length,
+    follow_up_ids: helperSourceFollowUpIds,
+    follow_up_statuses: helperSourceFollowUpStatuses,
+    related_input_ids: helperSourceFollowUpInputIds,
+    related_review_ids: helperSourceFollowUpReviewIds,
+    missing_source_inputs: helperSourceFollowUpMissingInputs,
+    required_fixture_case_ids: helperSourceFollowUpFixtureCaseIds,
+    required_expectation_ids: helperSourceFollowUpExpectationIds,
+    required_decision_check_ids: helperSourceFollowUpDecisionCheckIds,
+    blocking_manual_approval_ids: helperSourceFollowUpManualApprovalIds,
+    blocked_outputs: blockedOutputs,
+    may_emit_carry_bps: false,
+    may_estimate_cost_bps: false,
+    may_rank_routes: false,
+    may_submit_orders: false,
+    safe_use: safeUse,
+    next_action: "Close helper/source follow-up rows before any GMX carry conversion",
+  };
   return {
     status: "mapping_review_required",
     read_only: true,
@@ -2173,6 +2312,8 @@ function buildGmxRateMappingReview(
     carry_source_evidence_checklist: carrySourceEvidenceChecklist,
     live_helper_source_summary: liveHelperSourceSummary,
     live_helper_source_checklist: liveHelperSourceChecklist,
+    helper_source_follow_up_summary: helperSourceFollowUpSummary,
+    helper_source_follow_up_checklist: helperSourceFollowUpChecklist,
   };
 }
 
@@ -2704,6 +2845,14 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
     gmxRateMappingReview?.live_helper_source_checklist?.length
       ? gmxRateMappingReview.live_helper_source_checklist
       : fallbackGmxRateMappingReview?.live_helper_source_checklist ?? [];
+  const gmxRateHelperSourceFollowUpSummary =
+    gmxRateMappingReview?.helper_source_follow_up_summary ??
+    fallbackGmxRateMappingReview?.helper_source_follow_up_summary ??
+    null;
+  const gmxRateHelperSourceFollowUpChecklist =
+    gmxRateMappingReview?.helper_source_follow_up_checklist?.length
+      ? gmxRateMappingReview.helper_source_follow_up_checklist
+      : fallbackGmxRateMappingReview?.helper_source_follow_up_checklist ?? [];
   const routeDiagnosticComponentSummaryRows =
     routeModel.status === "unavailable"
       ? []
@@ -3314,6 +3463,73 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
           routeModelList(item.fixture_case_ids),
           routeModelList(item.expectation_ids),
           item.manual_approval_required ? item.manual_approval_id : "None",
+          routeModelList(item.blocked_by),
+          <span key="flags" className={toneText("positive")}>
+            {[
+              item.may_emit_carry_bps ? "Carry Allowed" : "Carry Blocked",
+              item.may_estimate_cost_bps ? "Cost Allowed" : "Cost Blocked",
+              item.may_rank_routes ? "Rank Allowed" : "Rank Blocked",
+              item.may_submit_orders ? "Exec Allowed" : "Exec Blocked",
+            ].join(" / ")}
+          </span>,
+          item.next_action,
+        ]);
+  const gmxRateHelperSourceFollowUpSummaryRows =
+    routeModel.status === "unavailable" || !gmxRateHelperSourceFollowUpSummary
+      ? []
+      : [
+          [
+            "Follow-up Status",
+            <span key="status" className={toneText(policyStatusTone(gmxRateHelperSourceFollowUpSummary.status))}>
+              {policyStatusLabel(gmxRateHelperSourceFollowUpSummary.status)}
+            </span>,
+            <span key="count" className="font-mono text-slate-100">
+              {gmxRateHelperSourceFollowUpSummary.blocked_follow_up_count}/
+              {gmxRateHelperSourceFollowUpSummary.follow_up_count}
+            </span>,
+            routeModelList(gmxRateHelperSourceFollowUpSummary.missing_source_inputs),
+            routeModelList(gmxRateHelperSourceFollowUpSummary.blocking_manual_approval_ids),
+            gmxRateHelperSourceFollowUpSummary.safe_use,
+          ],
+          [
+            "Related Gates",
+            <span key="status" className={toneText("warning")}>
+              Helper / Manual Gate
+            </span>,
+            routeModelList(gmxRateHelperSourceFollowUpSummary.related_input_ids),
+            routeModelList(gmxRateHelperSourceFollowUpSummary.related_review_ids),
+            routeModelList(gmxRateHelperSourceFollowUpSummary.required_decision_check_ids),
+            gmxRateHelperSourceFollowUpSummary.next_action,
+          ],
+          [
+            "Blocked Outputs",
+            <span key="status" className={toneText("positive")}>
+              Carry Blocked / Cost Blocked / Rank Blocked / Exec Blocked
+            </span>,
+            routeModelList(gmxRateHelperSourceFollowUpSummary.blocked_outputs),
+            routeModelList(gmxRateHelperSourceFollowUpSummary.required_fixture_case_ids),
+            routeModelList(gmxRateHelperSourceFollowUpSummary.required_expectation_ids),
+            routeModelList(gmxRateHelperSourceFollowUpSummary.follow_up_statuses.map((status) => policyStatusLabel(status))),
+          ],
+        ];
+  const gmxRateHelperSourceFollowUpRows =
+    routeModel.status === "unavailable" || !gmxRateMappingReview
+      ? []
+      : gmxRateHelperSourceFollowUpChecklist.map((item) => [
+          <span key="follow-up" className="font-semibold text-cyan-200">
+            {item.follow_up_label}
+          </span>,
+          <span key="status" className={toneText(policyStatusTone(item.status))}>
+            {policyStatusLabel(item.status)}
+          </span>,
+          item.follow_up_type,
+          routeModelList(item.related_input_ids),
+          routeModelList(item.related_review_ids),
+          routeModelList(item.missing_source_inputs),
+          routeModelList(item.required_fixture_case_ids),
+          routeModelList(item.required_expectation_ids),
+          routeModelList(item.required_decision_check_ids),
+          routeModelList(item.blocking_manual_approval_ids),
           routeModelList(item.blocked_by),
           <span key="flags" className={toneText("positive")}>
             {[
@@ -4164,6 +4380,48 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
             ) : (
               <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
                 GMX rate live helper source review is not available from the backend right now.
+              </div>
+            )}
+          </TerminalPanel>
+        )}
+
+        {(activeView === "overview" || activeView === "venues" || activeView === "opportunities") && (
+          <TerminalPanel
+            title="GMX Rate Helper Source Follow-up"
+            caption="Missing helper inputs and manual approvals still blocking GMX carry conversion"
+          >
+            {gmxRateHelperSourceFollowUpSummaryRows.length > 0 || gmxRateHelperSourceFollowUpRows.length > 0 ? (
+              <div className="space-y-4">
+                {gmxRateHelperSourceFollowUpSummaryRows.length > 0 && (
+                  <TerminalTable
+                    columns={["Area", "Status", "Count / Inputs", "Missing / Reviews", "Manual / Checks", "Boundary"]}
+                    rows={gmxRateHelperSourceFollowUpSummaryRows}
+                  />
+                )}
+                {gmxRateHelperSourceFollowUpRows.length > 0 && (
+                  <TerminalTable
+                    columns={[
+                      "Follow-up",
+                      "Status",
+                      "Type",
+                      "Related Inputs",
+                      "Related Reviews",
+                      "Missing Inputs",
+                      "Fixture Cases",
+                      "Expectations",
+                      "Decision Checks",
+                      "Manual Approvals",
+                      "Blocked By",
+                      "Carry / Cost / Rank / Exec",
+                      "Next Action",
+                    ]}
+                    rows={gmxRateHelperSourceFollowUpRows}
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                GMX rate helper source follow-up is not available from the backend right now.
               </div>
             )}
           </TerminalPanel>

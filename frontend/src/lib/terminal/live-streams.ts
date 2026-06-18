@@ -816,6 +816,50 @@ export interface LivePerpDexGmxRateLiveHelperSourceReview {
   next_action: string;
 }
 
+export interface LivePerpDexGmxRateHelperSourceFollowUpSummary {
+  status: string;
+  follow_up_count: number;
+  blocked_follow_up_count: number;
+  follow_up_ids: string[];
+  follow_up_statuses: string[];
+  related_input_ids: string[];
+  related_review_ids: string[];
+  missing_source_inputs: string[];
+  required_fixture_case_ids: string[];
+  required_expectation_ids: string[];
+  required_decision_check_ids: string[];
+  blocking_manual_approval_ids: string[];
+  blocked_outputs: string[];
+  may_emit_carry_bps: boolean;
+  may_estimate_cost_bps: boolean;
+  may_rank_routes: boolean;
+  may_submit_orders: boolean;
+  safe_use: string;
+  next_action: string;
+}
+
+export interface LivePerpDexGmxRateHelperSourceFollowUpItem {
+  follow_up_id: string;
+  follow_up_label: string;
+  follow_up_type: string;
+  status: string;
+  related_input_ids: string[];
+  related_review_ids: string[];
+  missing_source_inputs: string[];
+  required_fixture_case_ids: string[];
+  required_expectation_ids: string[];
+  required_decision_check_ids: string[];
+  blocking_manual_approval_ids: string[];
+  blocked_by: string[];
+  blocked_outputs: string[];
+  may_emit_carry_bps: boolean;
+  may_estimate_cost_bps: boolean;
+  may_rank_routes: boolean;
+  may_submit_orders: boolean;
+  safe_use: string;
+  next_action: string;
+}
+
 export interface LivePerpDexGmxRateMappingReview {
   status: string;
   read_only: boolean;
@@ -845,6 +889,8 @@ export interface LivePerpDexGmxRateMappingReview {
   carry_source_evidence_checklist?: LivePerpDexGmxRateCarrySourceEvidenceCheck[];
   live_helper_source_summary?: LivePerpDexGmxRateLiveHelperSourceSummary;
   live_helper_source_checklist?: LivePerpDexGmxRateLiveHelperSourceReview[];
+  helper_source_follow_up_summary?: LivePerpDexGmxRateHelperSourceFollowUpSummary;
+  helper_source_follow_up_checklist?: LivePerpDexGmxRateHelperSourceFollowUpItem[];
 }
 
 export interface LivePerpDexRouteCostDiagnosticSummary {

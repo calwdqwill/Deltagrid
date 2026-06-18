@@ -4,6 +4,14 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` оформлен и задеплоен вручную на production; `main` находится на `0716f6a`, tag `v1.3.1` указывает на этот commit. Production deploy hardening уже есть в `main`, но `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` и `PROD_APP_DIR` пока отсутствуют.
 **Last Updated**: 2026-06-18
 
+## Обновление 2026-06-18 — Perp DEX GMX helper/source follow-up rows v0
+
+- Backend `gmx_rate_mapping_review_v0` получил `helper_source_follow_up_summary`: compact summary по missing helper source inputs, связанным input/review ids, fixture/decision gates и manual approvals, которые блокируют GMX carry conversion.
+- Backend `gmx_rate_mapping_review_v0` получил `helper_source_follow_up_checklist` с rows `source_helper_inputs_missing`, `live_nonzero_mapping_approval`, `side_direction_approval` и `carry_runtime_policy_approvals`.
+- Frontend `Perp DEX` получил панель `GMX Rate Helper Source Follow-up`, где отдельно видны missing inputs и blocking manual approvals.
+- Policy smoke compact contract расширен полями `gmx_rate_helper_follow_up_*`; backend regression tests закрепляют новый summary/checklist и неизменные safety flags.
+- Граница не изменилась: diagnostic carry bps, numeric route cost bps, route ranking, route selection и execution не включались.
+
 ## Обновление 2026-06-18 — preview deploy follow-up после depth freshness
 
 - Product commit `4433f0b` (`feat: add perp dex depth freshness evidence`) прошёл GitHub CI run `27761405255` со статусом `success`.
@@ -842,7 +850,7 @@
 - [x] Добавить UI-панель `Perp DEX Source Status` без сортировки venues и без production signal.
 - [x] Расширить provider error taxonomy для direct venues: timeout, rate limit, empty response, schema drift, unavailable endpoint.
 - [x] Добавить smoke/test coverage на provider error taxonomy без live secrets и без raw payload dumps.
-- [ ] Добавить GMX helper/source follow-up rows: какие source helper inputs всё ещё отсутствуют, какие manual approvals блокируют carry conversion.
+- [x] Добавить GMX helper/source follow-up rows: какие source helper inputs всё ещё отсутствуют, какие manual approvals блокируют carry conversion.
 - [x] Добавить Lighter/Aster depth freshness evidence layer: timestamp/source-age policy как readiness, без slippage bps.
 - [ ] Добавить fee schedule evidence layer для Lighter/Aster: account tier/order intent/manual approval gates, без fee bps total.
 - [ ] Добавить compact compare contract для `Perp DEX Source Status`, чтобы preview/prod drift был виден без полного payload.

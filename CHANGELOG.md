@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [PRODUCT/DATA] - Perp DEX GMX helper/source follow-up rows v0
+- `gmx_rate_mapping_review_v0` получил `helper_source_follow_up_summary`: compact worklist по отсутствующим GMX helper source inputs, связанным review/input ids, fixture/decision gates и manual approval ids, которые всё ещё блокируют carry conversion.
+- `gmx_rate_mapping_review_v0` получил `helper_source_follow_up_checklist`: отдельные rows для missing helper inputs, live nonzero mapping approval, side-direction approval и carry runtime/display approvals.
+- `Perp DEX` UI получил панель `GMX Rate Helper Source Follow-up` рядом с текущими GMX live helper/carry evidence panels.
+- `scripts/perp-dex-policy-smoke.sh` compact contract теперь включает `gmx_rate_helper_follow_up_status`, ids/statuses, missing source inputs и blocking manual approval ids; backend regression tests закрепляют новый summary/checklist и safety flags.
+- Граница сохранена: diagnostic carry bps, numeric route cost bps, route ranking, route selection и execution не включались.
+
 ## [2026-06-18] - [OPS] - Preview deploy follow-up после depth freshness
 - Product commit `4433f0b` прошёл GitHub CI `27761405255`, но GitHub `Deploy Preview` `27761467202` снова завершился `failure` на шаге `Deploy preview` после успешных secrets/fingerprint/value checks, SSH port/login и app-dir check.
 - Public logs endpoint для failed run вернул `403`, поэтому причина внутри stdout deploy step недоступна через API; по step timing это выглядит как повторный transient SSH/deploy transport failure из GitHub runner.

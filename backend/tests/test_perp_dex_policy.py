@@ -1305,6 +1305,108 @@ def test_perp_dex_route_model_is_read_only_inputs_required() -> None:
         assert helper_review["may_submit_orders"] is False
         assert "no percent, bps" in helper_review["safe_use"]
         assert helper_review["next_action"]
+    gmx_helper_follow_up_summary = gmx_rate_mapping_review["helper_source_follow_up_summary"]
+    expected_helper_follow_up_ids = [
+        "source_helper_inputs_missing",
+        "live_nonzero_mapping_approval",
+        "side_direction_approval",
+        "carry_runtime_policy_approvals",
+    ]
+    expected_helper_follow_up_statuses = [
+        "source_inputs_missing",
+        "mapping_review_required",
+        "fixture_required",
+        "manual_approval_required",
+    ]
+    assert gmx_helper_follow_up_summary["status"] == "follow_up_required"
+    assert gmx_helper_follow_up_summary["follow_up_count"] == 4
+    assert gmx_helper_follow_up_summary["blocked_follow_up_count"] == 4
+    assert gmx_helper_follow_up_summary["follow_up_ids"] == expected_helper_follow_up_ids
+    assert gmx_helper_follow_up_summary["follow_up_statuses"] == expected_helper_follow_up_statuses
+    assert gmx_helper_follow_up_summary["related_input_ids"] == [
+        "source_helper_inputs",
+        "rate_sign_convention",
+        "holding_period_hours",
+        "position_notional_usd",
+        "display_unit_decision",
+    ]
+    assert gmx_helper_follow_up_summary["related_review_ids"] == [
+        "helper_source_fields_presence",
+        "manual_live_helper_mapping_review",
+        "live_rate_output_fields_available",
+        "nonzero_borrowing_relation_evidence",
+        "side_direction_helper_fields",
+        "carry_conversion_boundary",
+    ]
+    assert gmx_helper_follow_up_summary["missing_source_inputs"] == gmx_rate_mapping_review["source_inputs_required"]
+    assert gmx_helper_follow_up_summary["required_fixture_case_ids"] == [
+        "source_helper_inputs_presence",
+        "live_nonzero_borrowing_relation",
+        "live_zero_borrowing_ambiguity",
+        "longs_pay_shorts_direction",
+        "source_relation_raw_fields",
+    ]
+    assert gmx_helper_follow_up_summary["required_expectation_ids"] == expected_gmx_side_expectation_ids
+    assert gmx_helper_follow_up_summary["required_decision_check_ids"] == [
+        "source_helper_inputs_available",
+        "nonzero_borrowing_relation_reviewed",
+        "side_aware_direction_fixtures",
+        "carry_inputs_defined",
+        "display_unit_decision_recorded",
+    ]
+    assert gmx_helper_follow_up_summary["blocking_manual_approval_ids"] == [
+        "gmx_source_helper_input_review",
+        "gmx_live_helper_source_review",
+        "gmx_live_nonzero_borrowing_mapping_review",
+        "gmx_side_aware_sign_review",
+        "gmx_carry_horizon_notional_review",
+        "gmx_hourly_vs_annualized_display_decision",
+    ]
+    assert gmx_helper_follow_up_summary["blocked_outputs"] == gmx_rate_mapping_review["blocked_outputs"]
+    assert gmx_helper_follow_up_summary["may_emit_carry_bps"] is False
+    assert gmx_helper_follow_up_summary["may_estimate_cost_bps"] is False
+    assert gmx_helper_follow_up_summary["may_rank_routes"] is False
+    assert gmx_helper_follow_up_summary["may_submit_orders"] is False
+    assert "no percent, bps" in gmx_helper_follow_up_summary["safe_use"]
+    assert gmx_helper_follow_up_summary["next_action"]
+    assert [item["follow_up_id"] for item in gmx_rate_mapping_review["helper_source_follow_up_checklist"]] == (
+        expected_helper_follow_up_ids
+    )
+    gmx_helper_follow_ups = {
+        item["follow_up_id"]: item
+        for item in gmx_rate_mapping_review["helper_source_follow_up_checklist"]
+    }
+    assert gmx_helper_follow_ups["source_helper_inputs_missing"]["missing_source_inputs"] == (
+        gmx_rate_mapping_review["source_inputs_required"]
+    )
+    assert gmx_helper_follow_ups["live_nonzero_mapping_approval"]["blocking_manual_approval_ids"] == [
+        "gmx_live_nonzero_borrowing_mapping_review"
+    ]
+    assert gmx_helper_follow_ups["side_direction_approval"]["required_expectation_ids"] == (
+        expected_gmx_side_expectation_ids
+    )
+    assert gmx_helper_follow_ups["carry_runtime_policy_approvals"]["blocking_manual_approval_ids"] == [
+        "gmx_carry_horizon_notional_review",
+        "gmx_hourly_vs_annualized_display_decision",
+    ]
+    for follow_up in gmx_rate_mapping_review["helper_source_follow_up_checklist"]:
+        assert follow_up["follow_up_label"]
+        assert follow_up["follow_up_type"]
+        assert follow_up["related_input_ids"]
+        assert follow_up["related_review_ids"]
+        assert isinstance(follow_up["missing_source_inputs"], list)
+        assert isinstance(follow_up["required_fixture_case_ids"], list)
+        assert isinstance(follow_up["required_expectation_ids"], list)
+        assert follow_up["required_decision_check_ids"]
+        assert follow_up["blocking_manual_approval_ids"]
+        assert follow_up["blocked_by"]
+        assert follow_up["blocked_outputs"] == gmx_rate_mapping_review["blocked_outputs"]
+        assert follow_up["may_emit_carry_bps"] is False
+        assert follow_up["may_estimate_cost_bps"] is False
+        assert follow_up["may_rank_routes"] is False
+        assert follow_up["may_submit_orders"] is False
+        assert "no percent, bps" in follow_up["safe_use"]
+        assert follow_up["next_action"]
 
     blocker_ids = {blocker["id"] for blocker in model["blockers"]}
     assert "numeric_fee_inputs_missing" in blocker_ids

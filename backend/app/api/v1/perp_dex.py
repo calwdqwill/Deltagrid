@@ -2774,6 +2774,177 @@ def _build_gmx_rate_mapping_review(gmx_rate_semantics: dict) -> dict:
         "safe_use": safe_use,
         "next_action": "complete live helper/source review before diagnostic GMX carry bps",
     }
+    helper_source_follow_up_checklist = [
+        {
+            "follow_up_id": "source_helper_inputs_missing",
+            "follow_up_label": "Source Helper Inputs Missing",
+            "follow_up_type": "missing_source_input",
+            "status": "source_inputs_missing",
+            "related_input_ids": ["source_helper_inputs", "rate_sign_convention"],
+            "related_review_ids": ["helper_source_fields_presence", "manual_live_helper_mapping_review"],
+            "missing_source_inputs": source_inputs_required,
+            "required_fixture_case_ids": ["source_helper_inputs_presence"],
+            "required_expectation_ids": [],
+            "required_decision_check_ids": ["source_helper_inputs_available"],
+            "blocking_manual_approval_ids": [
+                "gmx_source_helper_input_review",
+                "gmx_live_helper_source_review",
+            ],
+            "blocked_by": [
+                "live /markets/info source helper inputs unavailable",
+                "manual GMX live helper source review",
+            ],
+            "blocked_outputs": blocked_outputs,
+            "may_emit_carry_bps": False,
+            "may_estimate_cost_bps": False,
+            "may_rank_routes": False,
+            "may_submit_orders": False,
+            "safe_use": safe_use,
+            "next_action": "source missing helper inputs or equivalent fixtures before GMX carry conversion",
+        },
+        {
+            "follow_up_id": "live_nonzero_mapping_approval",
+            "follow_up_label": "Live Nonzero Mapping Approval",
+            "follow_up_type": "manual_approval",
+            "status": "mapping_review_required",
+            "related_input_ids": ["source_helper_inputs", "rate_sign_convention"],
+            "related_review_ids": [
+                "live_rate_output_fields_available",
+                "nonzero_borrowing_relation_evidence",
+            ],
+            "missing_source_inputs": source_inputs_required,
+            "required_fixture_case_ids": [
+                "live_nonzero_borrowing_relation",
+                "live_zero_borrowing_ambiguity",
+            ],
+            "required_expectation_ids": [],
+            "required_decision_check_ids": [
+                "nonzero_borrowing_relation_reviewed",
+                "source_helper_inputs_available",
+            ],
+            "blocking_manual_approval_ids": ["gmx_live_nonzero_borrowing_mapping_review"],
+            "blocked_by": [
+                "live /markets/info nonzero borrowing rate mapping review",
+                "live /markets/info source helper inputs unavailable",
+            ],
+            "blocked_outputs": blocked_outputs,
+            "may_emit_carry_bps": False,
+            "may_estimate_cost_bps": False,
+            "may_rank_routes": False,
+            "may_submit_orders": False,
+            "safe_use": safe_use,
+            "next_action": "resolve live funding+borrowing mapping before any carry conversion",
+        },
+        {
+            "follow_up_id": "side_direction_approval",
+            "follow_up_label": "Side Direction Approval",
+            "follow_up_type": "fixture_manual_approval",
+            "status": "fixture_required",
+            "related_input_ids": ["rate_sign_convention"],
+            "related_review_ids": ["side_direction_helper_fields"],
+            "missing_source_inputs": ["fundingFactorPerSecond", "longsPayShorts"],
+            "required_fixture_case_ids": ["longs_pay_shorts_direction"],
+            "required_expectation_ids": side_aware_expectation_ids,
+            "required_decision_check_ids": ["side_aware_direction_fixtures"],
+            "blocking_manual_approval_ids": ["gmx_side_aware_sign_review"],
+            "blocked_by": [
+                "side-aware funding sign tests",
+                "live /markets/info source helper inputs unavailable",
+            ],
+            "blocked_outputs": blocked_outputs,
+            "may_emit_carry_bps": False,
+            "may_estimate_cost_bps": False,
+            "may_rank_routes": False,
+            "may_submit_orders": False,
+            "safe_use": safe_use,
+            "next_action": "approve side-aware long/short funding direction only after fixtures exist",
+        },
+        {
+            "follow_up_id": "carry_runtime_policy_approvals",
+            "follow_up_label": "Carry Runtime And Policy Approvals",
+            "follow_up_type": "carry_boundary_approval",
+            "status": "manual_approval_required",
+            "related_input_ids": [
+                "holding_period_hours",
+                "position_notional_usd",
+                "display_unit_decision",
+            ],
+            "related_review_ids": ["carry_conversion_boundary"],
+            "missing_source_inputs": [],
+            "required_fixture_case_ids": [
+                "source_relation_raw_fields",
+                "longs_pay_shorts_direction",
+            ],
+            "required_expectation_ids": side_aware_expectation_ids,
+            "required_decision_check_ids": [
+                "carry_inputs_defined",
+                "display_unit_decision_recorded",
+            ],
+            "blocking_manual_approval_ids": [
+                "gmx_carry_horizon_notional_review",
+                "gmx_hourly_vs_annualized_display_decision",
+            ],
+            "blocked_by": [
+                "holding_period_hours input",
+                "position_notional_usd input",
+                "production decision on hourly vs annualized display",
+            ],
+            "blocked_outputs": blocked_outputs,
+            "may_emit_carry_bps": False,
+            "may_estimate_cost_bps": False,
+            "may_rank_routes": False,
+            "may_submit_orders": False,
+            "safe_use": safe_use,
+            "next_action": "record runtime carry inputs and display policy before carry conversion",
+        },
+    ]
+    helper_source_follow_up_ids: list[str] = []
+    helper_source_follow_up_statuses: list[str] = []
+    helper_source_follow_up_input_ids: list[str] = []
+    helper_source_follow_up_review_ids: list[str] = []
+    helper_source_follow_up_missing_inputs: list[str] = []
+    helper_source_follow_up_fixture_case_ids: list[str] = []
+    helper_source_follow_up_expectation_ids: list[str] = []
+    helper_source_follow_up_decision_check_ids: list[str] = []
+    helper_source_follow_up_manual_approval_ids: list[str] = []
+    for follow_up in helper_source_follow_up_checklist:
+        append_unique(helper_source_follow_up_ids, follow_up["follow_up_id"])
+        append_unique(helper_source_follow_up_statuses, follow_up["status"])
+        for input_id in follow_up["related_input_ids"]:
+            append_unique(helper_source_follow_up_input_ids, input_id)
+        for review_id in follow_up["related_review_ids"]:
+            append_unique(helper_source_follow_up_review_ids, review_id)
+        for source_input in follow_up["missing_source_inputs"]:
+            append_unique(helper_source_follow_up_missing_inputs, source_input)
+        for fixture_case_id in follow_up["required_fixture_case_ids"]:
+            append_unique(helper_source_follow_up_fixture_case_ids, fixture_case_id)
+        for expectation_id in follow_up["required_expectation_ids"]:
+            append_unique(helper_source_follow_up_expectation_ids, expectation_id)
+        for decision_check_id in follow_up["required_decision_check_ids"]:
+            append_unique(helper_source_follow_up_decision_check_ids, decision_check_id)
+        for manual_approval_id in follow_up["blocking_manual_approval_ids"]:
+            append_unique(helper_source_follow_up_manual_approval_ids, manual_approval_id)
+    helper_source_follow_up_summary = {
+        "status": "follow_up_required",
+        "follow_up_count": len(helper_source_follow_up_checklist),
+        "blocked_follow_up_count": len(helper_source_follow_up_checklist),
+        "follow_up_ids": helper_source_follow_up_ids,
+        "follow_up_statuses": helper_source_follow_up_statuses,
+        "related_input_ids": helper_source_follow_up_input_ids,
+        "related_review_ids": helper_source_follow_up_review_ids,
+        "missing_source_inputs": helper_source_follow_up_missing_inputs,
+        "required_fixture_case_ids": helper_source_follow_up_fixture_case_ids,
+        "required_expectation_ids": helper_source_follow_up_expectation_ids,
+        "required_decision_check_ids": helper_source_follow_up_decision_check_ids,
+        "blocking_manual_approval_ids": helper_source_follow_up_manual_approval_ids,
+        "blocked_outputs": blocked_outputs,
+        "may_emit_carry_bps": False,
+        "may_estimate_cost_bps": False,
+        "may_rank_routes": False,
+        "may_submit_orders": False,
+        "safe_use": safe_use,
+        "next_action": "close helper/source follow-up rows before any GMX carry conversion",
+    }
 
     return {
         "status": "mapping_review_required",
@@ -2804,6 +2975,8 @@ def _build_gmx_rate_mapping_review(gmx_rate_semantics: dict) -> dict:
         "carry_source_evidence_checklist": carry_source_evidence_checklist,
         "live_helper_source_summary": live_helper_source_summary,
         "live_helper_source_checklist": live_helper_source_checklist,
+        "helper_source_follow_up_summary": helper_source_follow_up_summary,
+        "helper_source_follow_up_checklist": helper_source_follow_up_checklist,
     }
 
 
