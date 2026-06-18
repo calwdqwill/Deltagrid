@@ -1,11 +1,370 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [RELEASE] - v1.3.2 release stabilization
+- Версия поднята до `1.3.2` в `VERSION`, `frontend/package.json` и root package entry в `frontend/package-lock.json`.
+- Release scope: Perp DEX route-model observability, GMX carry/source evidence gates, GMX live helper source review, production deploy hardening, production healthcheck и PostgreSQL backup tooling.
+- Safety boundary сохранена: diagnostic carry bps, route cost bps, route ranking, route selection и execution не включались.
+- Проверка: release preflight `1.3.2`, backend compileall, targeted backend regression tests, HTTP Perp DEX policy smoke, HTTP Perp DEX direct smoke, frontend build и `npm audit --audit-level=high` проходят.
+- Production deploy для `main` остаётся зависимым от настроенных GitHub secrets `PROD_*`; preview push должен пройти через GitHub CI и `Deploy Preview`.
+
+## [2026-06-18] - [PRODUCT/DATA] - Perp DEX GMX live helper source review v0
+- `gmx_rate_mapping_review_v0` получил `live_helper_source_summary`: compact summary по live GMX `/markets/info` rate output fields, missing helper source inputs, fixture cases, side-aware expectations и manual approval ids.
+- `gmx_rate_mapping_review_v0` получил `live_helper_source_checklist`: live rate output fields, nonzero-borrowing relation evidence, helper source fields presence, side-direction helper fields и manual review gate теперь видны как отдельные read-only review rows.
+- `Perp DEX` UI получил панель `GMX Rate Live Helper Source Review` рядом с текущими GMX carry evidence panels.
+- `scripts/perp-dex-policy-smoke.sh` compact contract теперь включает `gmx_rate_live_helper_review_status`, `gmx_rate_live_helper_review_ids`, `gmx_rate_live_helper_review_statuses`, `gmx_rate_live_helper_missing_source_inputs` и `gmx_rate_live_helper_manual_approval_ids`; backend regression tests закрепляют новый summary/checklist и flags.
+- Граница не изменилась: diagnostic carry bps, route cost bps, route ranking, route selection и execution не включались.
+- Проверка: backend compileall, `pytest backend/tests/test_perp_dex_policy.py`, `bash -n scripts/perp-dex-policy-smoke.sh`, HTTP policy smoke, frontend build/audit и Browser QA desktop/mobile для `/perp-dex?view=opportunities` проходят.
+
+## [2026-06-18] - [PRODUCT/DATA] - Perp DEX GMX carry-source evidence gate v0
+- `gmx_rate_mapping_review_v0` получил `carry_source_evidence_summary`: compact summary по GMX carry evidence ids, evidence types, related inputs, source fields, fixture cases, decision checks и manual approval ids.
+- `gmx_rate_mapping_review_v0` получил `carry_source_evidence_checklist`: runtime inputs, side-aware fixture evidence, source helper field evidence, display-unit policy evidence и manual approval evidence теперь видны как read-only gates перед любым diagnostic carry bps.
+- `Perp DEX` UI получил таблицы `GMX Rate Carry Evidence Summary` и `GMX Rate Carry Evidence Checklist` рядом с текущими carry readiness panels.
+- `scripts/perp-dex-policy-smoke.sh` compact contract теперь включает `gmx_rate_carry_evidence_status`, `gmx_rate_carry_evidence_ids`, `gmx_rate_carry_evidence_statuses`, `gmx_rate_carry_evidence_types` и `gmx_rate_carry_evidence_manual_approval_ids`; backend regression tests закрепляют новые rows и flags.
+- Граница не изменилась: diagnostic carry bps, route cost bps, route ranking, route selection и execution не включались.
+
+## [2026-06-18] - [PRODUCT/DATA] - Perp DEX GMX carry-readiness audit v0
+- `gmx_rate_mapping_review_v0` получил `carry_readiness_summary`: compact summary по GMX carry inputs, required fixtures, decision checks и manual approval ids перед любым diagnostic carry bps.
+- `gmx_rate_mapping_review_v0` получил `carry_input_checklist`: `holding_period_hours`, `position_notional_usd`, `rate_sign_convention`, `source_helper_inputs` и `display_unit_decision` теперь видны как read-only gates без расчёта carry bps.
+- `Perp DEX` UI получил таблицы `GMX Rate Carry Readiness Summary` и `GMX Rate Carry Input Checklist` рядом с текущими GMX mapping/fixture panels.
+- `scripts/perp-dex-policy-smoke.sh` compact contract теперь включает `gmx_rate_mapping_decision_manual_approval_ids`, `gmx_rate_carry_readiness_status`, `gmx_rate_carry_input_ids`, `gmx_rate_carry_input_statuses` и `gmx_rate_carry_manual_approval_ids`; backend regression tests закрепляют новые rows и flags.
+- Граница не изменилась: diagnostic carry bps, route cost bps, route ranking, route selection и execution не включались.
+
+## [2026-06-18] - [PRODUCT/DATA] - Perp DEX GMX fixture/source hardening v0
+- `gmx_rate_mapping_review_v0` получил `side_aware_fixture_expectations`: для `longsPayShorts` явно перечислены long/short paying/receiving cases, которые должны быть покрыты fixtures до любого carry bps.
+- `gmx_rate_mapping_review_v0` получил `mapping_decision_checklist`: source helper inputs, live nonzero-borrowing mapping, side-aware fixtures, carry horizon/notional и display-unit decision теперь видны как read-only checklist с manual approval ids.
+- `Perp DEX` UI получил таблицы `GMX Rate Side-aware Fixtures` и `GMX Rate Mapping Decision Checklist`; `GMX Rate Fixture Readiness` показывает expectation notes для `longsPayShorts`.
+- `scripts/perp-dex-policy-smoke.sh` compact contract теперь включает `gmx_rate_fixture_statuses`, `gmx_rate_side_expectation_ids`, `gmx_rate_mapping_decision_check_ids` и `gmx_rate_mapping_decision_statuses`; backend regression tests проверяют новые rows и сохраняют `carry/cost/rank/exec=false`.
+- Граница не изменилась: diagnostic carry bps, route cost bps, route ranking, route selection и execution не включались.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX GMX mapping evidence hardening v0
+- `gmx_rate_mapping_review_v0` получил `blocker_breakdown`: blockers GMX source helper inputs, live mapping, fixture coverage, side-aware sign tests, holding period/notional и display decision теперь агрегируются по review rows.
+- `gmx_rate_mapping_review_v0` получил `fixture_readiness_matrix`: nonzero borrowing, zero borrowing ambiguity, `longsPayShorts` direction и missing helper inputs видны как отдельные readiness cases без carry conversion.
+- `Perp DEX` UI получил таблицы `GMX Rate Mapping Blockers` и `GMX Rate Fixture Readiness` рядом с текущим `GMX Rate Mapping Review`.
+- `scripts/perp-dex-policy-smoke.sh` compact contract теперь включает `gmx_rate_mapping_status`, `gmx_rate_mapping_blocker_ids` и `gmx_rate_fixture_case_ids`; backend regression tests проверяют новые rows и сохраняют `carry/cost/rank/exec=false`.
+- Граница не изменилась: numeric carry bps, route cost bps, route ranking, route selection и execution не включались.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX venue evidence and GMX mapping review v0
+- `diagnostic_cost_estimate_v0.summary` получил `venue_evidence_status`: Lighter, Aster, GMX и cross-venue gates теперь разделены по venue-specific evidence, cross-venue blockers и явным `cost/rank/exec=false`.
+- `GET /api/v1/perp-dex/route-model` получил read-only `gmx_rate_mapping_review_v0`, который выносит GMX `rate_relation_summary`/`rate_source_fields_summary` в отдельный mapping review без percent, bps, annualized или carry conversion.
+- `Perp DEX` UI получил таблицы `Route Diagnostic Venue Evidence Status` и `GMX Rate Mapping Review` с fallback из уже существующих route-model слоёв.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют `venue_evidence_status`, `gmx_rate_mapping_review_v0`, compact `venue_evidence_status_ids` и `gmx_rate_mapping_review_ids`.
+- В README/ARCHITECTURE добавлен decision note: до первой numeric route-cost formula нужны source-backed fee tiers, order intent, depth/staleness policy, GMX mapping fixtures, carry horizon/notional, risk gates и отдельное явное решение; route ranking/execution не включались.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX route-ready evidence checklist v0
+- `diagnostic_cost_estimate_v0.summary` получил `route_ready_evidence_checklist`: fee schedule, order intent, depth freshness, depth aggregation, carry semantics и risk limits теперь видны как отдельные evidence-gates перед route-ready use.
+- `Perp DEX` UI получил таблицу `Route Diagnostic Evidence Checklist`, где каждый gate показывает required inputs, policy inputs, sourced evidence fields, blocked outputs и явные блокировки cost/rank/exec.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency `route_ready_evidence_checklist` с components/source fields/depth policy и закрепляют `may_estimate_cost_bps=false`, `may_rank_routes=false`, `may_submit_orders=false`.
+- Compact smoke contract теперь включает `route_ready_evidence_gate_ids`, чтобы preview/prod diff ловил исчезновение или перестановку evidence gates.
+- Граница не изменилась: checklist является pre-route-scoring observability/readiness layer, а не route cost bps, route ranking, route selection или execution.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic source input actions coverage v0
+- `diagnostic_cost_estimate_v0.summary` получил `source_input_action_coverage`: sourced display fields теперь связаны с required route inputs и mapped next actions.
+- `Perp DEX` UI получил таблицу `Route Diagnostic Source Input Actions`, где видно, какие display fields уже есть, какие inputs они частично покрывают и какие actions всё ещё блокируют route-ready use.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency `source_input_action_coverage` с `source_field_breakdown` и `next_action_breakdown`.
+- Compact smoke contract теперь включает `source_input_action_fields`; README фиксирует preview/prod compare пример с `depth_policy_ids` и `next_action_ids`.
+- Граница не изменилась: coverage является observability/readiness layer, а не route cost, route ranking, route selection или execution.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic policy input breakdown v0
+- `diagnostic_cost_estimate_v0.summary` получил `required_policy_input_breakdown`: required policy inputs из depth/staleness checklist теперь агрегируются по policy rows, components, venues, source endpoints и blockers.
+- `Perp DEX` UI получил таблицу `Route Diagnostic Policy Inputs`, где видно, какие policy inputs блокируют Lighter/Aster depth freshness и stale-depth gates перед любым slippage bps.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency `required_policy_input_breakdown` с `depth_staleness_policy_checklist` и сохраняют `may_emit_slippage_bps=false`.
+- Compact smoke contract теперь включает `required_policy_input_ids`, чтобы preview/prod diff ловил исчезновение или перестановку required policy inputs.
+- Граница не изменилась: policy input breakdown является readiness/observability layer, а не route cost, route ranking, route selection или execution.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic next actions breakdown v0
+- `diagnostic_cost_estimate_v0.summary` получил `next_action_breakdown`: required-input, readiness rollup и depth/staleness policy actions теперь агрегируются в machine-readable planning layer.
+- `Perp DEX` UI получил таблицу `Route Diagnostic Next Actions`, где видно action, source count/types, required inputs, policy inputs, components, venues и boundary для numeric total.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency `next_action_breakdown` с `required_input_breakdown`, `readiness_rollup` и `depth_staleness_policy_checklist`.
+- Compact smoke contract теперь включает `next_action_ids`, чтобы preview/prod diff ловил исчезновение или перестановку planning actions.
+- Граница не изменилась: next-action breakdown является planning/observability layer, а не route cost, route ranking, route selection или execution.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic depth policy and smoke compare v0
+- `diagnostic_cost_estimate_v0.summary` получил `depth_staleness_policy_checklist`: Lighter `orderBookOrders`, Aster `ticker/bookTicker` и Aster `fapi/v3/depth` теперь явно требуют timestamp freshness, `max_depth_age_ms`, stale-depth action, order size, side, aggregation policy и liquidity cap перед любым slippage bps.
+- `Perp DEX` UI получил таблицу `Route Diagnostic Depth/Staleness Policy` с venue, depth scope, endpoint, source fields, required policy inputs, blockers, slippage boundary и next action.
+- `scripts/perp-dex-policy-smoke.sh` теперь проверяет depth/staleness checklist и печатает compact `contract` для route policy/model observability. Через `COMPARE_BASE_URL` можно добавить preview/prod diff summary, а `FAIL_ON_DIFF=1` делает расхождения фейлом.
+- Backend regression tests закрепляют, что depth checklist согласован с `diagnostic_cost_estimate_v0.components`, а `may_emit_slippage_bps=false` и `numeric_total_status=blocked` остаются неизменными.
+- Граница не изменилась: depth/staleness checklist является observability/policy layer, а не расчётом slippage, total route cost bps, route ranking, route selection или execution.
+- Проверка: `tests/test_perp_dex_policy.py`, `compileall app`, `bash -n scripts/perp-dex-policy-smoke.sh`, HTTP `scripts/perp-dex-policy-smoke.sh`, frontend `npm run build`, `npm audit --audit-level=high` и Browser QA проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic observability rollups v0
+- `diagnostic_cost_estimate_v0.summary` получил `source_field_breakdown`: sourced display fields теперь агрегируются по component ids, venue ids, required input ids и blocked numeric ids.
+- `diagnostic_cost_estimate_v0.summary` получил `safe_use_breakdown`: safe-use boundaries теперь сгруппированы по components, чтобы display diagnostics не выглядели как route signal.
+- `diagnostic_cost_estimate_v0.summary` получил `readiness_rollup`: compact fee/depth/carry/risk readiness показывает status, sourced counts, display ids, blocked numeric ids и next action без numeric total bps.
+- `Perp DEX` UI получил таблицы `Route Diagnostic Source Fields Breakdown`, `Route Diagnostic Safe Use Breakdown` и `Route Diagnostic Readiness Rollup` с fallback-группировкой из `components`.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency новых breakdown/rollup слоёв с `diagnostic_cost_estimate_v0.components`.
+- Граница не изменилась: новые rollups являются observability layer, а не route cost, route ranking, route selection или execution.
+- Проверка: `bash -n scripts/perp-dex-policy-smoke.sh`, `tests/test_perp_dex_policy.py` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic required input breakdown v0
+- `diagnostic_cost_estimate_v0.components` получили `required_input_ids`, чтобы component-level diagnostics были связаны с обязательными входами route model.
+- `diagnostic_cost_estimate_v0.summary` получил `required_input_breakdown`: по каждому required input теперь видны component ids, venue ids, display ids, blocked numeric ids, sourced ids и next action.
+- `Perp DEX` UI получил таблицу `Route Diagnostic Required Input Breakdown` с fallback-группировкой из `required_inputs` и `components`, если backend summary недоступен.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency `required_input_breakdown` с `components[*].required_input_ids`.
+- Граница не изменилась: breakdown показывает coverage обязательных inputs, но не включает total route cost bps, route ranking, route selection или execution.
+- Проверка: `bash -n scripts/perp-dex-policy-smoke.sh`, `tests/test_perp_dex_policy.py`, `compileall app`, frontend `npm run build` и `npm audit --audit-level=high` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic blocker breakdown v0
+- `diagnostic_cost_estimate_v0.summary` получил `blocker_breakdown`: повторяющиеся `blocked_by` причины теперь агрегируются по component ids, venue ids, display component ids и blocked numeric component ids.
+- `Perp DEX` UI получил таблицу `Route Diagnostic Blocker Breakdown`, чтобы видеть, какие blockers мешают route-ready cost inputs чаще всего.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency `blocker_breakdown` с `diagnostic_cost_estimate_v0.components[*].blocked_by`.
+- Граница не изменилась: blocker breakdown является observability layer, а не route cost, route ranking, route selection или execution.
+- Проверка: `bash -n scripts/perp-dex-policy-smoke.sh`, `tests/test_perp_dex_policy.py` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic venue breakdown v0
+- `diagnostic_cost_estimate_v0.summary` получил `venue_breakdown`: component counts, display-only ids, blocked numeric ids и sourced ids теперь доступны по Lighter, Aster и cross-venue components.
+- `Perp DEX` UI получил таблицу `Route Diagnostic Venue Breakdown`, чтобы видеть venue-level component readiness отдельно от общей summary и детального component list.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency `venue_breakdown` с `diagnostic_cost_estimate_v0.components`.
+- Граница не изменилась: venue breakdown является observability layer, а не route cost, route ranking, route selection или execution.
+- Проверка: `bash -n scripts/perp-dex-policy-smoke.sh`, `tests/test_perp_dex_policy.py` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic component summary contract v0
+- `GET /api/v1/perp-dex/route-model` получил machine-readable `diagnostic_cost_estimate_v0.summary`: component counts, display-only ids, blocked numeric ids, sourced ids, `numeric_total_status=blocked` и boundary `component_readiness_only`.
+- `Perp DEX` UI теперь читает `Route Diagnostic Components Summary` из backend summary, но сохраняет fallback-расчёт из `components` для совместимости со старым response.
+- `scripts/perp-dex-policy-smoke.sh` и backend regression tests проверяют consistency между `summary` и `components`, чтобы component diagnostics не расходились с отображаемым summary.
+- Граница не изменилась: summary является контрактом наблюдаемости, а не включением total route cost bps, route ranking, route selection или execution.
+- Проверка: `bash -n scripts/perp-dex-policy-smoke.sh`, `tests/test_perp_dex_policy.py` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostic components summary v0
+- `Perp DEX` UI получил таблицу `Route Diagnostic Components Summary`: количество diagnostic components, display-only outputs, blocked numeric components, sourced component fields и статус numeric total bps теперь видны отдельным summary-layer перед `Route Cost Diagnostics v0`.
+- `scripts/perp-dex-policy-smoke.sh` теперь проверяет структуру `diagnostic_cost_estimate_v0.components`: обязательные component ids, `status`, `source_fields`, `blocked_by`, `safe_use` и запрет total numeric bps.
+- Backend regression tests закрепляют полный набор diagnostic component ids и machine-readable поля каждого component.
+- Граница не изменилась: summary показывает готовность компонент, но не включает total route cost bps, route ranking, route selection или execution.
+- Проверка: `bash -n scripts/perp-dex-policy-smoke.sh`, `tests/test_perp_dex_policy.py` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX route safety guardrails v0
+- `Perp DEX` UI получил таблицу `Route Safety Guardrails`: top-level expected vs actual по `research_only`, execution, liquidity ranking, order submission, model read-only, production signal и numeric total bps.
+- `scripts/perp-dex-policy-smoke.sh` теперь дополнительно проверяет `route-model.required_inputs` и `formula_skeleton`, включая обязательные ключи `gross_edge_bps`, `estimated_cost_bps`, `net_edge_bps` и `route_allowed`.
+- Backend regression tests закрепляют полный набор ключей `formula_skeleton` и непустые formula strings.
+- Граница не изменилась: guardrails являются observability/checklist layer, а не включением numeric route cost, ranking, route selection или execution.
+- Проверка: `bash -n scripts/perp-dex-policy-smoke.sh`, `tests/test_perp_dex_policy.py` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX required inputs and direct smoke guardrails v0
+- `scripts/perp-dex-direct-smoke.sh` усилен safety-инвариантами по direct venue snapshots: `read_only` должен оставаться `true`, `execution_enabled` должен оставаться `false`, а optional `ranking_enabled` / `production_signal_enabled` не могут стать `true`.
+- `Perp DEX` UI получил таблицу `Route Required Inputs`, которая отдельно показывает обязательные входы route model: fee schedule, order intent, depth/impact model, carry horizon и risk limits.
+- Regression tests закрепляют структуру `route-model.required_inputs`: у каждого input должны быть `id`, `label` и `reason`.
+- Граница не изменилась: таблица required inputs является checklist для следующего research шага, а не разрешением на numeric route cost, ranking или execution.
+- Проверка: `bash -n scripts/perp-dex-direct-smoke.sh`, `tests/test_perp_dex_policy.py` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX policy smoke and output policy v0
+- Добавлен `scripts/perp-dex-policy-smoke.sh` для компактной preview/prod проверки `route-constraints` и `route-model`: read-only режим, выключенные ranking/execution, запрет numeric total bps и структурированные blockers.
+- `Perp DEX` UI получил таблицу `Route Output Policy`, где явно видно, какие route-model outputs можно показывать как diagnostics, а какие остаются заблокированы для production scoring.
+- `Perp DEX` UI получил таблицу `Route Model Blockers` поверх `route-model.blockers`: missing inputs, blocked-by причины и safe-use формулировки теперь видны отдельно от route-constraints blockers.
+- Regression tests усилены общим инвариантом: все route policy/model blockers должны иметь `id`, `severity=blocker`, `reason`, `missing_inputs`, `blocked_by` и `safe_use`; policy blockers дополнительно требуют `scope`.
+- Граница не изменилась: numeric route cost bps, route ranking, route selection и order submission остаются выключены до sourced fee/depth/carry inputs, order intent, risk gates и execution boundary.
+- Проверка: `bash -n scripts/perp-dex-policy-smoke.sh`, `tests/test_perp_dex_policy.py` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Perp DEX diagnostics hardening v0
+- Добавлен `scripts/perp-dex-direct-smoke.sh` для компактной server-side проверки direct Perp DEX venue endpoints на preview/prod без вывода raw payload и секретов.
+- `Perp DEX` UI получил таблицу `Depth Diagnostics`: display-only best bid/ask, spread и top-depth summaries по direct venues, где источник отдаёт публичную depth/orderbook диагностику.
+- `route-constraints` и `route-model` получили структурированные blockers: `missing_inputs`, `blocked_by` и `safe_use`, чтобы явно видеть, что именно мешает numeric route cost, ranking и execution.
+- `Perp DEX` UI получил `Route Blockers Matrix` поверх backend policy, чтобы route/execution ограничения были видны рядом с route-cost diagnostics.
+- Граница не изменилась: total cost bps, liquidity ranking, route selection и order submission не включались; Lighter/Aster depth остаются display-only diagnostics до order size, side, aggregation policy, liquidity caps, stale-depth policy и risk boundary.
+- Проверка: backend Perp DEX regression tests, `compileall app`, frontend `npm run build`, `npm audit --audit-level=high` и `bash -n scripts/perp-dex-direct-smoke.sh` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Aster depth ladder diagnostics v0
+- Aster direct snapshot теперь дополнительно читает public `GET /fapi/v3/depth?symbol=...&limit=20` для каждого выбранного USDT perpetual market.
+- `AsterClient` нормализует display-only depth ladder: best bid/ask, `top_of_book_spread_bps`, количество bid/ask levels и top-level depth summaries в base/USD.
+- `route-constraints` и `route-model` получили capability/component `aster_depth_ladder_diagnostics` / `aster_depth_ladder`.
+- Aster depth status повышен до `partial_ready_depth_ladder_display_only`, но slippage bps, order-size aggregation, liquidity caps, stale-depth policy, ranking и execution остаются заблокированы.
+- `Perp DEX` UI автоматически показывает новый Aster component в `Route Cost Diagnostics v0`; total cost bps и route ranking не включались.
+
+## [2026-06-17] - [PRODUCT/DATA] - Lighter orderBookOrders depth diagnostics v0
+- Lighter direct snapshot теперь дополнительно читает public `GET /api/v1/orderBookOrders?market_id=...&limit=25`.
+- `LighterClient` нормализует display-only top resting orders: best bid/ask, `top_of_book_spread_bps`, count bids/asks и top-order depth summaries в base/USD.
+- `route-constraints` и `route-model` получили capability/component `lighter_orderbook_orders_depth_diagnostics` / `lighter_top_order_depth`.
+- Lighter depth status повышен до `partial_ready_top_orders_only`, но slippage bps, depth aggregation policy, liquidity caps, order size/side и execution остаются обязательными blockers.
+- `Perp DEX` UI автоматически показывает новый Lighter component в `Route Cost Diagnostics v0`; route ranking, total cost bps и execution не включались.
+
+## [2026-06-17] - [PRODUCT/DATA] - Diagnostic route-cost components v0
+- `GET /api/v1/perp-dex/route-model` получил read-only блок `diagnostic_cost_estimate_v0`: компонентные diagnostics по fees/spread/slippage/carry без суммарного route-cost bps.
+- Aster normalizer теперь считает `top_of_book_spread_bps` из `bid_price`/`ask_price` как display-only spread; это не depth curve, не slippage model и не executable liquidity.
+- Aster policy получила published USDT-perp fee metadata: maker `0.0` bps и taker `4.0` bps по публичному fee schedule; это default reference metadata, а не account-level fee tier.
+- Lighter fee fields остаются `source_fields_available_unit_unconfirmed`: `maker_fee`/`taker_fee` можно показывать как raw public fields, но нельзя включать в numeric route cost без подтверждения units, account tier и order intent.
+- `Perp DEX` UI получил таблицу `Route Cost Diagnostics v0`, чтобы показывать компонентную готовность без route ranking, execution и total cost estimate.
+- `output_policy.may_show_diagnostic_cost_components=true`, но `may_estimate_cost_bps=false`, `may_rank_routes=false` и execution остаётся выключенным.
+
+## [2026-06-17] - [PRODUCT/DATA] - Lighter/Aster cost semantics metadata v0
+- `GET /api/v1/perp-dex/route-constraints` расширен diagnostic-only блоками `cost_input_semantics` для Lighter и Aster.
+- Для Lighter явно зафиксировано: `maker_fee`/`taker_fee` являются sourced display fields, но route-level fee estimate всё ещё требует account fee tier, maker/taker side и order intent.
+- Для Aster явно зафиксировано: `ticker/bookTicker` даёт top-of-book display fields, но это не depth curve и не slippage model; fee schedule/tier ещё не подключены.
+- `GET /api/v1/perp-dex/route-model` теперь показывает source semantics и `cost_input_status` по Lighter/Aster в venue readiness.
+- `Perp DEX` UI показывает колонку `Source Semantics` в `Route Model Venue Inputs`, чтобы partial readiness не выглядела как готовый route-cost input.
+- Route ranking, numeric cost bps, carry conversion и execution не включались.
+
+## [2026-06-17] - [PRODUCT/DATA] - Aster direct Perp DEX snapshot v0
+- Проведён Aster official API review для следующего direct Perp DEX candidate после Lighter.
+- Добавлен read-only `AsterClient` поверх публичных Aster Futures endpoints `exchangeInfo`, `premiumIndex`, `ticker/24hr`, `openInterest` и `ticker/bookTicker`.
+- Открыт endpoint `GET /api/v1/perp-dex/venues/aster/markets?symbols=BTC,ETH,SOL`; он делает live provider calls, не пишет в PostgreSQL и возвращает `execution_enabled=false`.
+- Aster normalizer возвращает direct market rows: mark/index/mid price, funding, OI USD estimate, 24h volume, trades, top-of-book, tick/step size, min notional и `normalization_status=aster_public_futures_market_data`.
+- `Perp DEX` UI теперь читает Aster рядом с Hyperliquid/dYdX/Lighter как четвёртый normalized direct venue; GMX остаётся raw diagnostics, CoinGlass остаётся research enrichment.
+- Route policy/model обновлены: `aster` добавлен в direct snapshot venues, но fee tier assumptions, depth/slippage model, carry-cost conversion, route ranking и execution остаются заблокированы.
+- Проверка: `tests/test_aster_client.py`, `tests/test_lighter_client.py`, `tests/test_perp_dex_policy.py` и `compileall app` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - Lighter direct Perp DEX snapshot v0
+- По live CoinGlass Perp DEX coverage smoke выбран следующий direct adapter candidate: `Lighter` (`Lighter`, `Aster` получили full `BTC/ETH/SOL` matches; `EdgeX`/`Drift` не вернули rows в текущем smoke).
+- Добавлен read-only `LighterClient` поверх публичных Lighter endpoints `orderBooks`, `orderBookDetails` и `funding-rates`.
+- Открыт endpoint `GET /api/v1/perp-dex/venues/lighter/markets?symbols=BTC,ETH,SOL`; он делает live provider calls, не пишет в PostgreSQL и возвращает `execution_enabled=false`.
+- Lighter normalizer возвращает direct market rows: display price из `last_trade_price`, funding, OI USD estimate, 24h volume, trades, maker/taker fee, margin fractions, tick/step size и `normalization_status=lighter_public_market_details`.
+- `Perp DEX` UI теперь читает Lighter рядом с Hyperliquid/dYdX как третий normalized direct venue; GMX остаётся raw diagnostics, CoinGlass остаётся research enrichment.
+- Route policy/model обновлены: `lighter` добавлен в direct snapshot venues, но route-level liquidity ranking, slippage/depth model, carry-cost conversion и execution остаются заблокированы.
+- Live smoke Lighter endpoint вернул `3` rows для `BTC/ETH/SOL`; у всех rows есть price/funding/OI/volume/fees, execution выключен.
+- Проверка: `tests/test_lighter_client.py`, `tests/test_perp_dex_policy.py`, targeted Perp DEX tests, `compileall app` и frontend `npm run build` проходят.
+
+## [2026-06-17] - [OPS/DATA] - CoinGlass Perp DEX coverage smoke script v0
+- Добавлен `scripts/coinglass-perp-dex-coverage-smoke.sh` для повторяемой проверки CoinGlass Perp DEX coverage endpoint на preview/prod backend.
+- Скрипт вызывает `GET /api/v1/perp-dex/venues/coinglass/markets`, проверяет минимальные thresholds по rows/matched exchanges и печатает compact summary без raw payload и без секретов.
+- Параметры `BASE_URL`, `SYMBOLS`, `EXCHANGES`, `MIN_ROWS`, `MIN_MATCHED_EXCHANGES`, `ALLOW_UNAVAILABLE`, `PYTHON_BIN` позволяют запускать один и тот же smoke на `/opt/deltagrid-preview` и `/opt/deltagrid`.
+- Query-параметры URL-encoded, поэтому venues с пробелами вроде `ApeX Omni` не ломают запрос.
+- Проверка: `bash -n scripts/coinglass-perp-dex-coverage-smoke.sh` проходит; live smoke отложен до запуска на окружении с CoinGlass API key.
+
+## [2026-06-17] - [PRODUCT/DATA] - CoinGlass Perp DEX coverage summary v0
+- CoinGlass Perp DEX enrichment snapshot теперь возвращает `coverage_summary` поверх normalized third-party rows.
+- Summary включает `total_rows`, `exchanges_with_matches`, `field_totals`, `direct_adapter_candidate_hints` и per-venue `by_exchange`.
+- Для каждого venue фиксируются `matched_rows`, `matched_symbols`, `missing_symbols`, `available_field_groups`, `field_coverage`, `route_input_status=not_route_input` и `next_action`.
+- `Perp DEX` UI получил отдельную таблицу `CoinGlass Perp DEX Coverage`; это coverage hints для выбора следующего direct adapter, а не liquidity ranking.
+- Локальный live smoke пропущен из-за отсутствующего CoinGlass API key в текущей Windows env; проверка не выводила секреты.
+- Проверка: `tests/test_coinglass_perp_dex_client.py` и `tests/test_perp_dex_policy.py` проходят, frontend `npm run build` проходит.
+
+## [2026-06-17] - [PRODUCT/DATA] - CoinGlass Perp DEX enrichment v0
+- `CoinGlassClient` получил read-only Perp DEX enrichment path поверх CoinGlass futures `coins-markets`.
+- Добавлен endpoint `GET /api/v1/perp-dex/venues/coinglass/markets`: по умолчанию проверяются `Aster`, `Lighter`, `EdgeX`, `Drift`, а policy фиксирует candidate venues `Hyperliquid`, `dYdX`, `Aster`, `Lighter`, `EdgeX`, `Drift`, `Paradex`, `Extended`, `ApeX Omni`.
+- Endpoint возвращает third-party aggregate rows с `normalization_status=coinglass_coin_market_enrichment`, `execution_enabled=false`, `ranking_enabled=false`, `production_signal_enabled=false`; это не direct venue adapter и не route-level liquidity signal.
+- `Perp DEX` UI получил отдельную таблицу `CoinGlass Perp DEX Enrichment`; CoinGlass rows не смешиваются с direct Hyperliquid/dYdX/GMX snapshots.
+- `route-constraints` и `route-model` получили capability/blocker для CoinGlass Perp DEX enrichment, чтобы route scoring и execution оставались явно заблокированы.
+- Проверка: `tests/test_coinglass_perp_dex_client.py` и `tests/test_perp_dex_policy.py` закрепляют normalizer, endpoint meta и read-only policy; `compileall app` и `npm run build` проходят.
+
+## [2026-06-17] - [PRODUCT/DATA] - GMX rate source fields guardrail v0
+- `GmxClient` добавил diagnostic-only `rate_source_fields_status` и `rate_source_fields_summary` для проверки, есть ли в GMX `/markets/info` helper inputs, нужные для пересчёта official `MarketTicker` hourly rates.
+- Проверяемые helper inputs: `fundingFactorPerSecond`, `borrowingFactorPerSecondForLongs`, `borrowingFactorPerSecondForShorts`, `longsPayShorts`.
+- Live GMX `/markets/info` по текущему payload не отдаёт эти поля: статус `source_factor_fields_unavailable`; endpoint показывает только ticker rate outputs (`fundingRate*`, `borrowingRate*`, `netRate*`).
+- `route-model.gmx_rate_semantics.mapping_review` расширен `source_inputs_required`, а `blocked_for_numeric_carry` получил blocker `live /markets/info source helper inputs unavailable`.
+- Production carry conversion, route scoring, liquidity ranking и execution не включались.
+- Проверка: `tests/test_gmx_client.py` и `tests/test_perp_dex_policy.py` закрепляют source-fields diagnostics и route-model blocker.
+
+## [2026-06-17] - [PRODUCT/DATA] - GMX rate relation summary v0
+- `GmxClient` добавил snapshot-level `rate_relation_summary`: counts по side statuses, source relation matches, raw-sum relation matches, nonzero/zero borrowing sides и zero-borrowing ambiguity.
+- GMX endpoint meta теперь отдаёт `rate_relation_summary`, чтобы UI/API diagnostics могли видеть live-shape без ручного скрипта.
+- Добавлен offline fixture `backend/tests/fixtures/gmx_rate_live_shape_fixture.json`: он закрепляет observed pattern, где одна nonzero-borrowing side совпадает с `funding+borrowing`, а zero-borrowing side остаётся ambiguous.
+- `route-model.gmx_rate_semantics` получил `mapping_review` со статусом `source_vs_live_mapping_unresolved` и явным списком diagnostic fields: `rate_semantics_status`, `rate_relation_diagnostics`, `rate_relation_summary`.
+- Production carry conversion, route scoring, liquidity ranking и execution не включались.
+- Проверка: `tests/test_gmx_client.py` и `tests/test_perp_dex_policy.py` закрепляют summary contract, fixture coverage и read-only policy.
+
+## [2026-06-17] - [PRODUCT/DATA] - GMX rate relation guardrail v2
+- `GmxClient` уточнил side-level диагностику GMX raw rate relation: zero-borrowing sides больше не считаются подтверждением `netRate=fundingRate-borrowingRate`, потому при `borrowingRate=0` relation `funding-borrowing` и `funding+borrowing` недискриминируемы.
+- Side diagnostics теперь возвращает `source_relation_matches`, `raw_sum_relation_matches`, `borrowing_is_zero` и `zero_borrowing_relation_ambiguous`.
+- Live GMX smoke по `BTC/ETH/SOL` вернул `9` rows и `rate_semantics_status=raw_rate_relation_plus_with_zero_borrowing`: `9` nonzero-borrowing sides совпали с `netRate=fundingRate+borrowingRate`, `9` zero-borrowing sides помечены как ambiguous.
+- `route-model.gmx_rate_semantics` и `route-constraints` обновлены: blocker теперь сформулирован как live `/markets/info` nonzero-borrowing mapping review, а не как готовая альтернативная формула.
+- Production route scoring, carry conversion, liquidity ranking и execution не включались: GMX raw rates остаются metadata/diagnostics до source-level mapping, side-aware fixtures, `holding_period_hours`, `position_notional_usd` и sourced fee/depth/carry inputs.
+- Проверка: `tests/test_gmx_client.py` и `tests/test_perp_dex_policy.py` закрепляют zero-borrowing ambiguity и live nonzero-borrowing blocker.
+
+## [2026-06-16] - [PRODUCT/DATA] - GMX rate relation guardrail v0
+- `GmxClient` добавил diagnostic-only проверку GMX raw rate fields через exact integer arithmetic без пересчёта в percent, bps или carry cost.
+- GMX market rows и endpoint meta теперь возвращают `rate_semantics_status`; при успешной проверке статус равен `hourly_rate_relation_confirmed`.
+- Добавлен offline fixture `backend/tests/fixtures/gmx_rate_fixture.json`, который работает как guardrail для ожидаемой source relation без live HTTP-вызова к GMX.
+- `GET /api/v1/perp-dex/route-constraints` получил capability `gmx_rate_relation_fixtures=partial_ready`, а `gmx_rate_semantics` в route model переведён в `guardrail_metadata_only`.
+- Live GMX smoke по `BTC/ETH/SOL` вернул `9` rows и `rate_semantics_status=raw_rate_relation_mixed`: часть side diagnostics совпадает с `netRate=fundingRate-borrowingRate`, часть — с `netRate=fundingRate+borrowingRate`.
+- Production route scoring, carry conversion, liquidity ranking и execution не включались: нужны side-aware funding sign fixtures, `holding_period_hours`, `position_notional_usd` и sourced fee/depth/carry inputs.
+- Проверка: `tests/test_gmx_client.py` и `tests/test_perp_dex_policy.py` закрепляют relation fixture, API meta и сохранение блокеров.
+
+## [2026-06-16] - [PRODUCT/DATA] - GMX rate semantics metadata v0
+- `GET /api/v1/perp-dex/route-model` расширен блоком `gmx_rate_semantics`: source-backed metadata по `fundingRateLong/Short`, `borrowingRateLong/Short` и `netRateLong/Short`.
+- По official `gmx-interface` зафиксировано: `MarketTicker` содержит rate fields, `getMarketTicker` считает их за период `1h`, а `netRateLong/Short = fundingRateLong/Short - borrowingRateLong/Short`.
+- По `gmx-interface`/`gmx-synthetics` зафиксировано, что funding sign зависит от paying/receiving side через `longsPayShorts`, а borrowing fee требует side-specific factor, period и `sizeInUsd`.
+- `GET /api/v1/perp-dex/route-constraints` получил capability `gmx_rate_semantics_metadata=partial_ready`, но raw GMX rates не конвертируются в percent/bps/carry cost.
+- Проверка: `test_perp_dex_policy.py` закрепляет metadata-only статус, official source URLs и blockers `holding_period_hours input` / `position_notional_usd input`.
+
+## [2026-06-16] - [PRODUCT/DATA] - Perp DEX route model v0
+- Добавлен read-only endpoint `GET /api/v1/perp-dex/route-model`: он возвращает checklist входов и formula skeleton для route-level fees/slippage/routing без внешних provider calls, без записи в БД и без execution path.
+- Route model v0 явно требует sourced inputs перед численными оценками: venue fee schedule/tier, order side/size/notional, depth или price-impact model, carry horizon, rate sign convention и risk limits.
+- `GET /api/v1/perp-dex/route-constraints` получил capability `route_cost_model_v0=partial_ready`, но `route_level_pricing`, `multi_venue_liquidity_ranking` и `execution` остаются `blocked`.
+- Perp DEX UI показывает `Route Cost Model v0` и `Route Model Venue Inputs` как diagnostic checklist; numeric cost estimates, route ranking и order submission не включены.
+- Проверка: `test_perp_dex_policy.py` расширен regression test'ом для `/route-model`, который закрепляет `execution_enabled=false`, `ranking_enabled=false`, blockers по fee/slippage/GMX rates и запрет `may_rank_routes`.
+
+## [2026-06-16] - [PRODUCT/DATA] - GMX OI/liquidity USD diagnostics v0
+- `GmxClient` добавил diagnostic-only масштабирование GMX `openInterestLong/Short` и `availableLiquidityLong/Short` из `1e30` USD decimals в строковые поля `*_usd_diagnostic`.
+- `open_interest_usd` и production liquidity/ranking поля не заполняются: GMX остаётся raw/partial venue, а новые значения предназначены только для диагностики и ручной сверки.
+- `GET /api/v1/perp-dex/route-constraints` получил capability `gmx_oi_liquidity_usd_diagnostics=partial_ready`; `multi_venue_liquidity_ranking` остаётся `blocked`.
+- Endpoint meta для GMX возвращает `diagnostic_usd_scale_status`, чтобы быстро видеть, удалось ли масштабировать OI/liquidity diagnostics.
+- Проверка: GMX/policy regression tests обновлены для diagnostic USD fields и сохранения route blocker.
+
+## [2026-06-16] - [PRODUCT/DATA] - GMX fixed-point source validation metadata v0
+- `GET /api/v1/perp-dex/route-constraints` расширен блоком `gmx_formula_validation` с официальными source URLs, подтверждёнными diagnostic-only scale notes и явным списком GMX fields, заблокированных для production liquidity/OI signal.
+- Зафиксировано безопасное разделение: `poolAmountLong/Short` можно показывать только как token-unit diagnostics через decimals из `/tokens`, `Precision` factors используют `1e30`, а `openInterest` и `openInterestInTokens` остаются разными contract paths до маппинга `/markets/info` fields на точные reader outputs.
+- `openInterest*`, `availableLiquidity*`, funding/borrowing/net rates не конвертируются и не участвуют в multi-venue liquidity ranking.
+- Проверка: route constraints regression test обновлён для `gmx_formula_validation`.
+
+## [2026-06-16] - [PRODUCT/DATA] - GMX pool token amount diagnostics v0
+- `GmxClient` теперь масштабирует GMX `poolAmountLong` и `poolAmountShort` в token-unit поля `pool_amount_long_token` и `pool_amount_short_token` через `Decimal` и decimals из GMX `/tokens`.
+- GMX market rows получили `token_amount_scale_status` и `token_amount_scale_reason`; snapshot и endpoint meta возвращают snapshot-level `token_amount_scale_status`.
+- Perp DEX UI показывает GMX mode как `Raw + Pool Units`, когда token pool amounts успешно масштабированы; GMX остаётся raw/partial venue, а не normalized liquidity source.
+- Route policy расширена capability `gmx_pool_token_amount_diagnostics=partial_ready`; blocker для multi-venue liquidity ranking остаётся активным, потому `openInterest*`, `availableLiquidity*`, funding/borrowing/net rates и USD liquidity/OI formulas ещё не валидированы.
+- Проверка: targeted GMX/policy tests `3 passed`; `compileall app` проходит.
+
 ## [v1.3.1] - 2026-06-16 - Patch release
 - Уточнён MVP1 provider inventory gate: `promotion_candidate` для full analytics universe теперь требует `complete_history`, а `chart_ready_candidates` остаются только для preview `/charts` и `/assets`.
 - Добавлена summary-разбивка blocker'ов по stream для `/api/v1/data/provider-inventory`, чтобы быстро видеть, какие persisted streams блокируют full promotion.
 - Закрыт свежий frontend high advisory `form-data@4.0.5` через lockfile update до `form-data@4.0.6`; `npm audit --audit-level=high` снова проходит.
 - Добавлен `scripts/release-preflight.sh` и обновлён release flow для проверки согласованности `VERSION`, frontend package version и lockfile root version.
 - Версия проекта поднята до `1.3.1` в `VERSION`, `frontend/package.json` и `frontend/package-lock.json`.
+
+## [2026-06-16] - [PRODUCT/DATA] - Perp DEX route constraints policy v0
+- Добавлен read-only endpoint `GET /api/v1/perp-dex/route-constraints`, который возвращает машинно-читаемую policy-границу для Perp DEX без внешних provider calls.
+- Policy фиксирует текущий статус `research_only`: market rows можно показывать, но liquidity ranking, route-level pricing и execution заблокированы.
+- В policy явно разделены normalized venue snapshots (`hyperliquid`, `dydx`) и raw venue snapshots (`gmx`), а также blockers `gmx_scale_validation_required`, `fees_slippage_model_missing` и `execution_boundary`.
+- Perp DEX screen теперь читает route policy и показывает таблицу `Route & Execution Policy`, чтобы блокеры были видны в UI, а не только в документации.
+- Добавлен regression test для route constraints endpoint: проверяется `execution_enabled=false`, `production_liquidity_signal=false` и запрет `may_rank_by_liquidity`.
+
+## [2026-06-16] - [PRODUCT/DATA] - GMX token decimals diagnostics v0
+- `GmxClient` теперь вместе с `/markets/info` читает GMX Oracle API `/tokens` и резолвит `index/long/short` token metadata для raw market rows.
+- В GMX market rows добавлены `index_token_symbol/decimals`, `long_token_symbol/decimals`, `short_token_symbol/decimals`, `scale_validation_status` и `scale_validation_reason`.
+- Snapshot-level поле `scale_validation_status` показывает `token_decimals_resolved`, если для всех выбранных GMX rows найдены decimals index/long/short tokens.
+- UI Perp DEX теперь показывает GMX mode как `Raw + Decimals`, когда token decimals resolved; `open_interest_usd`, liquidity и funding по GMX остаются `No data`, пока raw fixed-point formulas не валидированы.
+- Route policy обновлена: GMX token decimals diagnostics помечены как `partial_ready`, а blocker теперь относится к fixed-point formula validation.
+- Проверка: targeted GMX/policy tests `3 passed`; live smoke GMX вернул `9` rows для `BTC/ETH/SOL` со `scale_validation_status=token_decimals_resolved`.
+
+## [2026-06-16] - [PRODUCT/DATA] - GMX Perp DEX raw market snapshot v0
+- Добавлен read-only `GmxClient` для GMX public REST `GET /markets/info` через `https://arbitrum-api.gmxinfra.io`.
+- Открыт backend endpoint `GET /api/v1/perp-dex/venues/gmx/markets?symbols=BTC,ETH,SOL`, который делает live external provider call, но не пишет в БД и возвращает `execution_enabled=false`.
+- GMX поля `openInterest*`, `availableLiquidity*`, `poolAmount*`, `fundingRate*`, `borrowingRate*` и `netRate*` сохраняются как raw fixed-point/token-unit strings; USD/OI/liquidity/funding не нормализуются до отдельной проверки scales и token decimals.
+- Perp DEX screen теперь показывает GMX rows как `Raw`/`Partial` рядом с normalized Hyperliquid и dYdX snapshots; KPI считает normalized live venues отдельно, чтобы GMX raw data не выглядел как production liquidity signal.
+- Добавлены regression tests для GMX payload normalization и endpoint dependency override без реального HTTP-вызова.
+- Проверка: backend GMX test `2 passed`; live smoke GMX вернул `9` raw rows для `BTC/ETH/SOL` со статусом `partial` и `normalization_status=raw_fixed_point`.
+
+## [2026-06-16] - [PRODUCT/DATA] - Hyperliquid Perp DEX live snapshot v0
+- Добавлен read-only `HyperliquidClient` для public `POST /info` с `type=metaAndAssetCtxs`: нормализуются mark/mid/oracle price, funding, open interest, 24h volume, premium, impact prices и leverage metadata.
+- Открыт backend endpoint `GET /api/v1/perp-dex/venues/hyperliquid/markets?symbols=BTC,ETH,SOL`, который делает live external provider call, но не пишет в БД и не включает execution.
+- Perp DEX screen теперь показывает Hyperliquid как live venue, если backend вернул market snapshot; dYdX/GMX остаются pending, а direct execution/fees/slippage/routing не заявляются как подключённые.
+- Добавлены regression tests для Hyperliquid payload normalization и endpoint dependency override без реального HTTP-вызова.
+- Проверка: backend targeted tests `23 passed`, `compileall app` проходит, frontend `npm run build` проходит.
+
+## [2026-06-16] - [PRODUCT/DATA] - dYdX Perp DEX live snapshot v0
+- Добавлен read-only `DydxClient` для dYdX v4 Indexer `GET /perpetualMarkets`: нормализуются oracle price как mark proxy, 24h price change, funding, open interest, 24h volume, trades, margin fractions, tick/step size и leverage estimate.
+- Открыт backend endpoint `GET /api/v1/perp-dex/venues/dydx/markets?symbols=BTC,ETH,SOL`, который делает live external provider call, но не пишет в БД и возвращает `execution_enabled=false`.
+- Perp DEX screen теперь объединяет Hyperliquid и dYdX live snapshots в одной read-only таблице direct Perp DEX venues; GMX, fees/slippage/routing и execution остаются pending.
+- Добавлены regression tests для dYdX payload normalization и endpoint dependency override без реального HTTP-вызова.
+- Проверка: backend targeted tests `25 passed`, `compileall app` проходит, frontend `npm run build` проходит; live smoke dYdX вернул `BTC/ETH/SOL`.
+
+## [2026-06-16] - [DATA] - Resolution strategy для promotion blockers
+- `GET /api/v1/data/provider-inventory` расширен additive-полями в blocker rows: `resolution_strategy`, `historical_backfill_supported`, `minimum_collection_window_hours`, `resolution_action`, `resolution_reason`.
+- В `summary` добавлены разбивки `coverage_blockers_by_resolution_strategy`, `freshness_blockers_by_resolution_strategy`, `promotion_blockers_by_resolution_strategy`.
+- Для текущего OKX/CoinGlass/CoinGecko ingestion path `open_interest`, `basis_premium` и `spot_perp_price` классифицируются как `snapshot_accumulation_required`: один запуск с `--lookback-hours 168` не создаёт честную 7d историю для этих потоков.
+- `ohlcv`, `funding_rates` и `long_short_ratio` остаются `history_backfill_supported`; `liquidations` классифицируется через `provider_sync_required`, потому sparse coverage может подтверждаться свежим успешным sync-run.
+- Regression tests обновлены для chart-ready candidate: partial `open_interest:1h`, `basis_premium:snapshot`, `spot_perp_price:snapshot` теперь явно проверяются как snapshot accumulation blockers.
+- Практический вывод для `HYPE/XRP/DOGE/ADA/LINK`: candidates остаются в chart/asset режиме до 7d накопления snapshot-стримов или подключения отдельного historical source для OI/basis/spot-perp.
+
+## [2026-06-16] - [OPS] - Production deploy secrets preflight
+- Проверено состояние релиза после `v1.3.1`: `origin/main` находится на `0716f6a`, `origin/preview` на `bc342ae`, деревья веток совпадают, annotated tag `v1.3.1` указывает на commit `0716f6a`.
+- Подтверждено, что `Deploy Production` hardening уже находится в `main`: workflow проверяет обязательные `PROD_*`, fingerprint deploy key, ожидаемые значения VPS/user/app dir и только затем запускает `scripts/deploy-compose-stack.sh`.
+- GitHub Actions run `27619159104` для `main@0716f6a` завершился success как safe-skip: отсутствуют `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`, поэтому `Deploy production` был skipped.
+- Локальный deploy key существует в ignored `outputs/deploy-keys`, fingerprint совпадает с workflow: `SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg`.
+- Read-only SSH preflight к `root@2.25.143.143` прошёл: `/opt/deltagrid` на `main@0716f6a`, production containers healthy, `scripts/server-smoke.sh` зелёный.
+- `Deploy Production` получил ручной `workflow_dispatch` с ограничением на ветку `main`, чтобы после добавления `PROD_*` выполнить контрольный deploy без пустого push.
+- Добавлен `Production Healthcheck` GitHub Actions workflow: scheduled/manual проверка public production endpoints `/api/v1/health`, `/api/v1/health/readiness`, `/api/v1/data/health` и frontend.
+- Добавлен `scripts/backup-postgres.sh`: reusable PostgreSQL backup через Docker Compose с чтением `POSTGRES_USER`/`POSTGRES_DB` из env-файла и compressed dump в `backups/`.
+- Первый production backup текущей PostgreSQL БД выполнен вручную на сервере: `/opt/deltagrid/backups/deltagrid_20260616T132922Z.sql.gz`, gzip integrity check прошёл.
+- `scripts/deploy-compose-stack.sh` теперь запускает backup перед production deploy (`BRANCH=main`) по умолчанию; для preview backup остаётся opt-in через `BACKUP_BEFORE_DEPLOY=1`.
+- В `BACKLOG.md` зафиксирован рабочий pipeline: CI/CD safety, production ops-наблюдаемость, preview publication, data promotion gate, product data adapters, backtest engine.
+- В текущей среде нет `gh` CLI и `GH_*/GITHUB_*` токена; repository secrets нужно добавить вручную в GitHub UI или через авторизованный `gh secret set`, не коммитя private key.
 
 ## [2026-06-16] - [RELEASE] - Release preflight для patch-релизов
 - Добавлен `scripts/release-preflight.sh` для проверки согласованности `VERSION`, `frontend/package.json` и root version в `frontend/package-lock.json`.

@@ -88,7 +88,14 @@ BRANCH=main ENV_FILE=.env.production COMPOSE_PROJECT_NAME=deltagrid sh scripts/d
 BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh scripts/deploy-compose-stack.sh
 ```
 
-Скрипт сначала собирает `backend` и `frontend`, и только после успешного build явно пересоздаёт app containers через `compose rm -sf backend frontend` и `compose up -d --no-build backend frontend`. PostgreSQL container и volume при этом не удаляются.
+Для `BRANCH=main` скрипт перед deploy по умолчанию создаёт PostgreSQL backup через `scripts/backup-postgres.sh` в `backups/deploy/`. Для preview backup по умолчанию выключен, чтобы не плодить дампы на каждом dev/staging push. Поведение можно переопределить:
+
+```bash
+BACKUP_BEFORE_DEPLOY=0 BRANCH=main ENV_FILE=.env.production COMPOSE_PROJECT_NAME=deltagrid sh scripts/deploy-compose-stack.sh
+BACKUP_BEFORE_DEPLOY=1 BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview sh scripts/deploy-compose-stack.sh
+```
+
+Скрипт сначала делает backup, затем собирает `backend` и `frontend`, и только после успешного build явно пересоздаёт app containers через `compose rm -sf backend frontend` и `compose up -d --no-build backend frontend`. PostgreSQL container и volume при этом не удаляются.
 
 Фактический preview rollout от 2026-06-14:
 
@@ -422,6 +429,20 @@ cd /opt/deltagrid-preview
 BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 MIN_CANDIDATE_OHLCV_ROWS=1000 sh scripts/preview-candidate-smoke.sh
 ```
 
+Для проверки CoinGlass Perp DEX coverage на стенде с настроенным CoinGlass API key:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 sh scripts/coinglass-perp-dex-coverage-smoke.sh
+```
+
+```bash
+cd /opt/deltagrid
+BASE_URL=http://127.0.0.1:8000 sh scripts/coinglass-perp-dex-coverage-smoke.sh
+```
+
+Скрипт выводит только compact summary по coverage, candidate hints и field groups; raw provider payload и секреты не печатаются.
+
 Фактический production rollout от 2026-06-05, обновлённый baseline от 2026-06-14:
 
 - DNS Cloudflare активен: `deltagrid.pro` и `www.deltagrid.pro` указывают на `2.25.143.143`.
@@ -449,17 +470,24 @@ $env:FRONTEND_URL="https://deltagrid.pro"
 Перед каждым деплоем и перед рискованными миграциями сделайте backup:
 
 ```bash
-mkdir -p backups
-docker compose --env-file .env.production -f docker-compose.prod.yml exec -T postgres pg_dump -U deltagrid deltagrid > backups/deltagrid_$(date +%F_%H%M).sql
+sh scripts/backup-postgres.sh
+```
+
+По умолчанию скрипт читает `.env.production`, использует `docker-compose.prod.yml`, сервис `postgres`, значения `POSTGRES_USER`/`POSTGRES_DB` из env-файла и сохраняет сжатый dump в `backups/deltagrid_YYYYMMDDTHHMMSSZ.sql.gz`.
+
+Для preview/dev стенда используйте явные параметры:
+
+```bash
+ENV_FILE=.env.preview COMPOSE_PROJECT_NAME=deltagrid-preview BACKUP_PREFIX=deltagrid-preview sh scripts/backup-postgres.sh
 ```
 
 Восстановление из backup:
 
 ```bash
-cat backups/deltagrid_YYYY-MM-DD_HHMM.sql | docker compose --env-file .env.production -f docker-compose.prod.yml exec -T postgres psql -U deltagrid deltagrid
+gzip -dc backups/deltagrid_YYYYMMDDTHHMMSSZ.sql.gz | docker compose --env-file .env.production -f docker-compose.prod.yml exec -T postgres psql -U deltagrid deltagrid
 ```
 
-Если в `.env.production` используются другие `POSTGRES_USER` или `POSTGRES_DB`, замените `deltagrid` в командах.
+Если `COMPRESS=0`, скрипт создаст обычный `.sql`, тогда восстановление можно выполнить через `cat backups/file.sql | ... psql ...`. Если в `.env.production` используются другие `POSTGRES_USER` или `POSTGRES_DB`, скрипт прочитает их автоматически.
 
 ## Rollback
 

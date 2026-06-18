@@ -633,6 +633,10 @@ def test_provider_inventory_defaults_to_expansion_candidates() -> None:
     assert "coverage_blockers_by_stream" in data["summary"]
     assert "freshness_blockers_by_stream" in data["summary"]
     assert "promotion_blockers_by_stream" in data["summary"]
+    assert "coverage_blockers_by_resolution_strategy" in data["summary"]
+    assert "freshness_blockers_by_resolution_strategy" in data["summary"]
+    assert "promotion_blockers_by_resolution_strategy" in data["summary"]
+    assert "blocker_resolution_strategies" in data["policy"]
     assert all("next_action" in row for row in data["symbols"])
     assert all("promotion_blockers" in row for row in data["symbols"])
 
@@ -683,6 +687,12 @@ def test_provider_inventory_tracks_candidate_freshness_scope() -> None:
     assert coverage_blocker["range"] == "7d"
     assert coverage_blocker["status"] == "partial"
     assert coverage_blocker["stream"] in {"ohlcv", "funding_rates", "open_interest", "long_short_ratio"}
+    assert coverage_blocker["resolution_strategy"] in {
+        "history_backfill_supported",
+        "snapshot_accumulation_required",
+    }
+    assert "resolution_action" in coverage_blocker
+    assert "resolution_reason" in coverage_blocker
     assert isinstance(data["policy"]["chart_ready_candidates"], list)
     assert data["summary"]["chart_ready_candidates"] >= 0
     assert data["summary"]["coverage_blockers"] >= len(hype["coverage_blockers_7d"])
@@ -711,6 +721,19 @@ def test_provider_inventory_keeps_chart_ready_candidate_out_of_full_promotion() 
     assert data["policy"]["promotion_candidates"] == []
     assert data["policy"]["gates"]["promotion_candidate"]["required_statuses"] == ["complete_history"]
     assert doge["promotion_blockers"] == doge["coverage_blockers_7d"]
+    blockers_by_stream = {
+        f"{blocker['stream']}:{blocker['interval']}": blocker
+        for blocker in doge["promotion_blockers"]
+    }
+    for stream_key in {
+        "open_interest:1h",
+        "basis_premium:snapshot",
+        "spot_perp_price:snapshot",
+    }:
+        blocker = blockers_by_stream[stream_key]
+        assert blocker["resolution_strategy"] == "snapshot_accumulation_required"
+        assert blocker["historical_backfill_supported"] is False
+        assert blocker["minimum_collection_window_hours"] == 168
     assert data["summary"]["coverage_blockers_by_stream"] == {
         "basis_premium:snapshot": 1,
         "open_interest:1h": 1,
@@ -721,6 +744,13 @@ def test_provider_inventory_keeps_chart_ready_candidate_out_of_full_promotion() 
         "basis_premium:snapshot": 1,
         "open_interest:1h": 1,
         "spot_perp_price:snapshot": 1,
+    }
+    assert data["summary"]["coverage_blockers_by_resolution_strategy"] == {
+        "snapshot_accumulation_required": 3,
+    }
+    assert data["summary"]["freshness_blockers_by_resolution_strategy"] == {}
+    assert data["summary"]["promotion_blockers_by_resolution_strategy"] == {
+        "snapshot_accumulation_required": 3,
     }
 
 

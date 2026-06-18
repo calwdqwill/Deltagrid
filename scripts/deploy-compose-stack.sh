@@ -66,6 +66,26 @@ git pull --ff-only "$REMOTE" "$BRANCH"
 
 compose config >/dev/null
 
+if [ -z "${BACKUP_BEFORE_DEPLOY:-}" ]; then
+  if [ "$BRANCH" = "main" ]; then
+    BACKUP_BEFORE_DEPLOY=1
+  else
+    BACKUP_BEFORE_DEPLOY=0
+  fi
+fi
+
+if [ "$BACKUP_BEFORE_DEPLOY" = "1" ]; then
+  backup_dir="${BACKUP_DIR:-backups/deploy}"
+  backup_prefix="${BACKUP_PREFIX:-deltagrid-${BRANCH}}"
+  printf 'Creating PostgreSQL backup before deploy ...\n'
+  ENV_FILE="$ENV_FILE" \
+    COMPOSE_FILE="$COMPOSE_FILE" \
+    COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME" \
+    BACKUP_DIR="$backup_dir" \
+    BACKUP_PREFIX="$backup_prefix" \
+    sh scripts/backup-postgres.sh
+fi
+
 # Build before stopping running services; then recreate app containers explicitly
 # to avoid Docker Compose rename conflicts during backend/frontend deploys.
 compose build backend frontend
