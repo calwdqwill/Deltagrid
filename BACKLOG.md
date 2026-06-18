@@ -162,6 +162,8 @@
 - [x] Выполнить Browser QA preview desktop/mobile.
 - [ ] Закоммитить и запушить `v1.4.0` release candidate в `preview`.
 - [x] Повторить release preflight на чистом `preview` без `ALLOW_DIRTY` после RC commit.
+- [x] После повторного GitHub runner SSH failure вручную обновить preview до `647f7f3` и пройти полный release smoke.
+- [x] Добавить `/version` и public HTTP fallback в `Deploy Preview` для проверки уже доставленного preview.
 - [ ] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
 - [ ] Выполнить финальный preview smoke после deploy.
 - [ ] Merge/push `preview` в `main`.

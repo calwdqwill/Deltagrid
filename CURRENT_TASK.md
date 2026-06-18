@@ -6,6 +6,10 @@
 
 ## Обновление 2026-06-18 — v1.4.0 release candidate подготовка
 
+- GitHub CI для RC commit `e32922a` прошёл (`27784328974`), но `Deploy Preview` run `27784385918` упал на GitHub runner SSH reachability: порт/app-dir prechecks не дошли до remote deploy script; локальный SSH к VPS был здоров.
+- Follow-up retry commit `647f7f3` также получил зелёный CI (`27785222823`), но `Deploy Preview` run `27785273679` снова упал на GitHub runner SSH reachability до remote deploy script.
+- Ручной SSH deploy тем же `scripts/deploy-compose-stack.sh` обновил `/opt/deltagrid-preview` до `647f7f3`, `VERSION=1.4.0`; backend/frontend containers healthy, server smoke и `scripts/release-smoke.sh` прошли.
+- Добавляется hardening: frontend `/version` отдаёт read-only package version, а GitHub `Deploy Preview` после SSH deploy failure сможет проверить публичный preview HTTP `/version` и `/api/v1/health` через `Host: preview.deltagrid.pro`; fallback проходит только если публичный preview уже показывает ожидаемую версию из `VERSION`.
 - Версия поднята до `1.4.0` в `VERSION`, `frontend/package.json` и root entry `frontend/package-lock.json`.
 - `CHANGELOG.md` получил release block для `v1.4.0`: release runway, Perp DEX read-only cockpit, preview deploy baseline, production blockers и known limitations.
 - `README.md` обновлён на текущую версию `v1.4.0`.
@@ -904,6 +908,8 @@
 - [x] Выполнить Browser QA preview desktop/mobile для `/perp-dex`, `/charts`, `/data-health` и ключевых terminal screens.
 - [ ] Закоммитить `v1.4.0` release candidate в `preview` и push в GitHub.
 - [x] Повторить `scripts/release-preflight.sh 1.4.0` на чистом `preview` без `ALLOW_DIRTY` после RC commit.
+- [x] После повторного SSH runner failure вручную обновить preview до `647f7f3` и пройти полный `scripts/release-smoke.sh`.
+- [x] Добавить `/version` и GitHub `Deploy Preview` public HTTP fallback для уже доставленного preview.
 - [ ] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
 - [ ] Выполнить финальный preview smoke после deploy: backend/frontend health, Perp DEX policy/direct smoke, data-health.
 - [ ] Merge/push `preview` в `main` только после зелёного preview gate.

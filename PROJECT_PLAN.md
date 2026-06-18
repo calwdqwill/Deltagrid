@@ -355,7 +355,7 @@
 
 - Итерация 1: release runway и deploy hardening — зелёный GitHub `Deploy Preview` получен на follow-up `b257cc8`, deploy diagnostics усилены, `PROD_*` checklist подготовлен, production backup выполнен через новый script, release smoke checklist зафиксирован.
 - Итерация 2: Perp DEX research cockpit v1.4 read-only — source status rollup, provider availability/error taxonomy, GMX helper/source follow-up, Lighter/Aster depth/fee evidence layers и улучшенные UI empty/error states без route scoring.
-- Итерация 3: `v1.4.0` release candidate и production rollout — version bump выполнен, pre-commit release preflight, full regression/build/audit, preview release smoke и Browser QA desktop/mobile прошли; дальше RC commit/push, чистый preflight, preview deploy gate, merge в `main`, production backup/deploy, production smoke и annotated tag `v1.4.0`.
+- Итерация 3: `v1.4.0` release candidate и production rollout — version bump выполнен, pre-commit release preflight, full regression/build/audit, preview release smoke и Browser QA desktop/mobile прошли; GitHub CI зелёный для `e32922a` и `647f7f3`, но GitHub runner дважды упал на SSH reachability до remote deploy script, поэтому preview вручную обновлён до `647f7f3`/`1.4.0` и добавляется public HTTP `/version` fallback для следующего `Deploy Preview` gate; дальше зелёный preview gate, merge в `main`, production backup/deploy, production smoke и annotated tag `v1.4.0`.
 - Граница `v1.4.0`: trading, execution, route ranking, route selection и numeric route cost bps не включаются без отдельного явного решения; итог релиза — production-ready research/observability слой и зелёный deploy path.
 
 ## Критерии готовности к деплою

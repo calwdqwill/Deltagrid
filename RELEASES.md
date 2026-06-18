@@ -52,6 +52,8 @@ BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/rel
 
 Перед RC commit/push для `v1.4.0-rc.1` дополнительно выполнить Browser QA preview через SSH tunnel для `/perp-dex`, `/charts`, `/data-health` и ключевых terminal screens на desktop/mobile: runtime errors, console errors и page-level horizontal overflow должны отсутствовать.
 
+Если GitHub-hosted runner не может завершить SSH deploy, но тот же `scripts/deploy-compose-stack.sh` уже вручную доставил commit на preview и `scripts/release-smoke.sh` прошёл, `Deploy Preview` может использовать public HTTP fallback: `/version` через `Host: preview.deltagrid.pro` должен вернуть ожидаемую версию из `VERSION`, а `/api/v1/health` должен быть доступен. Этот fallback не включает production promotion и не заменяет production backup/deploy gate.
+
 Для compact preview/prod diff `Perp DEX Source Status` можно отдельно выполнить:
 
 ```bash
