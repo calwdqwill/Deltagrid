@@ -332,10 +332,18 @@
 - [ ] Расширить CoinGlass data adapter до дополнительных provider-specific L/S потоков, если Binance global L/S будет недостаточно для MVP.
 - [ ] Реализовать backtest engine и scheduler после data quality gate.
 
-### План новой версии `v1.3.2`
+### Follow-up по версии `v1.3.2`
 
-- Итерация 1 выполнена: Perp DEX GMX live helper source review v0 добавил read-only backend summary/checklist, compact smoke keys, backend tests, небольшую UI-панель и русскую документацию. Carry bps, route cost bps, ranking, route selection и execution остались выключены.
-- Итерация 2 выполняется: version bump до `1.3.2` и release notes подготовлены; далее нужен полный regression/smoke/build/audit pass, проверка safety flags, `scripts/release-preflight.sh`, scoped commit и push в GitHub. Production deploy остаётся зависимым от настроенных `PROD_*` secrets.
+- `preview` находится на `d3de35e`, `VERSION=1.3.2`, GitHub CI run `27744113125` прошёл `success`.
+- GitHub `Deploy Preview` run `27744161749` завершился `failure` на шаге `Deploy preview`, но ручной запуск того же `scripts/deploy-compose-stack.sh` по SSH успешно обновил `/opt/deltagrid-preview` до `d3de35e`; backend/frontend containers healthy, server smoke прошёл.
+- `main`, production deploy и tag `v1.3.2` пока не трогались. Следующий production target — minor release `v1.4.0`.
+
+### План новой версии `v1.4.0`
+
+- Итерация 1: release runway и deploy hardening — получить зелёный GitHub `Deploy Preview`, усилить deploy diagnostics, подготовить `PROD_*` checklist, выполнить production backup через новый script и зафиксировать release smoke checklist.
+- Итерация 2: Perp DEX research cockpit v1.4 read-only — source status rollup, provider availability/error taxonomy, GMX helper/source follow-up, Lighter/Aster depth/fee evidence layers и улучшенные UI empty/error states без route scoring.
+- Итерация 3: `v1.4.0` release candidate и production rollout — version bump, full regression/smoke/build/audit pass, preview deploy gate, merge в `main`, production backup/deploy, production smoke и annotated tag `v1.4.0`.
+- Граница `v1.4.0`: trading, execution, route ranking, route selection и numeric route cost bps не включаются без отдельного явного решения; итог релиза — production-ready research/observability слой и зелёный deploy path.
 
 ## Критерии готовности к деплою
 

@@ -41,7 +41,7 @@ v1.4.0-rc.1  release candidate на preview
 3. Перед релизным bump проверить согласованность версии:
 
 ```bash
-ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.3.1
+ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.4.0
 ```
 
 4. Закоммитить изменения и запушить в `preview`.
@@ -51,14 +51,14 @@ ALLOW_DIRTY=1 sh scripts/release-preflight.sh 1.3.1
 8. На чистом дереве повторить preflight без `ALLOW_DIRTY`:
 
 ```bash
-RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.3.1
+RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.4.0
 ```
 
 9. Создать annotated tag:
 
 ```bash
-git tag -a v1.3.1 -m "DeltaGrid v1.3.1"
-git push origin v1.3.1
+git tag -a v1.4.0 -m "DeltaGrid v1.4.0"
+git push origin v1.4.0
 ```
 
 ## Документация релиза
@@ -71,4 +71,6 @@ git push origin v1.3.1
 
 ## Текущий baseline
 
-`v1.3.1` — patch release поверх `v1.3.0`: provider inventory promotion gate, blocker breakdown, frontend audit repair и release preflight.
+`v1.3.2` — preview release stabilization: Perp DEX route-model observability, GMX carry/source evidence gates, GMX live helper source review, production deploy hardening, production healthcheck и PostgreSQL backup tooling.
+
+Следующий production target: `v1.4.0` — minor release с зелёным deploy path, Perp DEX read-only research cockpit и production rollout на `deltagrid.pro`.

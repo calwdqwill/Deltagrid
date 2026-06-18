@@ -755,9 +755,68 @@
 - [x] Обновить финальные release notes в `CHANGELOG.md`, `CURRENT_TASK.md`, `PROJECT_PLAN.md`, `BACKLOG.md` и при необходимости `README.md`/`ARCHITECTURE.md`.
 - [x] Запустить `scripts/release-preflight.sh` и исправить только релизные несоответствия.
 - [x] Прогнать frontend `npm run build` и `npm audit --audit-level=high`.
-- [ ] Закоммитить scoped changes в текущей ветке без отката чужих изменений.
-- [ ] Push в GitHub на рабочую ветку release/preview и проверить GitHub CI.
-- [ ] После зелёного CI подготовить merge/push в `main` и tag `v1.3.2`; production deploy останется зависимым от настроенных `PROD_*` secrets.
+- [x] Закоммитить scoped changes в текущей ветке без отката чужих изменений: `d3de35e chore: release v1.3.2 perp dex observability`.
+- [x] Push в GitHub на рабочую ветку `preview` и проверить GitHub CI: CI run `27744113125` прошёл `success`.
+- [ ] Получить зелёный GitHub `Deploy Preview` run для `d3de35e`: run `27744161749` упал на шаге `Deploy preview`, но ручной запуск того же `scripts/deploy-compose-stack.sh` по SSH успешно обновил `/opt/deltagrid-preview` до `d3de35e`, `VERSION=1.3.2`, backend/frontend healthy.
+- [ ] После зелёного preview deploy подготовить merge/push в `main` и tag `v1.3.2` или включить этот шаг в финальный `v1.4.0` release path; production deploy останется зависимым от настроенных `PROD_*` secrets.
+
+## Follow-up по `v1.3.2` — 2026-06-18
+
+- `preview` запушен на commit `d3de35e`; локальное дерево чистое.
+- GitHub CI для `preview@d3de35e` зелёный.
+- GitHub `Deploy Preview` для этого push завершился `failure` на шаге `Deploy preview`; без GitHub job logs через API причина не видна, потому что logs endpoint вернул `403`.
+- Read-only SSH показал, что после failed run preview server оставался на `bc342ae`, но ручной запуск того же deploy script на сервере прошёл: `git pull` fast-forward до `d3de35e`, Docker build успешен, containers healthy, `scripts/server-smoke.sh` прошёл.
+- Production `main` и tag `v1.3.2` пока не трогались. Следующая версия должна идти как `v1.4.0` после отдельного preview-green и production rollout gate.
+- Важный blocker для production auto-deploy остаётся прежним: GitHub repository secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR` ещё нужно завести вручную.
+
+## План новой версии `v1.4.0`: 3 итерации, 36 задач
+
+Цель `v1.4.0` — выпустить production-ready minor release на `deltagrid.pro`: стабилизировать release/deploy pipeline, довести Perp DEX research cockpit до более полезного read-only уровня и провести preview -> main -> production rollout без включения trading, execution, route ranking, route selection или numeric route cost bps.
+
+### Итерация 1 — Release runway и deploy hardening
+
+- [ ] Разобрать причину красного GitHub `Deploy Preview` run `27744161749`: получить logs через UI/GitHub token или повторить run и сравнить с ручным SSH deploy.
+- [ ] Сделать GitHub `Deploy Preview` зелёным для текущего `preview@d3de35e` или маленького follow-up commit без продуктового scope.
+- [ ] Зафиксировать в docs фактическое состояние `v1.3.2`: CI зелёный, manual preview deploy зелёный, GitHub deploy run требует rerun/fix.
+- [ ] Обновить release/deploy scripts так, чтобы transient SSH/deploy failure давал более короткий diagnostic output и не скрывал причину в GitHub UI.
+- [ ] Добавить preview/prod release smoke checklist для `perp-dex-direct`, `perp-dex-policy`, `coinglass-perp-dex-coverage`, `/api/v1/health`, `/api/v1/data/health` и frontend.
+- [ ] Подготовить безопасный production backup run через `scripts/backup-postgres.sh` после попадания backup script на `/opt/deltagrid`.
+- [ ] Подготовить инструкцию и checklist для ручного добавления `PROD_*` secrets в GitHub без вывода private key в repo/logs.
+- [ ] Проверить `Deploy Production` manual workflow после добавления `PROD_*`: сначала secret readiness/fingerprint/app dir, затем deploy step.
+- [ ] Добавить release preflight target для `1.4.0-rc.1` на `preview` без преждевременного production bump.
+- [ ] Провести Browser QA smoke для preview `/perp-dex`, `/charts`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets`.
+- [ ] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md`, `README.md` и `DEPLOYMENT.md` по результатам deploy hardening.
+- [ ] Не включать новые trading/execution/ranking/cost-bps capabilities в этой итерации; итог итерации — зелёный release runway.
+
+### Итерация 2 — Perp DEX research cockpit v1.4 read-only
+
+- [ ] Добавить compact Perp DEX source status rollup: direct venues, CoinGlass enrichment, GMX raw, policy/model contract, last successful smoke.
+- [ ] Добавить backend summary по direct venue availability: rows, partial/live status, read-only flags, depth diagnostics availability, provider error class.
+- [ ] Добавить UI-панель `Perp DEX Source Status` без сортировки venues и без production signal.
+- [ ] Расширить provider error taxonomy для direct venues: timeout, rate limit, empty response, schema drift, unavailable endpoint.
+- [ ] Добавить smoke/test coverage на provider error taxonomy без live secrets и без raw payload dumps.
+- [ ] Добавить GMX helper/source follow-up rows: какие source helper inputs всё ещё отсутствуют, какие manual approvals блокируют carry conversion.
+- [ ] Добавить Lighter/Aster depth freshness evidence layer: timestamp/source-age policy как readiness, без slippage bps.
+- [ ] Добавить fee schedule evidence layer для Lighter/Aster: account tier/order intent/manual approval gates, без fee bps total.
+- [ ] Добавить compact compare contract для `Perp DEX Source Status`, чтобы preview/prod drift был виден без полного payload.
+- [ ] Улучшить пустые/error states в Perp DEX UI для provider unavailable и partial data states.
+- [ ] Прогнать backend tests, direct/policy/coinglass smoke, frontend build/audit и Browser QA desktop/mobile.
+- [ ] Обновить русскую документацию по всем новым read-only panels, API fields и safety gates.
+
+### Итерация 3 — `v1.4.0` release candidate и production rollout
+
+- [ ] Поднять версию до `1.4.0` в `VERSION`, `frontend/package.json`, `frontend/package-lock.json`.
+- [ ] Подготовить `CHANGELOG.md` release block для `v1.4.0`: release runway, Perp DEX source status, deploy/backup, known limitations.
+- [ ] Пройти `scripts/release-preflight.sh 1.4.0` на `preview` с `ALLOW_DIRTY=1`, затем без `ALLOW_DIRTY` после commit.
+- [ ] Выполнить full local regression: backend compileall, targeted backend tests, frontend build, `npm audit --audit-level=high`.
+- [ ] Выполнить HTTP smoke на preview backend: direct venues, policy/model, CoinGlass coverage, health/readiness/data-health.
+- [ ] Выполнить Browser QA preview desktop/mobile для `/perp-dex`, `/charts`, `/data-health` и ключевых terminal screens.
+- [ ] Закоммитить `v1.4.0` release candidate в `preview` и push в GitHub.
+- [ ] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
+- [ ] Выполнить финальный preview smoke после deploy: backend/frontend health, Perp DEX policy/direct smoke, data-health.
+- [ ] Merge/push `preview` в `main` только после зелёного preview gate.
+- [ ] Запустить production deploy для `main` через GitHub Actions или согласованный ручной SSH fallback; перед deploy обязательно сделать PostgreSQL backup.
+- [ ] После production deploy проверить `https://deltagrid.pro`: health/readiness/data-health, frontend, `/perp-dex`, route safety flags, затем создать annotated tag `v1.4.0` и обновить docs итоговым production follow-up.
 
 ## Phase 6 Summary (ARCHITECTURE HARDENING)
 

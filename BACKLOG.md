@@ -112,9 +112,57 @@
 - [x] Обновить финальные release notes в `CHANGELOG.md`, `CURRENT_TASK.md`, `PROJECT_PLAN.md`, `BACKLOG.md` и при необходимости `README.md`/`ARCHITECTURE.md`.
 - [x] Запустить `scripts/release-preflight.sh` и исправить только релизные несоответствия.
 - [x] Прогнать frontend `npm run build` и `npm audit --audit-level=high`.
-- [ ] Закоммитить scoped changes в текущей ветке без отката чужих изменений.
-- [ ] Push в GitHub на рабочую ветку release/preview и проверить GitHub CI.
-- [ ] После зелёного CI подготовить merge/push в `main` и tag `v1.3.2`; production deploy останется зависимым от настроенных `PROD_*` secrets.
+- [x] Закоммитить scoped changes в текущей ветке без отката чужих изменений: `d3de35e`.
+- [x] Push в GitHub на рабочую ветку `preview` и проверить GitHub CI: CI run `27744113125` прошёл `success`.
+- [ ] Получить зелёный GitHub `Deploy Preview` run для `d3de35e`: run `27744161749` упал на шаге `Deploy preview`, ручной SSH deploy тем же script прошёл и обновил preview server до `1.3.2`.
+- [ ] После зелёного preview deploy подготовить merge/push в `main` и tag `v1.3.2` или включить этот шаг в финальный `v1.4.0` release path; production deploy останется зависимым от настроенных `PROD_*` secrets.
+
+### План новой версии `v1.4.0`: 3 итерации, 36 задач
+
+#### Итерация 1 — Release runway и deploy hardening
+
+- [ ] Разобрать причину красного GitHub `Deploy Preview` run `27744161749`.
+- [ ] Сделать GitHub `Deploy Preview` зелёным для текущего preview commit или маленького follow-up commit.
+- [ ] Зафиксировать `v1.3.2` follow-up в docs: CI зелёный, manual preview deploy зелёный, GitHub deploy run требует rerun/fix.
+- [ ] Усилить deploy diagnostics, чтобы transient SSH/deploy failure быстрее показывал причину.
+- [ ] Добавить release smoke checklist для direct/policy/coinglass/health/frontend checks.
+- [ ] Выполнить production backup через `scripts/backup-postgres.sh` после доставки script на сервер.
+- [ ] Подготовить checklist добавления `PROD_*` GitHub secrets.
+- [ ] Проверить manual `Deploy Production` readiness после добавления `PROD_*`.
+- [ ] Добавить release preflight target для `1.4.0-rc.1` на preview.
+- [ ] Провести Browser QA smoke для preview key screens.
+- [ ] Обновить русскую release/deploy документацию.
+- [ ] Сохранить запрет на trading/execution/ranking/cost-bps capabilities.
+
+#### Итерация 2 — Perp DEX research cockpit v1.4 read-only
+
+- [ ] Добавить compact Perp DEX source status rollup.
+- [ ] Добавить backend summary по direct venue availability и provider error classes.
+- [ ] Добавить UI-панель `Perp DEX Source Status`.
+- [ ] Расширить provider error taxonomy для direct venues.
+- [ ] Добавить smoke/test coverage на provider error taxonomy без raw payload.
+- [ ] Добавить GMX helper/source follow-up rows по missing inputs/manual approvals.
+- [ ] Добавить Lighter/Aster depth freshness evidence layer без slippage bps.
+- [ ] Добавить fee schedule evidence layer для Lighter/Aster без fee bps total.
+- [ ] Добавить compact compare contract для Perp DEX source status.
+- [ ] Улучшить empty/error states в Perp DEX UI.
+- [ ] Прогнать backend/frontend/smoke/Browser QA проверки.
+- [ ] Обновить русскую документацию по новым read-only panels/API fields/safety gates.
+
+#### Итерация 3 — `v1.4.0` release candidate и production rollout
+
+- [ ] Поднять версию до `1.4.0`.
+- [ ] Подготовить `CHANGELOG.md` release block для `v1.4.0`.
+- [ ] Пройти release preflight на `preview`.
+- [ ] Выполнить full local regression/build/audit pass.
+- [ ] Выполнить HTTP smoke на preview backend.
+- [ ] Выполнить Browser QA preview desktop/mobile.
+- [ ] Закоммитить и запушить `v1.4.0` release candidate в `preview`.
+- [ ] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
+- [ ] Выполнить финальный preview smoke после deploy.
+- [ ] Merge/push `preview` в `main`.
+- [ ] Запустить production deploy для `main` после обязательного PostgreSQL backup.
+- [ ] Проверить production `https://deltagrid.pro`, создать annotated tag `v1.4.0` и обновить итоговые docs.
 
 ### Ближайшая итерация
 
