@@ -4,6 +4,17 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` оформлен и задеплоен вручную на production; `main` находится на `0716f6a`, tag `v1.3.1` указывает на этот commit. Production deploy hardening уже есть в `main`, но `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` и `PROD_APP_DIR` пока отсутствуют.
 **Last Updated**: 2026-06-18
 
+## Обновление 2026-06-18 — v1.4.0 production release завершён
+
+- Свежий production PostgreSQL backup создан перед rollout: `/opt/deltagrid/backups/deltagrid-v140-production_20260618T210020Z.sql.gz`, размер `4422613` bytes, `gzip -t` прошёл внутри `scripts/backup-postgres.sh`.
+- `preview` смержен в `main` merge commit `3936c83` (`Merge preview for v1.4.0`); `RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.4.0`, backend compileall, targeted backend pytest, frontend build и `npm audit --audit-level=high` прошли.
+- GitHub CI для `main@3936c83` прошёл (`27789130591`), `Deploy Production` run `27789183806` завершился safe-skip/success, потому что `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR` всё ещё отсутствуют.
+- Production deploy выполнен вручную тем же `scripts/deploy-compose-stack.sh` через SSH после backup; `/opt/deltagrid` обновлён до `3936c83`, `VERSION=1.4.0`, backend/frontend/postgres healthy.
+- Production smoke прошёл: `scripts/release-smoke.sh`, `https://deltagrid.pro/version`, `/api/v1/health`, `/api/v1/health/readiness`.
+- Browser QA production desktop/mobile прошёл для `/version`, `/perp-dex?view=venues`, `/charts?symbol=BTC&interval=1m&range=24h`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`: runtime/console errors и page-level horizontal overflow не найдены.
+- Annotated tag `v1.4.0` создан на `main@3936c83` и запушен в GitHub.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## Обновление 2026-06-18 — v1.4.0 release candidate подготовка
 
 - GitHub CI для RC commit `e32922a` прошёл (`27784328974`), но `Deploy Preview` run `27784385918` упал на GitHub runner SSH reachability: порт/app-dir prechecks не дошли до remote deploy script; локальный SSH к VPS был здоров.
@@ -914,9 +925,9 @@
 - [x] Добавить `/version` и GitHub `Deploy Preview` public HTTP fallback для уже доставленного preview.
 - [x] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
 - [x] Выполнить финальный preview smoke после deploy: backend/frontend health, Perp DEX policy/direct smoke, data-health.
-- [ ] Merge/push `preview` в `main` только после зелёного preview gate.
-- [ ] Запустить production deploy для `main` через GitHub Actions или согласованный ручной SSH fallback; перед deploy обязательно сделать PostgreSQL backup.
-- [ ] После production deploy проверить `https://deltagrid.pro`: health/readiness/data-health, frontend, `/perp-dex`, route safety flags, затем создать annotated tag `v1.4.0` и обновить docs итоговым production follow-up.
+- [x] Merge/push `preview` в `main` только после зелёного preview gate.
+- [x] Запустить production deploy для `main` через GitHub Actions или согласованный ручной SSH fallback; перед deploy обязательно сделать PostgreSQL backup.
+- [x] После production deploy проверить `https://deltagrid.pro`: health/readiness/data-health, frontend, `/perp-dex`, route safety flags, затем создать annotated tag `v1.4.0` и обновить docs итоговым production follow-up.
 
 ## Phase 6 Summary (ARCHITECTURE HARDENING)
 

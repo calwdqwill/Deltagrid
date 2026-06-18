@@ -355,8 +355,8 @@
 
 - Итерация 1: release runway и deploy hardening — зелёный GitHub `Deploy Preview` получен на follow-up `b257cc8`, deploy diagnostics усилены, `PROD_*` checklist подготовлен, production backup выполнен через новый script, release smoke checklist зафиксирован.
 - Итерация 2: Perp DEX research cockpit v1.4 read-only — source status rollup, provider availability/error taxonomy, GMX helper/source follow-up, Lighter/Aster depth/fee evidence layers и улучшенные UI empty/error states без route scoring.
-- Итерация 3: `v1.4.0` release candidate и production rollout — version bump выполнен, pre-commit release preflight, full regression/build/audit, preview release smoke и Browser QA desktop/mobile прошли; после transient GitHub runner SSH failures добавлен public HTTP `/version` fallback, workflow fallback вынесен в ops-only `main@3a8a497`, `preview@e1be7a3` получил зелёные CI `27787569356` и `Deploy Preview` `27787622699`, `/opt/deltagrid-preview` обновлён до `e1be7a3`/`1.4.0`, финальный release smoke прошёл; дальше merge в `main`, production backup/deploy, production smoke и annotated tag `v1.4.0`.
-- Граница `v1.4.0`: trading, execution, route ranking, route selection и numeric route cost bps не включаются без отдельного явного решения; итог релиза — production-ready research/observability слой и зелёный deploy path.
+- Итерация 3: `v1.4.0` release candidate и production rollout — завершена. `preview` смержен в `main@3936c83`, свежий production backup создан, GitHub CI `27789130591` зелёный, `Deploy Production` `27789183806` сделал safe-skip по отсутствующим `PROD_*`, ручной deploy тем же script обновил `/opt/deltagrid` до `3936c83`/`1.4.0`, production release smoke и Browser QA desktop/mobile прошли, annotated tag `v1.4.0` создан.
+- Граница `v1.4.0`: trading, execution, route ranking, route selection и numeric route cost bps не включались без отдельного явного решения; итог релиза — production-ready research/observability слой и зелёный deploy path.
 
 ## Критерии готовности к деплою
 

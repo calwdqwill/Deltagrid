@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [RELEASE] - v1.4.0 production
+- `preview` смержен в `main` merge commit `3936c83`, `VERSION=1.4.0`; annotated tag `v1.4.0` создан и запушен.
+- Перед rollout создан свежий PostgreSQL backup `/opt/deltagrid/backups/deltagrid-v140-production_20260618T210020Z.sql.gz` (`4422613` bytes, gzip integrity check прошёл).
+- GitHub CI для `main@3936c83` прошёл (`27789130591`); `Deploy Production` run `27789183806` сделал safe-skip/success из-за отсутствующих `PROD_*`, поэтому production deploy выполнен вручную тем же `scripts/deploy-compose-stack.sh`.
+- `/opt/deltagrid` обновлён до `3936c83`, `VERSION=1.4.0`; backend/frontend/postgres healthy, `scripts/release-smoke.sh`, public `/version`, `/api/v1/health`, `/api/v1/health/readiness` и Browser QA desktop/mobile прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-18] - [RELEASE] - v1.4.0 release candidate
 - Версия поднята до `1.4.0` в `VERSION`, `frontend/package.json` и root package entry в `frontend/package-lock.json`.
 - Release scope: release/deploy runway v1.4, зелёный preview deploy path, reusable release smoke, production backup tooling, Perp DEX Source Status rollup/compare contract, direct venue `availability_summary`, provider error taxonomy, depth freshness evidence, Lighter/Aster fee schedule evidence и provider state empty/error states.

@@ -166,9 +166,9 @@
 - [x] Добавить `/version` и public HTTP fallback в `Deploy Preview` для проверки уже доставленного preview.
 - [x] Дождаться зелёного GitHub CI и зелёного GitHub `Deploy Preview`.
 - [x] Выполнить финальный preview smoke после deploy.
-- [ ] Merge/push `preview` в `main`.
-- [ ] Запустить production deploy для `main` после обязательного PostgreSQL backup.
-- [ ] Проверить production `https://deltagrid.pro`, создать annotated tag `v1.4.0` и обновить итоговые docs.
+- [x] Merge/push `preview` в `main`.
+- [x] Запустить production deploy для `main` после обязательного PostgreSQL backup.
+- [x] Проверить production `https://deltagrid.pro`, создать annotated tag `v1.4.0` и обновить итоговые docs.
 
 ### Ближайшая итерация
 

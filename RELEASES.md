@@ -87,7 +87,7 @@ git push origin v1.4.0
 
 ## Текущий baseline
 
-`v1.3.2` — preview release stabilization: Perp DEX route-model observability, GMX carry/source evidence gates, GMX live helper source review, production deploy hardening, production healthcheck и PostgreSQL backup tooling.
+`v1.4.0` — production minor release: зелёный preview/prod deploy path, Perp DEX read-only research cockpit, source-status/release smoke tooling, production backup tooling и `/version` verification endpoint.
 
 Preview release runway для `v1.4.0` подтверждён на `preview@b257cc8`: CI `27746664616`, `Deploy Preview` `27746714283`, server release smoke на `8011/3012` зелёный. После Perp DEX depth freshness commit `4433f0b` GitHub CI `27761405255` зелёный, `Deploy Preview` `27761467202` упал на step `Deploy preview`, но ручной deploy тем же script и полный preview release smoke на `8011/3012` прошли. `main`, production deploy и tag `v1.3.2` не трогались.
 
@@ -95,4 +95,4 @@ Preview release runway для `v1.4.0` подтверждён на `preview@b257
 
 На 2026-06-18 Perp DEX research cockpit для `v1.4.0` дополнен provider state empty/error states: Direct/Depth/CoinGlass panels показывают compact provider/source rows поверх `availability_summary`/`coverage_summary`, чтобы preview/prod QA видела provider unavailable, partial data, missing symbols и CoinGlass unavailable без включения route ranking, route selection, numeric route cost bps или execution.
 
-`v1.4.0` release candidate готов в `preview`: `preview@e1be7a3` прошёл CI `27787569356`, `Deploy Preview` `27787622699`, финальный preview `scripts/release-smoke.sh` и public `/version=1.4.0`. Promotion в `main`, production deploy и annotated tag должны выполняться только после подтверждения свежего PostgreSQL backup и production rollout checklist.
+`v1.4.0` выпущен в production: `main@3936c83`, tag `v1.4.0`, `/opt/deltagrid` обновлён до `3936c83`/`VERSION=1.4.0`, backup `/opt/deltagrid/backups/deltagrid-v140-production_20260618T210020Z.sql.gz` создан перед deploy, production `scripts/release-smoke.sh` и Browser QA desktop/mobile прошли.
