@@ -33,6 +33,7 @@
    Perp DEX GMX carry-readiness audit v0 добавлен как следующий read-only слой: `gmx_rate_mapping_review_v0.carry_readiness_summary`, `carry_input_checklist`, UI `GMX Rate Carry Readiness Summary`/`GMX Rate Carry Input Checklist` и compact smoke `gmx_rate_carry_*` показывают carry horizon/notional/sign/source/display gates без diagnostic carry bps, route scoring или execution.
    Perp DEX GMX carry-source evidence gate v0 добавлен как следующий read-only слой: `gmx_rate_mapping_review_v0.carry_source_evidence_summary`, `carry_source_evidence_checklist`, UI `GMX Rate Carry Evidence Summary`/`GMX Rate Carry Evidence Checklist` и compact smoke `gmx_rate_carry_evidence_*` показывают source/fixture/runtime/manual evidence gaps без diagnostic carry bps, route scoring или execution.
    Perp DEX Lighter/Aster fee schedule evidence v0 добавлен как следующий read-only слой: `summary.fee_schedule_evidence_summary`, `summary.fee_schedule_evidence_checklist`, UI `Route Diagnostic Fee Schedule Evidence`/`Route Diagnostic Fee Schedule Checklist` и compact smoke `fee_schedule_evidence_*` показывают account tier/order intent/manual approval gates без fee bps total, route scoring или execution.
+   Perp DEX Source Status compare contract v0 добавлен как release/readiness слой: `scripts/perp-dex-source-status-smoke.sh` собирает direct venues, GMX raw, CoinGlass enrichment, route policy/model и release-smoke checklist в compact source-status contract, поддерживает `COMPARE_BASE_URL`/`FAIL_ON_DIFF=1` и показывает preview/prod drift без полного payload, ranking, route selection, cost bps или execution.
 6. **Strategy/backtest** — настоящий backtest engine и scheduler после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
 
 ### Следующий Perp DEX route-model observability блок
@@ -145,7 +146,7 @@
 - [x] Добавить GMX helper/source follow-up rows по missing inputs/manual approvals.
 - [x] Добавить Lighter/Aster depth freshness evidence layer без slippage bps.
 - [x] Добавить fee schedule evidence layer для Lighter/Aster без fee bps total.
-- [ ] Добавить compact compare contract для Perp DEX source status.
+- [x] Добавить compact compare contract для Perp DEX source status.
 - [ ] Улучшить empty/error states в Perp DEX UI.
 - [ ] Прогнать backend/frontend/smoke/Browser QA проверки.
 - [ ] Обновить русскую документацию по новым read-only panels/API fields/safety gates.

@@ -102,6 +102,15 @@ Frontend runs at `http://127.0.0.1:3000`
 
 `Perp DEX Source Status` в `overview` и `venues` даёт compact rollup по текущему read-only cockpit: direct venue snapshots, GMX raw diagnostics, CoinGlass enrichment, route policy/model contract и last release smoke. Панель использует уже загруженные frontend snapshots и backend policy/model responses, не делает дополнительных provider calls, не сортирует venues и не превращает coverage hints в route ranking.
 
+Для server-side проверки и preview/prod сравнения `Perp DEX Source Status` используйте `scripts/perp-dex-source-status-smoke.sh`. Скрипт собирает compact contract из direct venues, GMX raw, CoinGlass enrichment, route policy/model и release-smoke checklist, печатает только ids/statuses/flags/counts и не выводит raw provider payload или secrets:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 COMPARE_BASE_URL=http://127.0.0.1:8000 sh scripts/perp-dex-source-status-smoke.sh
+```
+
+Если нужно сделать preview/prod drift hard gate, добавьте `FAIL_ON_DIFF=1`. Compact `contract` включает `source_status_row_ids`, `source_status_statuses`, direct venue rows/statuses/depth freshness/provider error classes, CoinGlass matched exchanges/candidate hints/route-input statuses, route policy/model blocker ids и safety flags. Эти поля нужны только для release/readiness observability; они не являются route ranking, route selection, numeric route cost bps, diagnostic carry bps или execution signal.
+
 Direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX дополнительно отдают `availability_summary`: rows, requested/matched/missing symbols, status counts, depth diagnostics availability, read-only safety flags, `provider_error_class` и `safe_use`. Для depth-capable Lighter/Aster summary включает `depth_diagnostics.freshness`: snapshot timestamp, observed timestamp, `age_ms`, display max-age policy, required stale-depth inputs и `may_emit_slippage_bps=false`. Error path остаётся compact: provider failures классифицируются как `timeout`, `rate_limit`, `empty_response`, `schema_drift`, `unavailable_endpoint`, `provider_unavailable` или `provider_http_error`, но raw provider payload и секреты не выводятся. Этот summary нужен для release smoke и UI/readiness диагностики; он не включает slippage bps, route ranking, route selection, numeric route cost bps или execution.
 
 CoinGlass Perp DEX enrichment доступен отдельно через `GET /api/v1/perp-dex/venues/coinglass/markets`: это third-party futures `coins-markets` aggregate rows для DEX-like venues (`Aster`, `Lighter`, `EdgeX`, `Drift` по умолчанию). В UI эти rows показаны отдельной таблицей `CoinGlass Perp DEX Enrichment` и не смешиваются с direct venue snapshots. Response также возвращает `coverage_summary`: per-venue matched rows/symbols, available field groups и `direct_adapter_candidate_hints`. Контракт явно возвращает `ranking_enabled=false`, `production_signal_enabled=false`, `execution_enabled=false`; coverage hints не являются liquidity ranking.

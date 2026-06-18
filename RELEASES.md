@@ -50,6 +50,12 @@ RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/releas
 BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/release-smoke.sh
 ```
 
+Для compact preview/prod diff `Perp DEX Source Status` можно отдельно выполнить:
+
+```bash
+BASE_URL=http://127.0.0.1:8011 COMPARE_BASE_URL=http://127.0.0.1:8000 sh scripts/perp-dex-source-status-smoke.sh
+```
+
 5. Закоммитить изменения и запушить в `preview`.
 6. CI на GitHub и `Deploy Preview` должны пройти.
 7. После проверки dev/staging стенда выполнить merge `preview` в `main`.

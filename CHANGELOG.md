@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [PRODUCT/OPS] - Perp DEX Source Status compare contract v0
+- Добавлен `scripts/perp-dex-source-status-smoke.sh`: compact smoke для `Perp DEX Source Status`, который собирает direct venues, GMX raw, CoinGlass enrichment, route policy/model и release-smoke checklist в один machine-readable contract.
+- Скрипт поддерживает `COMPARE_BASE_URL` и `FAIL_ON_DIFF=1`, чтобы сравнивать preview/prod source-status drift без полного payload и без вывода raw provider data или secrets.
+- Contract фиксирует ids/statuses/flags/counts: direct venue rows/statuses/depth freshness, provider error classes, CoinGlass matched exchanges/candidate hints, route policy/model blockers и safety flags.
+- Граница сохранена: source-status compare не является route ranking, route selection, numeric route cost bps, diagnostic carry bps или execution signal.
+
 ## [2026-06-18] - [PRODUCT/DATA] - Perp DEX Lighter/Aster fee schedule evidence v0
 - `diagnostic_cost_estimate_v0.summary` получил `fee_schedule_evidence_summary`: compact status по Lighter/Aster fee evidence, source fields, required route inputs, required policy inputs, manual approvals и blocked outputs.
 - `diagnostic_cost_estimate_v0.summary` получил `fee_schedule_evidence_checklist`: отдельные read-only rows для Lighter public maker/taker fee fields и Aster published USDT perpetual fee defaults.

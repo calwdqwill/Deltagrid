@@ -12,6 +12,13 @@
 - Policy smoke compact contract расширен полями `fee_schedule_evidence_*`; backend regression tests закрепляют account tier/order intent/manual approval gates.
 - Граница не изменилась: fee bps total, numeric route cost bps, route ranking, route selection и execution не включались.
 
+## Обновление 2026-06-18 — Perp DEX Source Status compare contract v0
+
+- Добавлен `scripts/perp-dex-source-status-smoke.sh`: reusable compact smoke для `Perp DEX Source Status`, который собирает direct venues, GMX raw, CoinGlass enrichment, route policy/model и release-smoke checklist в один source-status contract.
+- Скрипт поддерживает `COMPARE_BASE_URL` и `FAIL_ON_DIFF=1`, чтобы preview/prod drift был виден по ids/statuses/flags/counts без полного payload.
+- Contract включает direct venue ids/statuses/rows/depth freshness/provider error classes, CoinGlass matched exchanges/candidate hints/route-input statuses, route policy/model blocker ids и safety flags.
+- Raw provider payload, secrets, route ranking, route selection, numeric route cost bps, diagnostic carry bps и execution не включались.
+
 ## Обновление 2026-06-18 — Perp DEX GMX helper/source follow-up rows v0
 
 - Backend `gmx_rate_mapping_review_v0` получил `helper_source_follow_up_summary`: compact summary по missing helper source inputs, связанным input/review ids, fixture/decision gates и manual approvals, которые блокируют GMX carry conversion.
@@ -861,7 +868,7 @@
 - [x] Добавить GMX helper/source follow-up rows: какие source helper inputs всё ещё отсутствуют, какие manual approvals блокируют carry conversion.
 - [x] Добавить Lighter/Aster depth freshness evidence layer: timestamp/source-age policy как readiness, без slippage bps.
 - [x] Добавить fee schedule evidence layer для Lighter/Aster: account tier/order intent/manual approval gates, без fee bps total.
-- [ ] Добавить compact compare contract для `Perp DEX Source Status`, чтобы preview/prod drift был виден без полного payload.
+- [x] Добавить compact compare contract для `Perp DEX Source Status`, чтобы preview/prod drift был виден без полного payload.
 - [ ] Улучшить пустые/error states в Perp DEX UI для provider unavailable и partial data states.
 - [ ] Прогнать backend tests, direct/policy/coinglass smoke, frontend build/audit и Browser QA desktop/mobile.
 - [ ] Обновить русскую документацию по всем новым read-only panels, API fields и safety gates.
