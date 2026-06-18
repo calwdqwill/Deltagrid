@@ -126,6 +126,9 @@ for venue in venues:
             "matched_symbols": availability.get("matched_symbols"),
             "missing_symbols": availability.get("missing_symbols"),
             "depth_diagnostics": availability.get("depth_diagnostics"),
+            "depth_freshness": (availability.get("depth_diagnostics") or {}).get("freshness")
+            if isinstance(availability.get("depth_diagnostics"), dict)
+            else None,
             "safe_use": availability.get("safe_use"),
         } if availability else None,
         "markets": [
@@ -147,6 +150,10 @@ for venue in venues:
     if provider_error_class and provider_error_class not in known_provider_error_classes:
         failures.append(f"{venue}: unknown_provider_error_class:{provider_error_class}")
     if availability:
+        depth_diagnostics = availability.get("depth_diagnostics")
+        depth_diagnostics = depth_diagnostics if isinstance(depth_diagnostics, dict) else {}
+        freshness = depth_diagnostics.get("freshness")
+        freshness = freshness if isinstance(freshness, dict) else {}
         if availability.get("read_only") is not True:
             failures.append(f"{venue}: availability_read_only_not_true")
         if availability.get("execution_enabled") is True:
@@ -155,6 +162,12 @@ for venue in venues:
             failures.append(f"{venue}: availability_ranking_enabled_true")
         if availability.get("production_signal_enabled") is True:
             failures.append(f"{venue}: availability_production_signal_enabled_true")
+        if not freshness:
+            failures.append(f"{venue}: missing_depth_freshness_evidence")
+        if freshness and freshness.get("may_emit_slippage_bps") is not False:
+            failures.append(f"{venue}: depth_freshness_slippage_enabled")
+        if freshness and freshness.get("numeric_total_status") != "blocked":
+            failures.append(f"{venue}: depth_freshness_numeric_total_not_blocked")
     if read_only is not True:
         failures.append(f"{venue}: read_only_not_true")
     if execution_enabled is not False:

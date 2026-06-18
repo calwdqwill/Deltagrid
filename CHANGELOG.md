@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [PRODUCT/API] - Perp DEX depth freshness evidence v0
+- `availability_summary.depth_diagnostics` получил `freshness`: snapshot timestamp, observed timestamp, `age_ms`, display `max_age_ms`, status, required policy inputs и stale-depth action.
+- Direct smoke проверяет freshness evidence и закрепляет `may_emit_slippage_bps=false`, `numeric_total_status=blocked`.
+- Добавлены targeted backend tests для fresh/stale/missing/not-applicable depth freshness statuses.
+- Граница сохранена: Lighter/Aster depth freshness является readiness/evidence layer, а не slippage bps, route cost, route ranking, route selection или execution.
+
 ## [2026-06-18] - [PRODUCT/API] - Perp DEX direct availability summary v0
 - Direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX получили `availability_summary`: rows, requested/matched/missing symbols, market/provider status counts, depth diagnostics availability, read-only flags и `safe_use`.
 - Provider failures получили compact taxonomy `provider_error_class`: `timeout`, `rate_limit`, `empty_response`, `schema_drift`, `unavailable_endpoint`, `provider_unavailable`, `provider_http_error`.

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Optional
 
 import httpx
@@ -23,6 +24,7 @@ DEFAULT_GMX_SYMBOLS = ("BTC", "ETH", "SOL")
 DEFAULT_LIGHTER_SYMBOLS = ("BTC", "ETH", "SOL")
 DEFAULT_ASTER_SYMBOLS = ("BTC", "ETH", "SOL")
 DEFAULT_COINGLASS_SYMBOLS = ("BTC", "ETH", "SOL")
+DIRECT_VENUE_DEPTH_FRESHNESS_MAX_AGE_MS = 60_000
 DIRECT_VENUE_PROVIDER_ERROR_CLASSES = {
     "timeout",
     "rate_limit",
@@ -2953,6 +2955,67 @@ def _provider_error_class_from_snapshot(snapshot: dict[str, Any]) -> str | None:
     return None
 
 
+def _parse_iso_datetime(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    normalized = value.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _build_depth_freshness_evidence(
+    snapshot: dict[str, Any],
+    *,
+    depth_market_count: int,
+    observed_at: datetime | None = None,
+) -> dict[str, Any]:
+    observed = observed_at or datetime.now(timezone.utc)
+    fetched_at = snapshot.get("fetched_at")
+    parsed_fetched_at = _parse_iso_datetime(fetched_at)
+    age_ms = None
+    if parsed_fetched_at is not None:
+        age_ms = max(0, int((observed - parsed_fetched_at).total_seconds() * 1000))
+
+    if depth_market_count <= 0:
+        freshness_status = "not_applicable"
+        evidence_status = "no_depth_diagnostics"
+    elif parsed_fetched_at is None:
+        freshness_status = "timestamp_missing"
+        evidence_status = "timestamp_required"
+    elif age_ms is not None and age_ms <= DIRECT_VENUE_DEPTH_FRESHNESS_MAX_AGE_MS:
+        freshness_status = "fresh_for_display"
+        evidence_status = "timestamp_available"
+    else:
+        freshness_status = "stale_for_display"
+        evidence_status = "stale_timestamp"
+
+    return {
+        "status": freshness_status,
+        "evidence_status": evidence_status,
+        "snapshot_timestamp": fetched_at,
+        "observed_at": observed.isoformat(),
+        "age_ms": age_ms,
+        "max_age_ms": DIRECT_VENUE_DEPTH_FRESHNESS_MAX_AGE_MS,
+        "depth_market_count": depth_market_count,
+        "required_policy_inputs": [
+            "depth_snapshot_timestamp",
+            "max_depth_age_ms",
+            "stale_depth_action",
+        ],
+        "stale_depth_action": "display_warning_only_until_route_policy_decision",
+        "may_emit_slippage_bps": False,
+        "numeric_total_status": "blocked",
+        "safe_use": "depth freshness evidence only; do not estimate slippage, route cost or ranking",
+    }
+
+
 def _build_direct_venue_availability_summary(
     snapshot: dict[str, Any],
     *,
@@ -3009,6 +3072,10 @@ def _build_direct_venue_availability_summary(
             "available": bool(depth_statuses),
             "market_count": len(depth_statuses),
             "statuses": sorted(set(depth_statuses)),
+            "freshness": _build_depth_freshness_evidence(
+                snapshot,
+                depth_market_count=len(depth_statuses),
+            ),
         },
         "fetched_at": snapshot.get("fetched_at"),
         "reason": snapshot.get("reason"),

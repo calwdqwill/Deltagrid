@@ -4,6 +4,14 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` оформлен и задеплоен вручную на production; `main` находится на `0716f6a`, tag `v1.3.1` указывает на этот commit. Production deploy hardening уже есть в `main`, но `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` и `PROD_APP_DIR` пока отсутствуют.
 **Last Updated**: 2026-06-18
 
+## Обновление 2026-06-18 — Perp DEX depth freshness evidence v0
+
+- `availability_summary.depth_diagnostics` для direct venue endpoints получил `freshness`: snapshot timestamp, observed timestamp, `age_ms`, display `max_age_ms`, status, required policy inputs и stale-depth action.
+- Freshness evidence применяется к Lighter/Aster depth diagnostics как read-only readiness layer; для venues без depth diagnostics статус остаётся `not_applicable`.
+- Smoke `scripts/perp-dex-direct-smoke.sh` теперь проверяет наличие depth freshness evidence и инварианты `may_emit_slippage_bps=false`, `numeric_total_status=blocked`.
+- Проверка: targeted backend tests по direct availability/depth freshness, Lighter/Aster clients и Perp DEX policy contract прошли; `compileall` и `bash -n` для direct smoke прошли.
+- Граница сохранена: freshness evidence не считает slippage bps, route cost bps, не сортирует venues и не включает route selection/execution.
+
 ## Обновление 2026-06-18 — Perp DEX direct availability summary v0
 
 - Backend direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX получили `availability_summary`: rows, requested/matched/missing symbols, market/provider status counts, depth diagnostics availability, read-only/execution/ranking/production-signal flags и `safe_use`.
@@ -826,7 +834,7 @@
 - [x] Расширить provider error taxonomy для direct venues: timeout, rate limit, empty response, schema drift, unavailable endpoint.
 - [x] Добавить smoke/test coverage на provider error taxonomy без live secrets и без raw payload dumps.
 - [ ] Добавить GMX helper/source follow-up rows: какие source helper inputs всё ещё отсутствуют, какие manual approvals блокируют carry conversion.
-- [ ] Добавить Lighter/Aster depth freshness evidence layer: timestamp/source-age policy как readiness, без slippage bps.
+- [x] Добавить Lighter/Aster depth freshness evidence layer: timestamp/source-age policy как readiness, без slippage bps.
 - [ ] Добавить fee schedule evidence layer для Lighter/Aster: account tier/order intent/manual approval gates, без fee bps total.
 - [ ] Добавить compact compare contract для `Perp DEX Source Status`, чтобы preview/prod drift был виден без полного payload.
 - [ ] Улучшить пустые/error states в Perp DEX UI для provider unavailable и partial data states.

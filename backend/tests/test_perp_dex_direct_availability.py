@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import httpx
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -54,11 +56,21 @@ def test_direct_venue_endpoint_adds_availability_summary() -> None:
     assert summary["missing_symbols"] == ["ETH"]
     assert summary["market_status_counts"] == {"live": 1}
     assert summary["provider_status_counts"] == {"active": 1}
-    assert summary["depth_diagnostics"] == {
-        "available": True,
-        "market_count": 1,
-        "statuses": ["partial_ready_top_orders_only"],
-    }
+    depth_diagnostics = summary["depth_diagnostics"]
+    assert depth_diagnostics["available"] is True
+    assert depth_diagnostics["market_count"] == 1
+    assert depth_diagnostics["statuses"] == ["partial_ready_top_orders_only"]
+    freshness = depth_diagnostics["freshness"]
+    assert freshness["snapshot_timestamp"] == "2026-06-18T00:00:00+00:00"
+    assert freshness["depth_market_count"] == 1
+    assert freshness["required_policy_inputs"] == [
+        "depth_snapshot_timestamp",
+        "max_depth_age_ms",
+        "stale_depth_action",
+    ]
+    assert freshness["stale_depth_action"] == "display_warning_only_until_route_policy_decision"
+    assert freshness["may_emit_slippage_bps"] is False
+    assert freshness["numeric_total_status"] == "blocked"
     assert summary["read_only"] is True
     assert summary["execution_enabled"] is False
     assert summary["ranking_enabled"] is False
@@ -93,6 +105,55 @@ def test_direct_venue_availability_summary_classifies_schema_drift_snapshot() ->
     assert summary["missing_symbols"] == ["BTC"]
     assert summary["read_only"] is True
     assert summary["execution_enabled"] is False
+
+
+def test_depth_freshness_evidence_is_display_only() -> None:
+    observed_at = datetime(2026, 6, 18, 0, 1, 0, tzinfo=timezone.utc)
+
+    fresh = perp_dex._build_depth_freshness_evidence(
+        {"fetched_at": "2026-06-18T00:00:30+00:00"},
+        depth_market_count=2,
+        observed_at=observed_at,
+    )
+    assert fresh["status"] == "fresh_for_display"
+    assert fresh["evidence_status"] == "timestamp_available"
+    assert fresh["age_ms"] == 30_000
+    assert fresh["max_age_ms"] == perp_dex.DIRECT_VENUE_DEPTH_FRESHNESS_MAX_AGE_MS
+    assert fresh["may_emit_slippage_bps"] is False
+    assert fresh["numeric_total_status"] == "blocked"
+
+    max_age_boundary = perp_dex._build_depth_freshness_evidence(
+        {"fetched_at": "2026-06-18T00:00:00+00:00"},
+        depth_market_count=2,
+        observed_at=observed_at,
+    )
+    assert max_age_boundary["status"] == "fresh_for_display"
+    assert max_age_boundary["age_ms"] == 60_000
+
+    stale = perp_dex._build_depth_freshness_evidence(
+        {"fetched_at": "2026-06-17T23:59:59+00:00"},
+        depth_market_count=2,
+        observed_at=observed_at,
+    )
+    assert stale["status"] == "stale_for_display"
+    assert stale["evidence_status"] == "stale_timestamp"
+
+    missing = perp_dex._build_depth_freshness_evidence(
+        {},
+        depth_market_count=2,
+        observed_at=observed_at,
+    )
+    assert missing["status"] == "timestamp_missing"
+    assert missing["evidence_status"] == "timestamp_required"
+    assert missing["age_ms"] is None
+
+    not_applicable = perp_dex._build_depth_freshness_evidence(
+        {"fetched_at": "2026-06-18T00:01:00+00:00"},
+        depth_market_count=0,
+        observed_at=observed_at,
+    )
+    assert not_applicable["status"] == "not_applicable"
+    assert not_applicable["evidence_status"] == "no_depth_diagnostics"
 
 
 def test_direct_venue_error_detail_preserves_read_only_boundary() -> None:

@@ -61,6 +61,7 @@
 - Perp DEX GMX live helper source review v0 готов: backend `gmx_rate_mapping_review_v0.live_helper_source_summary` и `live_helper_source_checklist`, UI `GMX Rate Live Helper Source Review`, compact smoke `gmx_rate_live_helper_*` и tests фиксируют live `/markets/info` rate output evidence, missing helper source inputs, side-aware expectations и manual review gates без diagnostic carry bps, route scoring или execution.
 - Perp DEX source status rollup v0 готов: UI-панель `Perp DEX Source Status` собирает direct venue snapshots, GMX raw, CoinGlass enrichment, route policy/model contract и last release smoke в compact read-only таблицу без новых provider calls, venue sorting, route ranking, numeric route cost bps или execution.
 - Perp DEX direct availability summary v0 готов: direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX отдают `availability_summary` с rows, requested/matched/missing symbols, status counts, depth diagnostics availability, read-only safety flags и `provider_error_class`; direct smoke и targeted tests проверяют taxonomy без raw payload.
+- Perp DEX depth freshness evidence v0 готов: `availability_summary.depth_diagnostics.freshness` показывает timestamp, observed_at, age, display max-age policy, stale-depth action и blocked numeric/slippage flags для Lighter/Aster depth diagnostics без slippage bps, route ranking или execution.
 
 ## Аудит production data — 2026-06-13
 

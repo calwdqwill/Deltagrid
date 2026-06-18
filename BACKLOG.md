@@ -142,7 +142,7 @@
 - [x] Расширить provider error taxonomy для direct venues.
 - [x] Добавить smoke/test coverage на provider error taxonomy без raw payload.
 - [ ] Добавить GMX helper/source follow-up rows по missing inputs/manual approvals.
-- [ ] Добавить Lighter/Aster depth freshness evidence layer без slippage bps.
+- [x] Добавить Lighter/Aster depth freshness evidence layer без slippage bps.
 - [ ] Добавить fee schedule evidence layer для Lighter/Aster без fee bps total.
 - [ ] Добавить compact compare contract для Perp DEX source status.
 - [ ] Улучшить empty/error states в Perp DEX UI.
