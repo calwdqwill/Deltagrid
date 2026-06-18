@@ -252,6 +252,46 @@ export interface LivePerpDexVenueMarket {
   fetched_at: string;
 }
 
+export interface LivePerpDexVenueAvailabilitySummary {
+  venue_id: string;
+  venue_name: string;
+  source?: string | null;
+  status: string;
+  provider_error_class?: string | null;
+  rows: number;
+  requested_symbols: string[];
+  matched_symbols: string[];
+  missing_symbols: string[];
+  market_status_counts: Record<string, number>;
+  provider_status_counts: Record<string, number>;
+  read_only: boolean;
+  execution_enabled: boolean;
+  ranking_enabled: boolean;
+  production_signal_enabled: boolean;
+  normalization_status?: string | null;
+  depth_diagnostics?: {
+    available: boolean;
+    market_count: number;
+    statuses: string[];
+    freshness?: {
+      status?: string | null;
+      evidence_status?: string | null;
+      snapshot_timestamp?: string | null;
+      observed_at?: string | null;
+      age_ms?: number | null;
+      max_age_ms?: number | null;
+      required_policy_inputs?: string[];
+      stale_depth_action?: string | null;
+      may_emit_slippage_bps?: boolean;
+      numeric_total_status?: string | null;
+      safe_use?: string;
+    };
+  };
+  fetched_at?: string | null;
+  reason?: string | null;
+  safe_use?: string;
+}
+
 export interface LivePerpDexVenueSnapshot {
   venue_id: string;
   venue_name: string;
@@ -272,6 +312,7 @@ export interface LivePerpDexVenueSnapshot {
   token_amount_scale_status?: string | null;
   diagnostic_usd_scale_status?: string | null;
   rate_semantics_status?: string | null;
+  availability_summary?: LivePerpDexVenueAvailabilitySummary;
   coverage_summary?: {
     requested_symbols: string[];
     requested_exchanges: string[];

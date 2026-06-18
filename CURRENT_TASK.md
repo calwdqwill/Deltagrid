@@ -4,6 +4,15 @@
 **Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` оформлен и задеплоен вручную на production; `main` находится на `0716f6a`, tag `v1.3.1` указывает на этот commit. Production deploy hardening уже есть в `main`, но `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` и `PROD_APP_DIR` пока отсутствуют.
 **Last Updated**: 2026-06-18
 
+## Обновление 2026-06-18 — Perp DEX provider state empty/error states v0
+
+- Frontend `Perp DEX` теперь показывает compact state rows перед `Direct Perp DEX Market Snapshots`, `Depth Diagnostics` и `CoinGlass Perp DEX Enrichment`.
+- Direct venue rows используют `availability_summary`: статус provider, rows, matched/missing symbols, market/depth status counts, provider issue и read-only boundary видны даже при пустых detail rows.
+- Depth summary отдельно показывает freshness/statuses/required inputs и сохраняет явную блокировку slippage bps/numeric route cost.
+- CoinGlass summary использует `coverage_summary` и graceful unavailable/empty state: coverage hints остаются research-only и не становятся ranking/execution signal.
+- Проверка: targeted backend tests `test_perp_dex_policy.py` и `test_perp_dex_direct_availability.py`, frontend `npm run build`, `npm audit --audit-level=high`, policy/direct smoke, local graceful-unavailable CoinGlass smoke и Browser QA desktop/mobile для `/perp-dex?view=venues` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## Обновление 2026-06-18 — Perp DEX Lighter/Aster fee schedule evidence v0
 
 - Backend `diagnostic_cost_estimate_v0.summary` получил `fee_schedule_evidence_summary`: compact summary по Lighter/Aster fee evidence, source fields, required inputs/policy inputs, manual approvals и blocked outputs.
@@ -869,9 +878,9 @@
 - [x] Добавить Lighter/Aster depth freshness evidence layer: timestamp/source-age policy как readiness, без slippage bps.
 - [x] Добавить fee schedule evidence layer для Lighter/Aster: account tier/order intent/manual approval gates, без fee bps total.
 - [x] Добавить compact compare contract для `Perp DEX Source Status`, чтобы preview/prod drift был виден без полного payload.
-- [ ] Улучшить пустые/error states в Perp DEX UI для provider unavailable и partial data states.
-- [ ] Прогнать backend tests, direct/policy/coinglass smoke, frontend build/audit и Browser QA desktop/mobile.
-- [ ] Обновить русскую документацию по всем новым read-only panels, API fields и safety gates.
+- [x] Улучшить пустые/error states в Perp DEX UI для provider unavailable и partial data states.
+- [x] Прогнать backend tests, direct/policy/coinglass smoke, frontend build/audit и Browser QA desktop/mobile.
+- [x] Обновить русскую документацию по всем новым read-only panels, API fields и safety gates.
 
 ### Итерация 3 — `v1.4.0` release candidate и production rollout
 

@@ -66,6 +66,7 @@
 - Perp DEX Source Status compare contract v0 готов: `scripts/perp-dex-source-status-smoke.sh` собирает тот же read-only cockpit scope в compact contract, поддерживает `COMPARE_BASE_URL`/`FAIL_ON_DIFF=1` для preview/prod drift и не выводит raw provider payload или secrets.
 - Perp DEX direct availability summary v0 готов: direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX отдают `availability_summary` с rows, requested/matched/missing symbols, status counts, depth diagnostics availability, read-only safety flags и `provider_error_class`; direct smoke и targeted tests проверяют taxonomy без raw payload.
 - Perp DEX depth freshness evidence v0 готов: `availability_summary.depth_diagnostics.freshness` показывает timestamp, observed_at, age, display max-age policy, stale-depth action и blocked numeric/slippage flags для Lighter/Aster depth diagnostics без slippage bps, route ranking или execution.
+- Perp DEX provider state empty/error states v0 готов: Direct/Depth/CoinGlass panels показывают compact provider/source state rows перед detail tables, чтобы provider unavailable, partial data, missing symbols, no-depth и CoinGlass unavailable были видны без route ranking, route selection, numeric route cost bps или execution.
 - Preview runtime после depth freshness подтверждён ручным deploy и release smoke на `/opt/deltagrid-preview`; GitHub Deploy Preview требует повторного follow-up gate из-за transient runner/SSH failure, а не из-за product smoke failure.
 
 ## Аудит production data — 2026-06-13

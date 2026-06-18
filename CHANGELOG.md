@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [PRODUCT/UI] - Perp DEX provider state empty/error states v0
+- `Perp DEX` получил compact state rows перед таблицами `Direct Perp DEX Market Snapshots`, `Depth Diagnostics` и `CoinGlass Perp DEX Enrichment`: venue/source status, rows, matched/missing symbols, provider issue, depth freshness и read-only boundary теперь видны даже при пустых detail rows.
+- UI использует уже загруженные `availability_summary` direct venues и `coverage_summary` CoinGlass, а для старого snapshot shape имеет frontend fallback; новых backend endpoints, provider calls, БД-записей и production signals не добавлено.
+- Empty/error states теперь явно разделяют provider unavailable, request failed/empty response, partial data, missing symbols и отсутствие depth diagnostics, не превращая coverage hints в ranking.
+- Проверка: targeted backend tests `test_perp_dex_policy.py` и `test_perp_dex_direct_availability.py` прошли; `npm run build`, `npm audit --audit-level=high`, policy smoke, direct venues smoke и Browser QA `/perp-dex?view=venues` desktop/mobile прошли. Локальный CoinGlass no-secret smoke проверен в graceful-unavailable режиме с `ALLOW_UNAVAILABLE=1 MIN_ROWS=0 MIN_MATCHED_EXCHANGES=0`.
+- Граница сохранена: slippage bps, fee bps total, diagnostic carry bps, numeric route cost bps, route ranking, route selection и execution не включались.
+
 ## [2026-06-18] - [PRODUCT/OPS] - Perp DEX Source Status compare contract v0
 - Добавлен `scripts/perp-dex-source-status-smoke.sh`: compact smoke для `Perp DEX Source Status`, который собирает direct venues, GMX raw, CoinGlass enrichment, route policy/model и release-smoke checklist в один machine-readable contract.
 - Скрипт поддерживает `COMPARE_BASE_URL` и `FAIL_ON_DIFF=1`, чтобы сравнивать preview/prod source-status drift без полного payload и без вывода raw provider data или secrets.

@@ -57,6 +57,7 @@ import {
   LivePerpDexRouteConstraints,
   LivePerpDexRouteModel,
   LivePerpDexRouteModelRequiredInput,
+  LivePerpDexVenueAvailabilitySummary,
   LivePerpDexVenueMarket,
   LivePerpDexVenueSnapshot,
   LiveMatrixRow,
@@ -451,6 +452,148 @@ function coinGlassMarketCells(market: LivePerpDexVenueMarket) {
   ];
 }
 
+function compactCountMap(values: Record<string, number> | undefined): string {
+  const entries = Object.entries(values ?? {}).filter(([, count]) => count > 0);
+  if (!entries.length) return "-";
+  return entries.map(([key, count]) => `${policyStatusLabel(key)} ${count}`).join(" / ");
+}
+
+function providerStateTone(snapshot: LivePerpDexVenueSnapshot, availability?: LivePerpDexVenueAvailabilitySummary) {
+  const status = availability?.status ?? snapshot.status;
+  if (availability?.provider_error_class || status === "unavailable" || status === "empty") return "negative";
+  if (status === "live" && (availability?.rows ?? snapshot.markets.length) > 0) return "positive";
+  return "warning";
+}
+
+function availabilityForSnapshot(snapshot: LivePerpDexVenueSnapshot): LivePerpDexVenueAvailabilitySummary {
+  return (
+    snapshot.availability_summary ?? {
+      venue_id: snapshot.venue_id,
+      venue_name: snapshot.venue_name,
+      source: snapshot.source,
+      status: snapshot.status,
+      provider_error_class: snapshot.reason === "backend_unavailable" ? "provider_unavailable" : snapshot.reason,
+      rows: snapshot.markets.length,
+      requested_symbols: snapshot.requested_symbols,
+      matched_symbols: Array.from(new Set(snapshot.markets.map((market) => market.symbol))),
+      missing_symbols: snapshot.requested_symbols.filter(
+        (symbol) => !snapshot.markets.some((market) => market.symbol === symbol)
+      ),
+      market_status_counts: snapshot.markets.reduce<Record<string, number>>((counts, market) => {
+        counts[market.status] = (counts[market.status] ?? 0) + 1;
+        return counts;
+      }, {}),
+      provider_status_counts: {},
+      read_only: snapshot.read_only,
+      execution_enabled: snapshot.execution_enabled,
+      ranking_enabled: snapshot.ranking_enabled === true,
+      production_signal_enabled: snapshot.production_signal_enabled === true,
+      normalization_status: snapshot.normalization_status,
+      depth_diagnostics: {
+        available: snapshot.markets.some((market) => Boolean(market.orderbook_depth_status)),
+        market_count: snapshot.markets.filter((market) => Boolean(market.orderbook_depth_status)).length,
+        statuses: Array.from(new Set(snapshot.markets.map((market) => market.orderbook_depth_status).filter(Boolean))) as string[],
+      },
+      fetched_at: snapshot.fetched_at,
+      reason: snapshot.reason,
+      safe_use: "Direct public market context only; do not route, rank liquidity or submit orders",
+    }
+  );
+}
+
+function providerStateRows(snapshots: LivePerpDexVenueSnapshot[]) {
+  return snapshots.map((snapshot) => {
+    const availability = availabilityForSnapshot(snapshot);
+    const depthFreshness = availability.depth_diagnostics?.freshness;
+    const providerIssue = availability.provider_error_class ?? availability.reason ?? "-";
+    const matched = availability.matched_symbols.length ? availability.matched_symbols.join(" / ") : "No matches";
+    const missing = availability.missing_symbols.length ? `Missing ${availability.missing_symbols.join(" / ")}` : "All requested";
+    return [
+      <span key="venue" className="font-semibold text-cyan-200">
+        {availability.venue_name}
+      </span>,
+      <span key="status" className={toneText(providerStateTone(snapshot, availability))}>
+        {policyStatusLabel(availability.status)}
+      </span>,
+      <span key="rows" className="font-mono text-slate-100">
+        {availability.rows}
+      </span>,
+      <span key="symbols" className="text-slate-300">
+        {matched}
+        <span className={availability.missing_symbols.length ? `ml-2 ${toneText("warning")}` : "ml-2 text-slate-500"}>
+          {missing}
+        </span>
+      </span>,
+      compactCountMap(availability.market_status_counts),
+      <span key="depth" className={toneText(depthFreshness?.status ? policyStatusTone(depthFreshness.status) : "neutral")}>
+        {availability.depth_diagnostics?.available
+          ? policyStatusLabel(depthFreshness?.status ?? availability.depth_diagnostics.statuses[0] ?? "partial_ready")
+          : "No depth"}
+      </span>,
+      <span key="issue" className={providerIssue === "-" ? "text-slate-500" : toneText("warning")}>
+        {providerIssue === "-" ? "-" : policyStatusLabel(providerIssue)}
+      </span>,
+      availability.safe_use ?? "Display-only market context",
+    ];
+  });
+}
+
+function depthStateRows(snapshots: LivePerpDexVenueSnapshot[]) {
+  return snapshots.map((snapshot) => {
+    const availability = availabilityForSnapshot(snapshot);
+    const depth = availability.depth_diagnostics;
+    const freshness = depth?.freshness;
+    const depthStatus = depth?.available
+      ? freshness?.status ?? depth.statuses[0] ?? "partial_ready"
+      : freshness?.status ?? "not_applicable";
+    return [
+      <span key="venue" className="font-semibold text-cyan-200">
+        {availability.venue_name}
+      </span>,
+      <span key="status" className={toneText(depth?.available ? policyStatusTone(depthStatus) : "neutral")}>
+        {policyStatusLabel(depthStatus)}
+      </span>,
+      <span key="markets" className="font-mono text-slate-100">
+        {depth?.market_count ?? 0}
+      </span>,
+      routeModelList(depth?.statuses ?? []),
+      routeModelList(freshness?.required_policy_inputs ?? []),
+      <span key="slippage" className={toneText(freshness?.may_emit_slippage_bps === true ? "negative" : "positive")}>
+        {freshness?.may_emit_slippage_bps === true ? "Slippage Enabled" : "Slippage Blocked"}
+      </span>,
+      freshness?.safe_use ?? availability.safe_use ?? "Depth diagnostics unavailable",
+    ];
+  });
+}
+
+function coinGlassStateRows(snapshot: LivePerpDexVenueSnapshot) {
+  const coverage = snapshot.coverage_summary;
+  const issue = snapshot.reason ?? (snapshot.status === "unavailable" ? "backend_unavailable" : "-");
+  return [
+    [
+      <span key="source" className="font-semibold text-cyan-200">
+        {snapshot.venue_name}
+      </span>,
+      <span key="status" className={toneText(snapshot.markets.length > 0 ? "warning" : sourceStatusTone(snapshot.status))}>
+        {snapshot.markets.length > 0 ? "Research Enrichment" : policyStatusLabel(snapshot.status)}
+      </span>,
+      <span key="rows" className="font-mono text-slate-100">
+        {coverage?.total_rows ?? snapshot.markets.length}
+      </span>,
+      coverage
+        ? `${coverage.exchanges_with_matches}/${coverage.requested_exchanges.length} venues matched`
+        : "No coverage summary",
+      routeModelList(coverage?.direct_adapter_candidate_hints ?? []),
+      <span key="issue" className={issue === "-" ? "text-slate-500" : toneText("warning")}>
+        {issue === "-" ? "-" : policyStatusLabel(issue)}
+      </span>,
+      snapshot.production_signal_enabled === true || snapshot.ranking_enabled === true || snapshot.execution_enabled === true
+        ? "Unsafe signal enabled"
+        : "Research-only; no ranking or execution",
+    ],
+  ];
+}
+
 function policyStatusLabel(status: string): string {
   if (status === "live") return "Live";
   if (status === "unavailable") return "Unavailable";
@@ -476,6 +619,18 @@ function policyStatusLabel(status: string): string {
   if (status === "blocked") return "Blocked";
   if (status === "screening_ready") return "Screening Ready";
   if (status === "request_failed") return "Request Failed";
+  if (status === "backend_unavailable") return "Backend Unavailable";
+  if (status === "provider_unavailable") return "Provider Unavailable";
+  if (status === "provider_http_error") return "Provider HTTP Error";
+  if (status === "unavailable_endpoint") return "Endpoint Unavailable";
+  if (status === "schema_drift") return "Schema Drift";
+  if (status === "empty_response") return "Empty Response";
+  if (status === "rate_limit") return "Rate Limit";
+  if (status === "timeout") return "Timeout";
+  if (status === "fresh_for_display") return "Fresh For Display";
+  if (status === "stale_for_display") return "Stale For Display";
+  if (status === "missing_timestamp") return "Missing Timestamp";
+  if (status === "not_applicable") return "Not Applicable";
   if (status === "partial") return "Partial";
   if (status === "empty") return "Empty";
   if (status === "route_gate_only") return "Route Gate Only";
@@ -2521,6 +2676,9 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
   const depthDiagnosticRows = dexMarkets
     .filter((market) => Boolean(market.orderbook_depth_status))
     .map(depthDiagnosticCells);
+  const directVenueStateRows = providerStateRows([hyperliquid, dydx, lighter, aster, gmx]);
+  const depthVenueStateRows = depthStateRows([hyperliquid, dydx, lighter, aster, gmx]);
+  const coinglassStateRows = coinGlassStateRows(coinglassPerpDex);
   const coinglassMarkets = coinglassPerpDex.markets.sort((left, right) =>
     `${left.venue_name}:${left.symbol}`.localeCompare(`${right.venue_name}:${right.symbol}`)
   );
@@ -2668,7 +2826,7 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
     ],
   ].map(([venue, status, note]) => [
     venue,
-    <span key="status" className={toneText(status === "Live" ? "positive" : "warning")}>
+    <span key="status" className={toneText(status === "Live" ? "positive" : status === "Unavailable" ? "negative" : "warning")}>
       {status}
     </span>,
     note,
@@ -3854,16 +4012,23 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
             title="Direct Perp DEX Market Snapshots"
             caption="Hyperliquid + dYdX + Lighter + Aster normalized snapshots; GMX raw fixed-point fields; read-only, no execution path"
           >
-            {dexMarkets.length > 0 ? (
+            <div className="space-y-4">
               <TerminalTable
-                columns={["Venue", "Market", "Mark", "Funding", "Open Interest", "24h Volume", "Max Lev", "Mode", "Status"]}
-                rows={dexMarkets.map(venueMarketCells)}
+                columns={["Venue", "Status", "Rows", "Symbols", "Market States", "Depth", "Provider Issue", "Boundary"]}
+                rows={directVenueStateRows}
               />
-            ) : (
-              <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
-                Direct public Perp DEX market snapshots are not available from the backend right now.
-              </div>
-            )}
+              {dexMarkets.length > 0 ? (
+                <TerminalTable
+                  columns={["Venue", "Market", "Mark", "Funding", "Open Interest", "24h Volume", "Max Lev", "Mode", "Status"]}
+                  rows={dexMarkets.map(venueMarketCells)}
+                />
+              ) : (
+                <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                  Direct public Perp DEX market rows are empty for this snapshot. Use the venue state row above to distinguish
+                  provider outage, empty response and missing requested symbols; the screen remains display-only.
+                </div>
+              )}
+            </div>
           </TerminalPanel>
         )}
 
@@ -3872,16 +4037,23 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
             title="Depth Diagnostics"
             caption="Display-only order book diagnostics from venues with sourced public depth fields"
           >
-            {depthDiagnosticRows.length > 0 ? (
+            <div className="space-y-4">
               <TerminalTable
-                columns={["Venue", "Market", "Depth", "Best Bid / Ask", "Spread", "Top Bid Depth", "Top Ask Depth", "Safe Use"]}
-                rows={depthDiagnosticRows}
+                columns={["Venue", "Depth State", "Markets", "Statuses", "Required Inputs", "Slippage", "Boundary"]}
+                rows={depthVenueStateRows}
               />
-            ) : (
-              <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
-                No sourced public depth diagnostics are available from direct venues right now.
-              </div>
-            )}
+              {depthDiagnosticRows.length > 0 ? (
+                <TerminalTable
+                  columns={["Venue", "Market", "Depth", "Best Bid / Ask", "Spread", "Top Bid Depth", "Top Ask Depth", "Safe Use"]}
+                  rows={depthDiagnosticRows}
+                />
+              ) : (
+                <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                  No sourced public depth diagnostics are available from direct venues right now. The summary above keeps the
+                  freshness and slippage guardrails visible; numeric route cost bps remain blocked.
+                </div>
+              )}
+            </div>
           </TerminalPanel>
         )}
 
@@ -3890,16 +4062,23 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
             title="CoinGlass Perp DEX Enrichment"
             caption="Third-party coin-market aggregates for DEX-like venues; research-only, no ranking or execution"
           >
-            {coinglassMarkets.length > 0 ? (
+            <div className="space-y-4">
               <TerminalTable
-                columns={["Venue", "Symbol", "Price", "Funding", "Open Interest", "L/S", "24h Liq.", "Use"]}
-                rows={coinglassMarkets.map(coinGlassMarketCells)}
+                columns={["Source", "Status", "Rows", "Coverage", "Hints", "Issue", "Boundary"]}
+                rows={coinglassStateRows}
               />
-            ) : (
-              <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
-                CoinGlass Perp DEX enrichment is not available from the backend right now.
-              </div>
-            )}
+              {coinglassMarkets.length > 0 ? (
+                <TerminalTable
+                  columns={["Venue", "Symbol", "Price", "Funding", "Open Interest", "L/S", "24h Liq.", "Use"]}
+                  rows={coinglassMarkets.map(coinGlassMarketCells)}
+                />
+              ) : (
+                <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                  CoinGlass Perp DEX enrichment rows are empty for this snapshot. The source state above separates backend
+                  unavailability from a valid empty response and keeps the data research-only.
+                </div>
+              )}
+            </div>
           </TerminalPanel>
         )}
 

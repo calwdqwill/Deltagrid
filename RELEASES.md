@@ -88,3 +88,5 @@ git push origin v1.4.0
 Preview release runway для `v1.4.0` подтверждён на `preview@b257cc8`: CI `27746664616`, `Deploy Preview` `27746714283`, server release smoke на `8011/3012` зелёный. После Perp DEX depth freshness commit `4433f0b` GitHub CI `27761405255` зелёный, `Deploy Preview` `27761467202` упал на step `Deploy preview`, но ручной deploy тем же script и полный preview release smoke на `8011/3012` прошли. `main`, production deploy и tag `v1.3.2` не трогались.
 
 Следующий production target: `v1.4.0` — minor release с зелёным deploy path, Perp DEX read-only research cockpit и production rollout на `deltagrid.pro`.
+
+На 2026-06-18 Perp DEX research cockpit для `v1.4.0` дополнен provider state empty/error states: Direct/Depth/CoinGlass panels показывают compact provider/source rows поверх `availability_summary`/`coverage_summary`, чтобы preview/prod QA видела provider unavailable, partial data, missing symbols и CoinGlass unavailable без включения route ranking, route selection, numeric route cost bps или execution.
