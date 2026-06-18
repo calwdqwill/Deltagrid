@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [OPS] - Preview deploy follow-up после depth freshness
+- Product commit `4433f0b` прошёл GitHub CI `27761405255`, но GitHub `Deploy Preview` `27761467202` снова завершился `failure` на шаге `Deploy preview` после успешных secrets/fingerprint/value checks, SSH port/login и app-dir check.
+- Public logs endpoint для failed run вернул `403`, поэтому причина внутри stdout deploy step недоступна через API; по step timing это выглядит как повторный transient SSH/deploy transport failure из GitHub runner.
+- Ручной SSH deploy тем же `scripts/deploy-compose-stack.sh` успешно обновил `/opt/deltagrid-preview` до `4433f0b`; backend/frontend containers healthy.
+- Полный preview release smoke на `8011/3012` прошёл: health/readiness/data/frontend, Perp DEX policy, direct venues и CoinGlass coverage зелёные.
+- `main`, production deploy и tags не трогались; trading, execution, route ranking, route selection, diagnostic carry bps и numeric route cost bps не включались.
+
 ## [2026-06-18] - [PRODUCT/API] - Perp DEX depth freshness evidence v0
 - `availability_summary.depth_diagnostics` получил `freshness`: snapshot timestamp, observed timestamp, `age_ms`, display `max_age_ms`, status, required policy inputs и stale-depth action.
 - Direct smoke проверяет freshness evidence и закрепляет `may_emit_slippage_bps=false`, `numeric_total_status=blocked`.

@@ -17,6 +17,7 @@
 - Preview auto-deploy через GitHub Actions проверен end-to-end: `PREVIEW_*` secrets, SSH login, deploy в `/opt/deltagrid-preview`, healthy containers и server smoke на ports `8011/3012`.
 - После flaky SSH login failure preview deploy workflow усилен явными SSH timeout/retry options; commit `4c3dec0` прошёл CI, `Deploy Preview` run `27532247102` завершился `success`, `/opt/deltagrid-preview` обновился автоматически и остался healthy.
 - После `v1.3.2` GitHub `Deploy Preview` run `27744161749` классифицирован как transient SSH reachability failure из GitHub runner: ручной deploy тем же script прошёл. Deploy workflows и `scripts/deploy-compose-stack.sh` усилены stage-aware diagnostics и remote diagnostic snapshot, добавлен `scripts/release-smoke.sh`, а `scripts/release-preflight.sh` получил `RELEASE_TARGET=1.4.0-rc.1` для preview RC target.
+- После product commit `4433f0b` с Perp DEX depth freshness GitHub CI `27761405255` прошёл, но `Deploy Preview` `27761467202` снова упал на шаге `Deploy preview` после успешных SSH prechecks; ручной deploy тем же script обновил `/opt/deltagrid-preview` до `4433f0b`, а полный preview release smoke на `8011/3012` прошёл.
 - Preview Nginx HTTP site заранее включён на VPS и проверен через `Host: preview.deltagrid.pro`; публичный HTTPS ждёт DNS-запись `preview -> 2.25.143.143`.
 - Production deploy hardening перенесён в `main`: workflow проверяет `PROD_*`, fingerprint deploy key, ожидаемые значения production VPS и app dir перед deploy step.
 - Read-only preflight production auto-deploy от 2026-06-16 подтвердил, что deploy contract готов: local deploy key fingerprint совпадает, SSH к `/opt/deltagrid` проходит, production smoke зелёный. `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR` ещё отсутствуют.
@@ -62,6 +63,7 @@
 - Perp DEX source status rollup v0 готов: UI-панель `Perp DEX Source Status` собирает direct venue snapshots, GMX raw, CoinGlass enrichment, route policy/model contract и last release smoke в compact read-only таблицу без новых provider calls, venue sorting, route ranking, numeric route cost bps или execution.
 - Perp DEX direct availability summary v0 готов: direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX отдают `availability_summary` с rows, requested/matched/missing symbols, status counts, depth diagnostics availability, read-only safety flags и `provider_error_class`; direct smoke и targeted tests проверяют taxonomy без raw payload.
 - Perp DEX depth freshness evidence v0 готов: `availability_summary.depth_diagnostics.freshness` показывает timestamp, observed_at, age, display max-age policy, stale-depth action и blocked numeric/slippage flags для Lighter/Aster depth diagnostics без slippage bps, route ranking или execution.
+- Preview runtime после depth freshness подтверждён ручным deploy и release smoke на `/opt/deltagrid-preview`; GitHub Deploy Preview требует повторного follow-up gate из-за transient runner/SSH failure, а не из-за product smoke failure.
 
 ## Аудит production data — 2026-06-13
 
