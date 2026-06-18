@@ -337,12 +337,13 @@
 
 - `preview` находится на `d3de35e`, `VERSION=1.3.2`, GitHub CI run `27744113125` прошёл `success`.
 - GitHub `Deploy Preview` run `27744161749` завершился `failure` на шаге `Deploy preview`, но ручной запуск того же `scripts/deploy-compose-stack.sh` по SSH успешно обновил `/opt/deltagrid-preview` до `d3de35e`; backend/frontend containers healthy, server smoke прошёл.
+- Follow-up `preview@b257cc8` прошёл GitHub CI `27746664616` и `Deploy Preview` `27746714283`; `/opt/deltagrid-preview` обновлён до `b257cc8`, preview release smoke на `8011/3012` прошёл.
 - Итерация release runway усилила diagnostics, добавила release smoke wrapper, выполнила preview smoke/Browser QA через SSH tunnel и создала production backup `/opt/deltagrid/backups/deltagrid-v140-runway_20260618T081912Z.sql.gz`.
 - `main`, production deploy и tag `v1.3.2` пока не трогались. Следующий production target — minor release `v1.4.0`.
 
 ### План новой версии `v1.4.0`
 
-- Итерация 1: release runway и deploy hardening — получить зелёный GitHub `Deploy Preview`, усилить deploy diagnostics, подготовить `PROD_*` checklist, выполнить production backup через новый script и зафиксировать release smoke checklist.
+- Итерация 1: release runway и deploy hardening — зелёный GitHub `Deploy Preview` получен на follow-up `b257cc8`, deploy diagnostics усилены, `PROD_*` checklist подготовлен, production backup выполнен через новый script, release smoke checklist зафиксирован.
 - Итерация 2: Perp DEX research cockpit v1.4 read-only — source status rollup, provider availability/error taxonomy, GMX helper/source follow-up, Lighter/Aster depth/fee evidence layers и улучшенные UI empty/error states без route scoring.
 - Итерация 3: `v1.4.0` release candidate и production rollout — version bump, full regression/smoke/build/audit pass, preview deploy gate, merge в `main`, production backup/deploy, production smoke и annotated tag `v1.4.0`.
 - Граница `v1.4.0`: trading, execution, route ranking, route selection и numeric route cost bps не включаются без отдельного явного решения; итог релиза — production-ready research/observability слой и зелёный deploy path.

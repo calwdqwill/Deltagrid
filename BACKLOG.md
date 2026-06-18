@@ -114,16 +114,16 @@
 - [x] Прогнать frontend `npm run build` и `npm audit --audit-level=high`.
 - [x] Закоммитить scoped changes в текущей ветке без отката чужих изменений: `d3de35e`.
 - [x] Push в GitHub на рабочую ветку `preview` и проверить GitHub CI: CI run `27744113125` прошёл `success`.
-- [ ] Получить зелёный GitHub `Deploy Preview` run для `d3de35e`: run `27744161749` упал на шаге `Deploy preview`, ручной SSH deploy тем же script прошёл и обновил preview server до `1.3.2`.
-- [ ] После зелёного preview deploy подготовить merge/push в `main` и tag `v1.3.2` или включить этот шаг в финальный `v1.4.0` release path; production deploy останется зависимым от настроенных `PROD_*` secrets.
+- [x] Получить зелёный GitHub `Deploy Preview` run для follow-up commit: run `27744161749` для `d3de35e` упал на шаге `Deploy preview`, но `b257cc8` прошёл CI `27746664616` и `Deploy Preview` `27746714283`; preview server обновлён до `1.3.2`.
+- [x] После зелёного preview deploy не делать отдельный production patch rollout `v1.3.2`, а включить promotion/tag в финальный `v1.4.0` release path; production deploy останется зависимым от настроенных `PROD_*` secrets.
 
 ### План новой версии `v1.4.0`: 3 итерации, 36 задач
 
 #### Итерация 1 — Release runway и deploy hardening
 
 - [x] Разобрать причину красного GitHub `Deploy Preview` run `27744161749`: transient SSH reachability из GitHub runner.
-- [ ] Сделать GitHub `Deploy Preview` зелёным для текущего preview commit или маленького follow-up commit.
-- [x] Зафиксировать `v1.3.2` follow-up в docs: CI зелёный, manual preview deploy зелёный, GitHub deploy run требует rerun/fix.
+- [x] Сделать GitHub `Deploy Preview` зелёным для маленького follow-up commit: `b257cc8`, CI `27746664616`, Deploy Preview `27746714283`.
+- [x] Зафиксировать `v1.3.2` follow-up в docs: CI зелёный, manual preview deploy зелёный, follow-up Deploy Preview зелёный.
 - [x] Усилить deploy diagnostics, чтобы transient SSH/deploy failure быстрее показывал причину.
 - [x] Добавить release smoke checklist для direct/policy/coinglass/health/frontend checks.
 - [x] Выполнить production backup через новый `scripts/backup-postgres.sh` из preview checkout против production Compose project, не пачкая production git checkout untracked script-файлом.

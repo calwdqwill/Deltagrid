@@ -112,6 +112,8 @@ BACKUP_BEFORE_DEPLOY=1 BRANCH=preview ENV_FILE=.env.preview COMPOSE_PROJECT_NAME
 - 7d BTC/ETH/SOL sync в preview БД завершён без ошибок, local smoke-check проходит;
 - DNS/Nginx для `preview.deltagrid.pro` ещё не настроены, но подготовлены `deploy/nginx/deltagrid-preview.conf.example`, `scripts/configure-preview-nginx-ssl.sh` и `deploy/dns/preview.deltagrid.pro.md`.
 
+Фактический preview deploy gate от 2026-06-18: после transient SSH failure в `Deploy Preview` run `27744161749` workflow и deploy script получили stage-aware diagnostics; follow-up `preview@b257cc8` прошёл CI `27746664616` и `Deploy Preview` `27746714283`, `/opt/deltagrid-preview` обновлён до `b257cc8`, release smoke на `127.0.0.1:8011/3012` прошёл.
+
 ## Подготовка env
 
 Автоматический вариант для сервера:

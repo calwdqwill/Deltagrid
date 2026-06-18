@@ -9,10 +9,11 @@
 - Docs follow-up по `v1.3.2` сохранён коммитом `60a7f0c`: зафиксированы `preview@d3de35e`, зелёный CI run `27744113125`, failed `Deploy Preview` run `27744161749` и успешный ручной preview deploy.
 - GitHub `Deploy Preview` failure разобран через GitHub API/job page: обязательные `PREVIEW_*` secrets и fingerprint checks были настроены, но SSH port/login/app-dir/deploy attempts из GitHub runner были нестабильны. Ручной SSH deploy после run прошёл, поэтому причина классифицирована как transient SSH reachability, а не ошибка app deploy script.
 - Deploy diagnostics усилены: deploy script печатает stage markers и failure snapshot, а GitHub preview/production workflows после failed deploy attempt пытаются собрать remote git/compose/logs snapshot или явно показывают SSH transport failure.
+- Follow-up commit `b257cc8` прошёл GitHub CI run `27746664616` и `Deploy Preview` run `27746714283`; `/opt/deltagrid-preview` обновлён до `b257cc8`, `VERSION=1.3.2`.
 - Добавлен `scripts/release-smoke.sh` для preview/prod release smoke: health/readiness/data-health/frontend, Perp DEX policy, direct venues и CoinGlass coverage.
 - `scripts/release-preflight.sh` получил `RELEASE_TARGET`; проверка `RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh` проходит на текущей версии `1.3.2`.
 - Production backup выполнен без изменения production checkout: script запущен из `/opt/deltagrid-preview` против production Compose project `deltagrid`, backup создан в `/opt/deltagrid/backups/deltagrid-v140-runway_20260618T081912Z.sql.gz`.
-- Preview VPS smoke прошёл: `server-smoke`, `perp-dex-policy-smoke`, `perp-dex-direct-smoke`, `coinglass-perp-dex-coverage-smoke`.
+- Preview VPS release smoke прошёл на `BASE_URL=http://127.0.0.1:8011` и `FRONTEND_URL=http://127.0.0.1:3012`: `server-smoke`, `perp-dex-policy-smoke`, `perp-dex-direct-smoke`, `coinglass-perp-dex-coverage-smoke`.
 - Browser QA через SSH tunnel прошёл для `/perp-dex?view=opportunities`, `/charts?symbol=BTC&interval=1m&range=24h`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets`; runtime errors и console errors не найдены. Публичный `preview.deltagrid.pro` всё ещё не резолвится, поэтому QA выполнен через tunnel.
 - `PROD_*` GitHub secrets остаются ручным внешним blocker’ом для реального `Deploy Production`; checklist обновлён в `deploy/github-actions-secrets.md`.
 - Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps и numeric route cost bps не включались.
@@ -770,8 +771,8 @@
 - [x] Прогнать frontend `npm run build` и `npm audit --audit-level=high`.
 - [x] Закоммитить scoped changes в текущей ветке без отката чужих изменений: `d3de35e chore: release v1.3.2 perp dex observability`.
 - [x] Push в GitHub на рабочую ветку `preview` и проверить GitHub CI: CI run `27744113125` прошёл `success`.
-- [ ] Получить зелёный GitHub `Deploy Preview` run для `d3de35e`: run `27744161749` упал на шаге `Deploy preview`, но ручной запуск того же `scripts/deploy-compose-stack.sh` по SSH успешно обновил `/opt/deltagrid-preview` до `d3de35e`, `VERSION=1.3.2`, backend/frontend healthy.
-- [ ] После зелёного preview deploy подготовить merge/push в `main` и tag `v1.3.2` или включить этот шаг в финальный `v1.4.0` release path; production deploy останется зависимым от настроенных `PROD_*` secrets.
+- [x] Получить зелёный GitHub `Deploy Preview` run для follow-up commit: run `27744161749` для `d3de35e` упал на шаге `Deploy preview`, но `b257cc8` прошёл CI `27746664616` и `Deploy Preview` `27746714283`; `/opt/deltagrid-preview` обновлён до `b257cc8`, `VERSION=1.3.2`.
+- [x] После зелёного preview deploy включить promotion/tag `v1.3.2` не отдельным patch rollout, а в финальный `v1.4.0` release path; production deploy останется зависимым от настроенных `PROD_*` secrets.
 
 ## Follow-up по `v1.3.2` — 2026-06-18
 
@@ -779,6 +780,7 @@
 - GitHub CI для `preview@d3de35e` зелёный.
 - GitHub `Deploy Preview` для этого push завершился `failure` на шаге `Deploy preview`; без GitHub job logs через API причина не видна, потому что logs endpoint вернул `403`.
 - Read-only SSH показал, что после failed run preview server оставался на `bc342ae`, но ручной запуск того же deploy script на сервере прошёл: `git pull` fast-forward до `d3de35e`, Docker build успешен, containers healthy, `scripts/server-smoke.sh` прошёл.
+- Follow-up `preview@b257cc8` прошёл GitHub CI `27746664616` и `Deploy Preview` `27746714283`; server release smoke на preview-портах `8011/3012` прошёл.
 - Production `main` и tag `v1.3.2` пока не трогались. Следующая версия должна идти как `v1.4.0` после отдельного preview-green и production rollout gate.
 - Важный blocker для production auto-deploy остаётся прежним: GitHub repository secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR` ещё нужно завести вручную.
 
@@ -789,8 +791,8 @@
 ### Итерация 1 — Release runway и deploy hardening
 
 - [x] Разобрать причину красного GitHub `Deploy Preview` run `27744161749`: GitHub API/job page показали transient SSH reachability из runner; ручной SSH deploy тем же script прошёл.
-- [ ] Сделать GitHub `Deploy Preview` зелёным для текущего `preview@d3de35e` или маленького follow-up commit без продуктового scope.
-- [x] Зафиксировать в docs фактическое состояние `v1.3.2`: CI зелёный, manual preview deploy зелёный, GitHub deploy run требует rerun/fix.
+- [x] Сделать GitHub `Deploy Preview` зелёным для маленького follow-up commit без продуктового scope: `b257cc8`, CI `27746664616`, Deploy Preview `27746714283`.
+- [x] Зафиксировать в docs фактическое состояние `v1.3.2`: CI зелёный, manual preview deploy зелёный, follow-up Deploy Preview зелёный.
 - [x] Обновить release/deploy scripts так, чтобы transient SSH/deploy failure давал более короткий diagnostic output и не скрывал причину в GitHub UI.
 - [x] Добавить preview/prod release smoke checklist для `perp-dex-direct`, `perp-dex-policy`, `coinglass-perp-dex-coverage`, `/api/v1/health`, `/api/v1/data/health` и frontend.
 - [x] Подготовить и выполнить безопасный production backup run через новый `scripts/backup-postgres.sh` из preview checkout против production Compose project, не пачкая production git checkout untracked script-файлом.

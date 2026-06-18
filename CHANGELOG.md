@@ -4,10 +4,11 @@
 - `v1.3.2` follow-up сохранён отдельным docs-коммитом: зафиксированы зелёный CI, ручной preview deploy и красный GitHub `Deploy Preview` run `27744161749`.
 - Причина красного `Deploy Preview` классифицирована как transient SSH reachability из GitHub runner: secrets/fingerprint/value checks были настроены, но SSH port/login/app-dir/deploy attempts были нестабильны; ручной SSH deploy тем же script прошёл.
 - `.github/workflows/deploy-preview.yml`, `.github/workflows/deploy-production.yml` и `scripts/deploy-compose-stack.sh` получили stage-aware diagnostics и remote diagnostic snapshot для failed deploy attempts.
+- Follow-up `preview@b257cc8` прошёл GitHub CI `27746664616` и `Deploy Preview` `27746714283`; `/opt/deltagrid-preview` обновлён до `b257cc8`, `VERSION=1.3.2`.
 - Добавлен `scripts/release-smoke.sh`: общий preview/prod smoke для health/readiness/data-health/frontend, Perp DEX policy, direct venues и CoinGlass coverage.
 - `scripts/release-preflight.sh` получил `RELEASE_TARGET`, чтобы проверять `1.4.0-rc.1` как preview target без преждевременного production bump.
 - Production backup подготовлен и выполнен безопасно через новый script из preview checkout против production Compose project: `/opt/deltagrid/backups/deltagrid-v140-runway_20260618T081912Z.sql.gz`, gzip integrity check прошёл внутри script.
-- Preview smoke на VPS прошёл: server smoke, Perp DEX policy smoke, direct venue smoke и CoinGlass coverage smoke зелёные; Browser QA через SSH tunnel прошёл для `/perp-dex`, `/charts`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets` без runtime errors.
+- Preview release smoke на VPS прошёл на `8011/3012`: server smoke, Perp DEX policy smoke, direct venue smoke и CoinGlass coverage smoke зелёные; Browser QA через SSH tunnel прошёл для `/perp-dex`, `/charts`, `/data-health`, `/market-matrix`, `/arbitrage-scanner`, `/assets` без runtime errors.
 - Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps и numeric route cost bps не включались.
 
 ## [2026-06-18] - [RELEASE] - v1.3.2 release stabilization
