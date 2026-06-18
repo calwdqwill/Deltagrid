@@ -1179,6 +1179,141 @@ def _build_diagnostic_cost_summary(
         )
 
     components_by_id = {item.get("id"): item for item in components if item.get("id")}
+    fee_schedule_evidence_definitions = [
+        {
+            "evidence_id": "lighter_fee_schedule_evidence",
+            "evidence_label": "Lighter Fee Schedule Evidence",
+            "venue_id": "lighter",
+            "venue_label": "Lighter",
+            "status": "fee_policy_required",
+            "source_component_id": "lighter_fee_fields",
+            "source_scope": "public maker/taker fee fields",
+            "required_input_ids": ["venue_fee_schedule", "order_intent"],
+            "required_policy_inputs": [
+                "account_fee_tier",
+                "fee_unit_confirmation",
+                "maker_taker_side",
+                "order_side",
+                "order_size_usd",
+                "order_intent_type",
+                "reduce_only_or_opening_intent",
+            ],
+            "manual_approval_ids": [
+                "lighter_fee_unit_review",
+                "lighter_account_fee_tier_review",
+                "lighter_order_intent_fee_review",
+            ],
+            "blocked_by": [
+                "raw_public_fee_fields_only",
+                "fee_unit_unconfirmed",
+                "account_fee_tier_missing",
+                "order_intent_missing",
+            ],
+            "blocked_outputs": ["fee_bps", "estimated_cost_bps", "net_edge_bps", "route_allowed"],
+            "safe_use": "Lighter fee fields are display-only until units, account tier and order intent are approved",
+        },
+        {
+            "evidence_id": "aster_fee_schedule_evidence",
+            "evidence_label": "Aster Fee Schedule Evidence",
+            "venue_id": "aster",
+            "venue_label": "Aster",
+            "status": "fee_policy_required",
+            "source_component_id": "aster_published_fee_schedule",
+            "source_scope": "published USDT perpetual fee defaults",
+            "required_input_ids": ["venue_fee_schedule", "order_intent"],
+            "required_policy_inputs": [
+                "account_fee_tier",
+                "fee_schedule_source_confirmation",
+                "fee_discount_policy",
+                "maker_taker_side",
+                "order_side",
+                "order_size_usd",
+                "order_intent_type",
+                "reduce_only_or_opening_intent",
+            ],
+            "manual_approval_ids": [
+                "aster_fee_schedule_source_review",
+                "aster_account_fee_tier_review",
+                "aster_fee_discount_policy_review",
+                "aster_order_intent_fee_review",
+            ],
+            "blocked_by": [
+                "published_defaults_not_account_fee",
+                "account_fee_tier_missing",
+                "fee_discount_policy_unconfirmed",
+                "order_intent_missing",
+            ],
+            "blocked_outputs": ["fee_bps", "estimated_cost_bps", "net_edge_bps", "route_allowed"],
+            "safe_use": "Aster published defaults are metadata only until account tier, discounts and order intent are approved",
+        },
+    ]
+    fee_schedule_evidence_checklist = []
+    for definition in fee_schedule_evidence_definitions:
+        component = components_by_id.get(definition["source_component_id"], {})
+        source_fields = component.get("source_fields") if isinstance(component.get("source_fields"), list) else []
+        published_values = component.get("published_values") if isinstance(component.get("published_values"), dict) else {}
+        fee_schedule_evidence_checklist.append(
+            {
+                "evidence_id": definition["evidence_id"],
+                "evidence_label": definition["evidence_label"],
+                "venue_id": definition["venue_id"],
+                "venue_label": definition["venue_label"],
+                "status": definition["status"],
+                "source_component_id": definition["source_component_id"],
+                "source_scope": definition["source_scope"],
+                "source_fields": source_fields,
+                "published_values": published_values,
+                "required_input_ids": definition["required_input_ids"],
+                "required_policy_inputs": definition["required_policy_inputs"],
+                "manual_approval_ids": definition["manual_approval_ids"],
+                "blocked_by": definition["blocked_by"],
+                "blocked_outputs": definition["blocked_outputs"],
+                "may_emit_fee_bps": False,
+                "may_estimate_cost_bps": False,
+                "may_rank_routes": False,
+                "may_submit_orders": False,
+                "numeric_total_status": "blocked",
+                "safe_use": definition["safe_use"],
+                "next_action": "confirm fee units, account tier and maker/taker side before fee bps",
+            }
+        )
+
+    def add_unique_value(target: list[str], value: str) -> None:
+        if value and value not in target:
+            target.append(value)
+
+    fee_schedule_evidence_summary = {
+        "status": "fee_schedule_evidence_required",
+        "evidence_count": len(fee_schedule_evidence_checklist),
+        "blocked_evidence_count": len(fee_schedule_evidence_checklist),
+        "venue_ids": [],
+        "component_ids": [],
+        "source_fields": [],
+        "required_input_ids": [],
+        "required_policy_inputs": [],
+        "manual_approval_ids": [],
+        "blocked_outputs": [],
+        "may_emit_fee_bps": False,
+        "may_estimate_cost_bps": False,
+        "may_rank_routes": False,
+        "may_submit_orders": False,
+        "numeric_total_status": "blocked",
+        "safe_use": "fee schedule evidence only; do not emit fee bps, total route cost, ranking or execution",
+        "next_action": "confirm account fee tier, fee units, discount policy and order intent before fee bps",
+    }
+    for evidence in fee_schedule_evidence_checklist:
+        add_unique_value(fee_schedule_evidence_summary["venue_ids"], evidence["venue_id"])
+        add_unique_value(fee_schedule_evidence_summary["component_ids"], evidence["source_component_id"])
+        for key in (
+            "source_fields",
+            "required_input_ids",
+            "required_policy_inputs",
+            "manual_approval_ids",
+            "blocked_outputs",
+        ):
+            for value in evidence[key]:
+                add_unique_value(fee_schedule_evidence_summary[key], value)
+
     depth_policy_definitions = [
         {
             "policy_id": "lighter_top_order_depth_staleness",
@@ -1409,6 +1544,16 @@ def _build_diagnostic_cost_summary(
             component_ids=[policy.get("component_id")] if policy.get("component_id") else [],
             venue_ids=[policy.get("venue_id")] if policy.get("venue_id") else [],
             policy_ids=[policy.get("policy_id")] if policy.get("policy_id") else [],
+        )
+    for evidence in fee_schedule_evidence_checklist:
+        add_next_action_source(
+            next_action=evidence.get("next_action", ""),
+            source_type="fee_schedule_evidence",
+            source_id=evidence.get("evidence_id", ""),
+            required_input_ids=evidence.get("required_input_ids") if isinstance(evidence.get("required_input_ids"), list) else [],
+            required_policy_inputs=evidence.get("required_policy_inputs") if isinstance(evidence.get("required_policy_inputs"), list) else [],
+            component_ids=[evidence.get("source_component_id")] if evidence.get("source_component_id") else [],
+            venue_ids=[evidence.get("venue_id")] if evidence.get("venue_id") else [],
         )
     next_action_breakdown = list(next_action_groups.values())
 
@@ -1758,6 +1903,8 @@ def _build_diagnostic_cost_summary(
         "source_field_breakdown": source_field_breakdown,
         "safe_use_breakdown": safe_use_breakdown,
         "readiness_rollup": readiness_rollup,
+        "fee_schedule_evidence_summary": fee_schedule_evidence_summary,
+        "fee_schedule_evidence_checklist": fee_schedule_evidence_checklist,
         "depth_staleness_policy_checklist": depth_staleness_policy_checklist,
         "required_policy_input_breakdown": required_policy_input_breakdown,
         "next_action_breakdown": next_action_breakdown,

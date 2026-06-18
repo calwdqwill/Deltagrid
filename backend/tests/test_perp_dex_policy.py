@@ -523,6 +523,80 @@ def test_perp_dex_route_model_is_read_only_inputs_required() -> None:
         assert rollup["safe_use"]
         assert rollup["next_action"]
 
+    fee_schedule_evidence_summary = diagnostics["summary"]["fee_schedule_evidence_summary"]
+    fee_schedule_evidence_checklist = diagnostics["summary"]["fee_schedule_evidence_checklist"]
+    expected_fee_evidence_ids = ["lighter_fee_schedule_evidence", "aster_fee_schedule_evidence"]
+    expected_fee_venue_ids = ["lighter", "aster"]
+    expected_fee_component_ids = ["lighter_fee_fields", "aster_published_fee_schedule"]
+    expected_fee_required_inputs = ["venue_fee_schedule", "order_intent"]
+    expected_fee_policy_inputs = [
+        "account_fee_tier",
+        "fee_unit_confirmation",
+        "maker_taker_side",
+        "order_side",
+        "order_size_usd",
+        "order_intent_type",
+        "reduce_only_or_opening_intent",
+        "fee_schedule_source_confirmation",
+        "fee_discount_policy",
+    ]
+    expected_fee_manual_approval_ids = [
+        "lighter_fee_unit_review",
+        "lighter_account_fee_tier_review",
+        "lighter_order_intent_fee_review",
+        "aster_fee_schedule_source_review",
+        "aster_account_fee_tier_review",
+        "aster_fee_discount_policy_review",
+        "aster_order_intent_fee_review",
+    ]
+    expected_fee_blocked_outputs = ["fee_bps", "estimated_cost_bps", "net_edge_bps", "route_allowed"]
+    assert fee_schedule_evidence_summary["status"] == "fee_schedule_evidence_required"
+    assert fee_schedule_evidence_summary["evidence_count"] == 2
+    assert fee_schedule_evidence_summary["blocked_evidence_count"] == 2
+    assert fee_schedule_evidence_summary["venue_ids"] == expected_fee_venue_ids
+    assert fee_schedule_evidence_summary["component_ids"] == expected_fee_component_ids
+    assert fee_schedule_evidence_summary["required_input_ids"] == expected_fee_required_inputs
+    assert fee_schedule_evidence_summary["required_policy_inputs"] == expected_fee_policy_inputs
+    assert fee_schedule_evidence_summary["manual_approval_ids"] == expected_fee_manual_approval_ids
+    assert fee_schedule_evidence_summary["blocked_outputs"] == expected_fee_blocked_outputs
+    assert fee_schedule_evidence_summary["may_emit_fee_bps"] is False
+    assert fee_schedule_evidence_summary["may_estimate_cost_bps"] is False
+    assert fee_schedule_evidence_summary["may_rank_routes"] is False
+    assert fee_schedule_evidence_summary["may_submit_orders"] is False
+    assert fee_schedule_evidence_summary["numeric_total_status"] == "blocked"
+    assert "do not emit fee bps" in fee_schedule_evidence_summary["safe_use"]
+    assert fee_schedule_evidence_summary["next_action"]
+
+    assert [item["evidence_id"] for item in fee_schedule_evidence_checklist] == expected_fee_evidence_ids
+    fee_evidence_by_id = {item["evidence_id"]: item for item in fee_schedule_evidence_checklist}
+    assert fee_evidence_by_id["lighter_fee_schedule_evidence"]["source_fields"] == ["maker_fee", "taker_fee"]
+    assert fee_evidence_by_id["lighter_fee_schedule_evidence"]["manual_approval_ids"] == [
+        "lighter_fee_unit_review",
+        "lighter_account_fee_tier_review",
+        "lighter_order_intent_fee_review",
+    ]
+    assert fee_evidence_by_id["aster_fee_schedule_evidence"]["published_values"]["taker_fee_bps"] == 4.0
+    assert fee_evidence_by_id["aster_fee_schedule_evidence"]["manual_approval_ids"] == [
+        "aster_fee_schedule_source_review",
+        "aster_account_fee_tier_review",
+        "aster_fee_discount_policy_review",
+        "aster_order_intent_fee_review",
+    ]
+    for fee_evidence in fee_schedule_evidence_checklist:
+        assert fee_evidence["venue_id"] in expected_fee_venue_ids
+        assert fee_evidence["status"] == "fee_policy_required"
+        assert fee_evidence["source_component_id"] in expected_fee_component_ids
+        assert fee_evidence["required_input_ids"] == expected_fee_required_inputs
+        assert fee_evidence["required_policy_inputs"]
+        assert fee_evidence["blocked_outputs"] == expected_fee_blocked_outputs
+        assert fee_evidence["may_emit_fee_bps"] is False
+        assert fee_evidence["may_estimate_cost_bps"] is False
+        assert fee_evidence["may_rank_routes"] is False
+        assert fee_evidence["may_submit_orders"] is False
+        assert fee_evidence["numeric_total_status"] == "blocked"
+        assert fee_evidence["safe_use"]
+        assert fee_evidence["next_action"]
+
     depth_policy = diagnostics["summary"]["depth_staleness_policy_checklist"]
     assert [item["policy_id"] for item in depth_policy] == [
         "lighter_top_order_depth_staleness",

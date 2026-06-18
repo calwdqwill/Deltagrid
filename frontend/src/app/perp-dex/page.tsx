@@ -27,6 +27,8 @@ import {
   LivePerpDexRouteCostDiagnosticBlockerBreakdown,
   LivePerpDexRouteCostDiagnosticComponent,
   LivePerpDexRouteCostDiagnosticDepthPolicyChecklist,
+  LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceItem,
+  LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceSummary,
   LivePerpDexRouteCostDiagnosticNextActionBreakdown,
   LivePerpDexRouteCostDiagnosticReadinessRollup,
   LivePerpDexRouteCostDiagnosticRequiredPolicyInputBreakdown,
@@ -798,6 +800,130 @@ function buildRouteDiagnosticReadinessRollup(
       next_action: definition.next_action,
     };
   });
+}
+
+function buildRouteDiagnosticFeeScheduleEvidenceChecklist(
+  components: LivePerpDexRouteCostDiagnosticComponent[]
+): LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceItem[] {
+  const componentsById = new Map(components.map((component) => [component.id, component]));
+  const definitions = [
+    {
+      evidence_id: "lighter_fee_schedule_evidence",
+      evidence_label: "Lighter Fee Schedule Evidence",
+      venue_id: "lighter",
+      venue_label: "Lighter",
+      status: "fee_policy_required",
+      source_component_id: "lighter_fee_fields",
+      source_scope: "public maker/taker fee fields",
+      required_policy_inputs: [
+        "account_fee_tier",
+        "fee_unit_confirmation",
+        "maker_taker_side",
+        "order_side",
+        "order_size_usd",
+        "order_intent_type",
+        "reduce_only_or_opening_intent",
+      ],
+      manual_approval_ids: [
+        "lighter_fee_unit_review",
+        "lighter_account_fee_tier_review",
+        "lighter_order_intent_fee_review",
+      ],
+      blocked_by: [
+        "raw_public_fee_fields_only",
+        "fee_unit_unconfirmed",
+        "account_fee_tier_missing",
+        "order_intent_missing",
+      ],
+      safe_use: "Lighter fee fields are display-only until units, account tier and order intent are approved",
+    },
+    {
+      evidence_id: "aster_fee_schedule_evidence",
+      evidence_label: "Aster Fee Schedule Evidence",
+      venue_id: "aster",
+      venue_label: "Aster",
+      status: "fee_policy_required",
+      source_component_id: "aster_published_fee_schedule",
+      source_scope: "published USDT perpetual fee defaults",
+      required_policy_inputs: [
+        "account_fee_tier",
+        "fee_schedule_source_confirmation",
+        "fee_discount_policy",
+        "maker_taker_side",
+        "order_side",
+        "order_size_usd",
+        "order_intent_type",
+        "reduce_only_or_opening_intent",
+      ],
+      manual_approval_ids: [
+        "aster_fee_schedule_source_review",
+        "aster_account_fee_tier_review",
+        "aster_fee_discount_policy_review",
+        "aster_order_intent_fee_review",
+      ],
+      blocked_by: [
+        "published_defaults_not_account_fee",
+        "account_fee_tier_missing",
+        "fee_discount_policy_unconfirmed",
+        "order_intent_missing",
+      ],
+      safe_use: "Aster published defaults are metadata only until account tier, discounts and order intent are approved",
+    },
+  ];
+
+  return definitions.map((definition) => {
+    const component = componentsById.get(definition.source_component_id);
+    return {
+      ...definition,
+      source_fields: component?.source_fields ?? [],
+      published_values: component?.published_values ?? {},
+      required_input_ids: ["venue_fee_schedule", "order_intent"],
+      blocked_outputs: ["fee_bps", "estimated_cost_bps", "net_edge_bps", "route_allowed"],
+      may_emit_fee_bps: false,
+      may_estimate_cost_bps: false,
+      may_rank_routes: false,
+      may_submit_orders: false,
+      numeric_total_status: "blocked",
+      next_action: "Confirm fee units, account tier and maker/taker side before fee bps",
+    };
+  });
+}
+
+function buildRouteDiagnosticFeeScheduleEvidenceSummary(
+  checklist: LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceItem[]
+): LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceSummary {
+  const appendUnique = (items: string[], value: string) => {
+    if (value && !items.includes(value)) items.push(value);
+  };
+  const summary: LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceSummary = {
+    status: "fee_schedule_evidence_required",
+    evidence_count: checklist.length,
+    blocked_evidence_count: checklist.length,
+    venue_ids: [],
+    component_ids: [],
+    source_fields: [],
+    required_input_ids: [],
+    required_policy_inputs: [],
+    manual_approval_ids: [],
+    blocked_outputs: [],
+    may_emit_fee_bps: false,
+    may_estimate_cost_bps: false,
+    may_rank_routes: false,
+    may_submit_orders: false,
+    numeric_total_status: "blocked",
+    safe_use: "Fee schedule evidence only; do not emit fee bps, total route cost, ranking or execution",
+    next_action: "Confirm account fee tier, fee units, discount policy and order intent before fee bps",
+  };
+  checklist.forEach((item) => {
+    appendUnique(summary.venue_ids, item.venue_id);
+    appendUnique(summary.component_ids, item.source_component_id);
+    item.source_fields.forEach((value) => appendUnique(summary.source_fields, value));
+    item.required_input_ids.forEach((value) => appendUnique(summary.required_input_ids, value));
+    item.required_policy_inputs.forEach((value) => appendUnique(summary.required_policy_inputs, value));
+    item.manual_approval_ids.forEach((value) => appendUnique(summary.manual_approval_ids, value));
+    item.blocked_outputs.forEach((value) => appendUnique(summary.blocked_outputs, value));
+  });
+  return summary;
 }
 
 function buildRouteDiagnosticDepthPolicyChecklist(
@@ -2777,6 +2903,14 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
     diagnosticComponentSummary?.readiness_rollup?.length
       ? diagnosticComponentSummary.readiness_rollup
       : buildRouteDiagnosticReadinessRollup(diagnosticComponents);
+  const fallbackFeeScheduleEvidenceChecklist = buildRouteDiagnosticFeeScheduleEvidenceChecklist(diagnosticComponents);
+  const diagnosticFeeScheduleEvidenceChecklist =
+    diagnosticComponentSummary?.fee_schedule_evidence_checklist?.length
+      ? diagnosticComponentSummary.fee_schedule_evidence_checklist
+      : fallbackFeeScheduleEvidenceChecklist;
+  const diagnosticFeeScheduleEvidenceSummary =
+    diagnosticComponentSummary?.fee_schedule_evidence_summary ??
+    buildRouteDiagnosticFeeScheduleEvidenceSummary(fallbackFeeScheduleEvidenceChecklist);
   const diagnosticDepthPolicyChecklist =
     diagnosticComponentSummary?.depth_staleness_policy_checklist?.length
       ? diagnosticComponentSummary.depth_staleness_policy_checklist
@@ -2953,6 +3087,72 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
           </span>,
           routeModelList(item.display_component_ids),
           routeModelList(item.blocked_numeric_component_ids),
+          item.next_action,
+        ]);
+  const routeDiagnosticFeeScheduleEvidenceSummaryRows =
+    routeModel.status === "unavailable" || !diagnosticFeeScheduleEvidenceSummary
+      ? []
+      : [
+          [
+            "Fee Schedule Evidence",
+            <span key="status" className={toneText(policyStatusTone(diagnosticFeeScheduleEvidenceSummary.status))}>
+              {policyStatusLabel(diagnosticFeeScheduleEvidenceSummary.status)}
+            </span>,
+            <span key="count" className="font-mono text-slate-100">
+              {diagnosticFeeScheduleEvidenceSummary.blocked_evidence_count}/
+              {diagnosticFeeScheduleEvidenceSummary.evidence_count}
+            </span>,
+            routeModelList(diagnosticFeeScheduleEvidenceSummary.venue_ids),
+            routeModelList(diagnosticFeeScheduleEvidenceSummary.required_policy_inputs),
+            routeModelList(diagnosticFeeScheduleEvidenceSummary.manual_approval_ids),
+            <span key="flags" className={toneText("positive")}>
+              {[
+                diagnosticFeeScheduleEvidenceSummary.may_emit_fee_bps ? "Fee Allowed" : "Fee Blocked",
+                diagnosticFeeScheduleEvidenceSummary.may_estimate_cost_bps ? "Cost Allowed" : "Cost Blocked",
+                diagnosticFeeScheduleEvidenceSummary.may_rank_routes ? "Rank Allowed" : "Rank Blocked",
+                diagnosticFeeScheduleEvidenceSummary.may_submit_orders ? "Exec Allowed" : "Exec Blocked",
+              ].join(" / ")}
+            </span>,
+          ],
+          [
+            "Blocked Outputs",
+            <span key="status" className={toneText(policyStatusTone(diagnosticFeeScheduleEvidenceSummary.numeric_total_status))}>
+              {policyStatusLabel(diagnosticFeeScheduleEvidenceSummary.numeric_total_status)}
+            </span>,
+            routeModelList(diagnosticFeeScheduleEvidenceSummary.blocked_outputs),
+            routeModelList(diagnosticFeeScheduleEvidenceSummary.component_ids),
+            routeModelList(diagnosticFeeScheduleEvidenceSummary.source_fields),
+            diagnosticFeeScheduleEvidenceSummary.safe_use,
+            diagnosticFeeScheduleEvidenceSummary.next_action,
+          ],
+        ];
+  const routeDiagnosticFeeScheduleEvidenceRows =
+    routeModel.status === "unavailable"
+      ? []
+      : diagnosticFeeScheduleEvidenceChecklist.map((item) => [
+          <span key="venue" className="font-semibold text-cyan-200">
+            {item.venue_label}
+          </span>,
+          <span key="status" className={toneText(policyStatusTone(item.status))}>
+            {policyStatusLabel(item.status)}
+          </span>,
+          item.source_scope,
+          item.source_component_id,
+          routeModelList(item.source_fields),
+          routeModelValues(item.published_values),
+          routeModelList(item.required_input_ids),
+          routeModelList(item.required_policy_inputs),
+          routeModelList(item.manual_approval_ids),
+          routeModelList(item.blocked_by),
+          routeModelList(item.blocked_outputs),
+          <span key="flags" className={toneText("positive")}>
+            {[
+              item.may_emit_fee_bps ? "Fee Allowed" : "Fee Blocked",
+              item.may_estimate_cost_bps ? "Cost Allowed" : "Cost Blocked",
+              item.may_rank_routes ? "Rank Allowed" : "Rank Blocked",
+              item.may_submit_orders ? "Exec Allowed" : "Exec Blocked",
+            ].join(" / ")}
+          </span>,
           item.next_action,
         ]);
   const routeDiagnosticDepthPolicyRows =
@@ -3902,6 +4102,56 @@ export default async function PerpDexPage({ searchParams }: PerpDexPageProps) {
             ) : (
               <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
                 Route diagnostic readiness rollup is not available from the backend right now.
+              </div>
+            )}
+          </TerminalPanel>
+        )}
+
+        {(activeView === "overview" || activeView === "venues" || activeView === "opportunities") && (
+          <TerminalPanel
+            title="Route Diagnostic Fee Schedule Evidence"
+            caption="Lighter/Aster fee schedule gates: account tier, order intent and manual approvals before any fee bps"
+          >
+            {routeDiagnosticFeeScheduleEvidenceSummaryRows.length > 0 ? (
+              <TerminalTable
+                columns={["Area", "Status", "Evidence", "Venues / Components", "Policy Inputs / Source Fields", "Manual / Boundary", "Cost / Rank / Exec"]}
+                rows={routeDiagnosticFeeScheduleEvidenceSummaryRows}
+              />
+            ) : (
+              <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                Route diagnostic fee schedule evidence summary is not available from the backend right now.
+              </div>
+            )}
+          </TerminalPanel>
+        )}
+
+        {(activeView === "overview" || activeView === "venues" || activeView === "opportunities") && (
+          <TerminalPanel
+            title="Route Diagnostic Fee Schedule Checklist"
+            caption="Venue-level fee evidence rows remain display-only until account tier and order intent approvals are explicit"
+          >
+            {routeDiagnosticFeeScheduleEvidenceRows.length > 0 ? (
+              <TerminalTable
+                columns={[
+                  "Venue",
+                  "Status",
+                  "Source Scope",
+                  "Component",
+                  "Source Fields",
+                  "Published Values",
+                  "Required Inputs",
+                  "Policy Inputs",
+                  "Manual Approvals",
+                  "Blocked By",
+                  "Blocked Outputs",
+                  "Fee / Cost / Rank / Exec",
+                  "Next Action",
+                ]}
+                rows={routeDiagnosticFeeScheduleEvidenceRows}
+              />
+            ) : (
+              <div className="rounded-md border border-white/10 bg-white/[0.035] p-4 text-sm text-slate-400">
+                Route diagnostic fee schedule checklist is not available from the backend right now.
               </div>
             )}
           </TerminalPanel>

@@ -555,6 +555,50 @@ export interface LivePerpDexRouteCostDiagnosticRouteReadyEvidenceChecklist {
   next_action: string;
 }
 
+export interface LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceSummary {
+  status: string;
+  evidence_count: number;
+  blocked_evidence_count: number;
+  venue_ids: string[];
+  component_ids: string[];
+  source_fields: string[];
+  required_input_ids: string[];
+  required_policy_inputs: string[];
+  manual_approval_ids: string[];
+  blocked_outputs: string[];
+  may_emit_fee_bps: boolean;
+  may_estimate_cost_bps: boolean;
+  may_rank_routes: boolean;
+  may_submit_orders: boolean;
+  numeric_total_status: string;
+  safe_use: string;
+  next_action: string;
+}
+
+export interface LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceItem {
+  evidence_id: string;
+  evidence_label: string;
+  venue_id: string;
+  venue_label: string;
+  status: string;
+  source_component_id: string;
+  source_scope: string;
+  source_fields: string[];
+  published_values?: Record<string, string | number | boolean>;
+  required_input_ids: string[];
+  required_policy_inputs: string[];
+  manual_approval_ids: string[];
+  blocked_by: string[];
+  blocked_outputs: string[];
+  may_emit_fee_bps: boolean;
+  may_estimate_cost_bps: boolean;
+  may_rank_routes: boolean;
+  may_submit_orders: boolean;
+  numeric_total_status: string;
+  safe_use: string;
+  next_action: string;
+}
+
 export interface LivePerpDexRouteCostDiagnosticVenueEvidenceStatus {
   venue_id: string;
   venue_label: string;
@@ -910,6 +954,8 @@ export interface LivePerpDexRouteCostDiagnosticSummary {
   source_field_breakdown?: LivePerpDexRouteCostDiagnosticSourceFieldBreakdown[];
   safe_use_breakdown?: LivePerpDexRouteCostDiagnosticSafeUseBreakdown[];
   readiness_rollup?: LivePerpDexRouteCostDiagnosticReadinessRollup[];
+  fee_schedule_evidence_summary?: LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceSummary;
+  fee_schedule_evidence_checklist?: LivePerpDexRouteCostDiagnosticFeeScheduleEvidenceItem[];
   depth_staleness_policy_checklist?: LivePerpDexRouteCostDiagnosticDepthPolicyChecklist[];
   required_policy_input_breakdown?: LivePerpDexRouteCostDiagnosticRequiredPolicyInputBreakdown[];
   next_action_breakdown?: LivePerpDexRouteCostDiagnosticNextActionBreakdown[];

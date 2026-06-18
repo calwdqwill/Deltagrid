@@ -143,6 +143,16 @@ def compact_contract(policy, model):
     source_breakdown = summary.get("source_field_breakdown") if isinstance(summary.get("source_field_breakdown"), list) else []
     safe_use_breakdown = summary.get("safe_use_breakdown") if isinstance(summary.get("safe_use_breakdown"), list) else []
     readiness_rollup = summary.get("readiness_rollup") if isinstance(summary.get("readiness_rollup"), list) else []
+    fee_schedule_evidence_summary = (
+        summary.get("fee_schedule_evidence_summary")
+        if isinstance(summary.get("fee_schedule_evidence_summary"), dict)
+        else {}
+    )
+    fee_schedule_evidence_checklist = (
+        summary.get("fee_schedule_evidence_checklist")
+        if isinstance(summary.get("fee_schedule_evidence_checklist"), list)
+        else []
+    )
     depth_checklist = (
         summary.get("depth_staleness_policy_checklist")
         if isinstance(summary.get("depth_staleness_policy_checklist"), list)
@@ -251,6 +261,19 @@ def compact_contract(policy, model):
         "source_fields": [item.get("source_field") for item in source_breakdown if isinstance(item, dict)],
         "safe_use_count": len(safe_use_breakdown),
         "readiness_rollup_ids": [item.get("category_id") for item in readiness_rollup if isinstance(item, dict)],
+        "fee_schedule_evidence_status": fee_schedule_evidence_summary.get("status"),
+        "fee_schedule_evidence_ids": [
+            item.get("evidence_id")
+            for item in fee_schedule_evidence_checklist
+            if isinstance(item, dict)
+        ],
+        "fee_schedule_evidence_venue_ids": [
+            item.get("venue_id")
+            for item in fee_schedule_evidence_checklist
+            if isinstance(item, dict)
+        ],
+        "fee_schedule_evidence_policy_inputs": fee_schedule_evidence_summary.get("required_policy_inputs", []),
+        "fee_schedule_evidence_manual_approval_ids": fee_schedule_evidence_summary.get("manual_approval_ids", []),
         "depth_policy_ids": [item.get("policy_id") for item in depth_checklist if isinstance(item, dict)],
         "required_policy_input_ids": [item.get("input_id") for item in policy_input_breakdown if isinstance(item, dict)],
         "next_action_ids": [item.get("action_id") for item in next_action_breakdown if isinstance(item, dict)],
@@ -910,6 +933,98 @@ def require_diagnostic_components(diagnostics, required_inputs, failures):
         require(rollup.get("numeric_total_status") == "blocked", f"{rollup_prefix}: numeric total status mismatch", failures)
         require(isinstance(rollup.get("safe_use"), str) and bool(rollup.get("safe_use")), f"{rollup_prefix}: safe_use missing", failures)
         require(isinstance(rollup.get("next_action"), str) and bool(rollup.get("next_action")), f"{rollup_prefix}: next_action missing", failures)
+
+    fee_schedule_evidence_summary = summary.get("fee_schedule_evidence_summary")
+    require(
+        isinstance(fee_schedule_evidence_summary, dict) and bool(fee_schedule_evidence_summary),
+        "model.diagnostic_cost_estimate_v0.summary.fee_schedule_evidence_summary: missing",
+        failures,
+    )
+    fee_schedule_evidence_checklist = summary.get("fee_schedule_evidence_checklist")
+    require(
+        isinstance(fee_schedule_evidence_checklist, list) and bool(fee_schedule_evidence_checklist),
+        "model.diagnostic_cost_estimate_v0.summary.fee_schedule_evidence_checklist: missing",
+        failures,
+    )
+    expected_fee_evidence_ids = ["lighter_fee_schedule_evidence", "aster_fee_schedule_evidence"]
+    expected_fee_venue_ids = ["lighter", "aster"]
+    expected_fee_component_ids = ["lighter_fee_fields", "aster_published_fee_schedule"]
+    expected_fee_required_inputs = ["venue_fee_schedule", "order_intent"]
+    expected_fee_policy_inputs = [
+        "account_fee_tier",
+        "fee_unit_confirmation",
+        "maker_taker_side",
+        "order_side",
+        "order_size_usd",
+        "order_intent_type",
+        "reduce_only_or_opening_intent",
+        "fee_schedule_source_confirmation",
+        "fee_discount_policy",
+    ]
+    expected_fee_manual_approval_ids = [
+        "lighter_fee_unit_review",
+        "lighter_account_fee_tier_review",
+        "lighter_order_intent_fee_review",
+        "aster_fee_schedule_source_review",
+        "aster_account_fee_tier_review",
+        "aster_fee_discount_policy_review",
+        "aster_order_intent_fee_review",
+    ]
+    expected_fee_blocked_outputs = ["fee_bps", "estimated_cost_bps", "net_edge_bps", "route_allowed"]
+    if isinstance(fee_schedule_evidence_summary, dict):
+        summary_prefix = "model.diagnostic_cost_estimate_v0.summary.fee_schedule_evidence_summary"
+        require(fee_schedule_evidence_summary.get("status") == "fee_schedule_evidence_required", f"{summary_prefix}: status mismatch", failures)
+        require(fee_schedule_evidence_summary.get("evidence_count") == 2, f"{summary_prefix}: evidence_count mismatch", failures)
+        require(fee_schedule_evidence_summary.get("blocked_evidence_count") == 2, f"{summary_prefix}: blocked count mismatch", failures)
+        require(fee_schedule_evidence_summary.get("venue_ids") == expected_fee_venue_ids, f"{summary_prefix}: venue ids mismatch", failures)
+        require(fee_schedule_evidence_summary.get("component_ids") == expected_fee_component_ids, f"{summary_prefix}: component ids mismatch", failures)
+        require(fee_schedule_evidence_summary.get("required_input_ids") == expected_fee_required_inputs, f"{summary_prefix}: required inputs mismatch", failures)
+        require(fee_schedule_evidence_summary.get("required_policy_inputs") == expected_fee_policy_inputs, f"{summary_prefix}: policy inputs mismatch", failures)
+        require(fee_schedule_evidence_summary.get("manual_approval_ids") == expected_fee_manual_approval_ids, f"{summary_prefix}: manual approvals mismatch", failures)
+        require(fee_schedule_evidence_summary.get("blocked_outputs") == expected_fee_blocked_outputs, f"{summary_prefix}: blocked outputs mismatch", failures)
+        require(fee_schedule_evidence_summary.get("may_emit_fee_bps") is False, f"{summary_prefix}: fee bps must stay blocked", failures)
+        require(fee_schedule_evidence_summary.get("may_estimate_cost_bps") is False, f"{summary_prefix}: cost bps must stay blocked", failures)
+        require(fee_schedule_evidence_summary.get("may_rank_routes") is False, f"{summary_prefix}: ranking must stay blocked", failures)
+        require(fee_schedule_evidence_summary.get("may_submit_orders") is False, f"{summary_prefix}: execution must stay blocked", failures)
+        require(fee_schedule_evidence_summary.get("numeric_total_status") == "blocked", f"{summary_prefix}: numeric total status mismatch", failures)
+        require(
+            isinstance(fee_schedule_evidence_summary.get("safe_use"), str)
+            and "do not emit fee bps" in fee_schedule_evidence_summary.get("safe_use"),
+            f"{summary_prefix}: safe_use mismatch",
+            failures,
+        )
+        require(isinstance(fee_schedule_evidence_summary.get("next_action"), str) and bool(fee_schedule_evidence_summary.get("next_action")), f"{summary_prefix}: next_action missing", failures)
+    fee_evidence_ids = [
+        item.get("evidence_id")
+        for item in fee_schedule_evidence_checklist
+        if isinstance(item, dict)
+    ] if isinstance(fee_schedule_evidence_checklist, list) else []
+    require(
+        fee_evidence_ids == expected_fee_evidence_ids,
+        "model.diagnostic_cost_estimate_v0.summary.fee_schedule_evidence_checklist: evidence order mismatch",
+        failures,
+    )
+    for evidence in fee_schedule_evidence_checklist if isinstance(fee_schedule_evidence_checklist, list) else []:
+        if not isinstance(evidence, dict):
+            failures.append("model.diagnostic_cost_estimate_v0.summary.fee_schedule_evidence_checklist: row must be object")
+            continue
+        evidence_prefix = f"model.diagnostic_cost_estimate_v0.summary.fee_schedule_evidence_checklist.{evidence.get('evidence_id')}"
+        require(evidence.get("venue_id") in expected_fee_venue_ids, f"{evidence_prefix}: venue mismatch", failures)
+        require(evidence.get("status") == "fee_policy_required", f"{evidence_prefix}: status mismatch", failures)
+        require(evidence.get("source_component_id") in expected_fee_component_ids, f"{evidence_prefix}: component mismatch", failures)
+        require(isinstance(evidence.get("source_fields"), list) and bool(evidence.get("source_fields")), f"{evidence_prefix}: source fields missing", failures)
+        require(evidence.get("required_input_ids") == expected_fee_required_inputs, f"{evidence_prefix}: required inputs mismatch", failures)
+        require(isinstance(evidence.get("required_policy_inputs"), list) and bool(evidence.get("required_policy_inputs")), f"{evidence_prefix}: policy inputs missing", failures)
+        require(isinstance(evidence.get("manual_approval_ids"), list) and bool(evidence.get("manual_approval_ids")), f"{evidence_prefix}: manual approvals missing", failures)
+        require(isinstance(evidence.get("blocked_by"), list) and bool(evidence.get("blocked_by")), f"{evidence_prefix}: blockers missing", failures)
+        require(evidence.get("blocked_outputs") == expected_fee_blocked_outputs, f"{evidence_prefix}: blocked outputs mismatch", failures)
+        require(evidence.get("may_emit_fee_bps") is False, f"{evidence_prefix}: fee bps must stay blocked", failures)
+        require(evidence.get("may_estimate_cost_bps") is False, f"{evidence_prefix}: cost bps must stay blocked", failures)
+        require(evidence.get("may_rank_routes") is False, f"{evidence_prefix}: ranking must stay blocked", failures)
+        require(evidence.get("may_submit_orders") is False, f"{evidence_prefix}: execution must stay blocked", failures)
+        require(evidence.get("numeric_total_status") == "blocked", f"{evidence_prefix}: numeric total status mismatch", failures)
+        require(isinstance(evidence.get("safe_use"), str) and bool(evidence.get("safe_use")), f"{evidence_prefix}: safe_use missing", failures)
+        require(isinstance(evidence.get("next_action"), str) and bool(evidence.get("next_action")), f"{evidence_prefix}: next_action missing", failures)
 
     depth_checklist = summary.get("depth_staleness_policy_checklist")
     require(

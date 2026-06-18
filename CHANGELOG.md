@@ -1,5 +1,12 @@
 # Changelog — DeltaGrid
 
+## [2026-06-18] - [PRODUCT/DATA] - Perp DEX Lighter/Aster fee schedule evidence v0
+- `diagnostic_cost_estimate_v0.summary` получил `fee_schedule_evidence_summary`: compact status по Lighter/Aster fee evidence, source fields, required route inputs, required policy inputs, manual approvals и blocked outputs.
+- `diagnostic_cost_estimate_v0.summary` получил `fee_schedule_evidence_checklist`: отдельные read-only rows для Lighter public maker/taker fee fields и Aster published USDT perpetual fee defaults.
+- `Perp DEX` UI получил панели `Route Diagnostic Fee Schedule Evidence` и `Route Diagnostic Fee Schedule Checklist` рядом с readiness/depth policy слоями.
+- `scripts/perp-dex-policy-smoke.sh` compact contract теперь включает `fee_schedule_evidence_*`; backend regression tests закрепляют manual approval gates и safety flags.
+- Граница сохранена: fee bps total, numeric route cost bps, route ranking, route selection и execution не включались.
+
 ## [2026-06-18] - [PRODUCT/DATA] - Perp DEX GMX helper/source follow-up rows v0
 - `gmx_rate_mapping_review_v0` получил `helper_source_follow_up_summary`: compact worklist по отсутствующим GMX helper source inputs, связанным review/input ids, fixture/decision gates и manual approval ids, которые всё ещё блокируют carry conversion.
 - `gmx_rate_mapping_review_v0` получил `helper_source_follow_up_checklist`: отдельные rows для missing helper inputs, live nonzero mapping approval, side-direction approval и carry runtime/display approvals.
