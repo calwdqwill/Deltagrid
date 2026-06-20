@@ -1,8 +1,16 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab` и локальный `v1.5.0` RC commit `0a43813`; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC и release handoff подготовлены; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
+**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab`, локальный `v1.5.0` RC commit `0a43813` и handoff/regression commit; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC, release handoff и full local regression pass подготовлены; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
 **Last Updated**: 2026-06-20
+
+## Обновление 2026-06-20 — v1.5.0 full local regression pass
+
+- Выполнен полный локальный regression pass поверх `v1.5.0` RC: release preflight, docs-check preflight, backend compileall, backend pytest, frontend build, frontend high-level audit, funding shell syntax и temp evidence bundle.
+- Backend tests запускались через проектный venv: `backend\\venv\\Scripts\\python.exe -m pytest tests -q`; результат `59 passed`.
+- Системный Python 3.12 не содержит `pytest`, поэтому backend regression в этом workspace нужно запускать через `backend\\venv\\Scripts\\python.exe`.
+- Funding CI-like temp evidence bundle прошёл с `ci_final_status=passed`, локальный `runway_status=blocked` остаётся корректным release blocker для среды без funding rows.
+- Production deploy/tag не выполнялись; следующий внешний шаг остаётся PR и GitHub CI.
 
 ## Обновление 2026-06-20 — v1.5.0 PR/release handoff readiness
 

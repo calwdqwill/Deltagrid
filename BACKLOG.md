@@ -61,6 +61,7 @@
 - [x] Итерация 3: собрать release evidence bundle, preview/prod compare-ready contract и список blockers без изменения production runtime.
 - [x] Итерация 4: подготовить локальный `v1.5.0` RC/version bump, пройти release preflight, frontend build/audit и funding evidence validation без изменения production runtime.
 - [x] Итерация 5: подготовить PR/release handoff readiness без production runtime changes.
+- [x] Итерация 6: выполнить full local regression pass и обновить release handoff фактическими проверками.
 - [ ] Финальный release gate после PR/review: preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
 
 ### Итерация 2 — Funding/Data QA product batch
@@ -113,6 +114,19 @@
 - [x] Добавить `deploy/v1.5.0-release-handoff.md` с PR URL, body, checks, preview evidence и production gate.
 - [x] Уточнить docs wording: `3936c83` является release/runtime commit `v1.4.0`, а не текущим `origin/main`.
 - [x] Не выполнять merge в `preview`/`main`, production deploy или tag без отдельного release decision.
+
+### Итерация 6 — v1.5.0 full local regression pass
+
+- [x] Повторить `scripts/release-preflight.sh 1.5.0` на чистом tree.
+- [x] Повторить docs-check preflight для `RELEASE_TARGET=1.5.0`.
+- [x] Пройти backend compileall через проектный venv.
+- [x] Пройти backend pytest через проектный venv: `59 passed`.
+- [x] Зафиксировать, что системный Python 3.12 не содержит `pytest`; backend checks запускать через `backend\\venv\\Scripts\\python.exe`.
+- [x] Пройти frontend `npm run build`.
+- [x] Пройти frontend `npm audit --audit-level=high`; high/critical blocker нет, known moderate `postcss` остаётся tech debt.
+- [x] Пройти shell syntax для Funding release scripts.
+- [x] Пройти CI-like Funding evidence bundle на temp artifact.
+- [x] Обновить `deploy/v1.5.0-release-handoff.md` и docs фактическими regression results.
 
 ### Следующий Funding analytics read-only блок
 

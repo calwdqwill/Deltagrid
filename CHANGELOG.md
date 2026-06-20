@@ -1,5 +1,10 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [QA] - v1.5.0 full local regression pass
+- Скоуп батча закрыт как локальный release QA pass: 1) `scripts/release-preflight.sh 1.5.0` проходит; 2) docs-check preflight для `v1.5.0` проходит; 3) backend compileall через project venv проходит; 4) backend pytest через project venv проходит (`59 passed`); 5) frontend `npm run build` проходит; 6) frontend `npm audit --audit-level=high` не находит high/critical blocker; 7) Funding release scripts проходят `bash -n`; 8) CI-like Funding evidence bundle проходит; 9) `deploy/v1.5.0-release-handoff.md` обновлён фактическими checks; 10) production runtime/tag/deploy не трогались.
+- Локальный системный Python 3.12 не содержит `pytest`; backend regression в этом workspace нужно запускать через `backend\\venv\\Scripts\\python.exe`.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-20] - [RELEASE] - v1.5.0 PR/release handoff readiness
 - Скоуп батча закрыт как docs-only release handoff: 1) проверены remote refs `origin/main=2b6c830`, `origin/preview=5f8ad89`, branch `0a43813`; 2) подтверждено отсутствие tags `v1.4.1`/`v1.5.0`; 3) подтверждено отсутствие открытого PR; 4) зафиксировано отсутствие `gh` CLI и локального GitHub token; 5) проверено, что CI не запускается на `codex/*` push; 6) добавлен `deploy/v1.5.0-release-handoff.md`; 7) handoff содержит PR URL/body; 8) handoff содержит checks и preview evidence path; 9) handoff фиксирует production release gate; 10) merge/deploy/tag не выполнялись.
 - Уточнена формулировка baseline: `3936c83` является release/runtime commit для `v1.4.0`, а текущий `origin/main` находится на docs-only follow-up `2b6c830`.
