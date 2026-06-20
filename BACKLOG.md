@@ -65,6 +65,7 @@
 - [x] Итерация 7: выполнить pre-merge validation против `origin/main` и обновить handoff.
 - [x] Итерация 8: включить GitHub CI для `codex/**` branch push без изменения deploy gates.
 - [x] Итерация 9: дождаться зелёного GitHub branch CI и обновить handoff ссылкой на run.
+- [x] Итерация 10: добавить release-specific PR template для ручного PR `v1.5.0`.
 - [ ] Финальный release gate после PR/review: preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
 
 ### Итерация 2 — Funding/Data QA product batch
@@ -162,6 +163,14 @@
 - [x] Обновить release handoff ссылкой на branch CI evidence.
 - [x] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md` и `CHANGELOG.md`.
 - [x] Не выполнять PR merge, preview deploy, production deploy или tag.
+
+### Итерация 10 — v1.5.0 PR template readiness batch
+
+- [x] Добавить `.github/PULL_REQUEST_TEMPLATE/v1.5.0-funding-qa.md`.
+- [x] Включить в template scope, checks, safety boundary и release gate.
+- [x] Обновить `deploy/v1.5.0-release-handoff.md` ссылкой с `template=v1.5.0-funding-qa.md`.
+- [x] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md` и `CHANGELOG.md`.
+- [x] Не менять deploy workflows, backend API, БД, provider calls или production runtime.
 
 ### Следующий Funding analytics read-only блок
 

@@ -1,5 +1,9 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [RELEASE] - v1.5.0 PR template readiness
+- Скоуп батча закрыт как PR ergonomics tooling: 1) добавлен `.github/PULL_REQUEST_TEMPLATE/v1.5.0-funding-qa.md`; 2) template содержит scope; 3) template содержит checks; 4) template содержит safety boundary; 5) template содержит release gate после PR; 6) handoff получил URL с `template=v1.5.0-funding-qa.md`; 7) `CURRENT_TASK.md` обновлён; 8) `BACKLOG.md` обновлён; 9) `PROJECT_PLAN.md` обновлён; 10) deploy/runtime не трогались.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-20] - [CI] - v1.5.0 branch CI success
 - Скоуп батча закрыт как CI evidence update: 1) branch push на `codex/v1.4.1-funding-release-tooling` запустил GitHub `CI`; 2) commit `9bc6dd7` проверен; 3) run id `27863265157`; 4) run завершился `success`; 5) handoff обновлён ссылкой на run; 6) `CURRENT_TASK.md` обновлён; 7) `BACKLOG.md` обновлён; 8) `PROJECT_PLAN.md` обновлён; 9) `CHANGELOG.md` обновлён; 10) merge/deploy/tag не выполнялись.
 - Branch CI является предварительным evidence для feature branch, но не заменяет PR review, preview evidence, production backup/deploy, smoke, Browser QA и annotated tag.
