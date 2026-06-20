@@ -1,5 +1,9 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [QA] - v1.5.0 pre-merge validation
+- Скоуп батча закрыт как pre-merge validation: 1) worktree чистый; 2) `merge-base` совпадает с `origin/main=2b6c830`; 3) `git merge-tree origin/main HEAD` проходит без conflict output; 4) `git diff --check origin/main...HEAD` чистый; 5) backend files в PR diff отсутствуют; 6) generated artifact paths в PR diff отсутствуют; 7) secret-like additions не найдены; 8) targeted forbidden capability enable scan пустой; 9) `deploy/v1.5.0-release-handoff.md` обновлён; 10) merge/deploy/tag не выполнялись.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-20] - [QA] - v1.5.0 full local regression pass
 - Скоуп батча закрыт как локальный release QA pass: 1) `scripts/release-preflight.sh 1.5.0` проходит; 2) docs-check preflight для `v1.5.0` проходит; 3) backend compileall через project venv проходит; 4) backend pytest через project venv проходит (`59 passed`); 5) frontend `npm run build` проходит; 6) frontend `npm audit --audit-level=high` не находит high/critical blocker; 7) Funding release scripts проходят `bash -n`; 8) CI-like Funding evidence bundle проходит; 9) `deploy/v1.5.0-release-handoff.md` обновлён фактическими checks; 10) production runtime/tag/deploy не трогались.
 - Локальный системный Python 3.12 не содержит `pytest`; backend regression в этом workspace нужно запускать через `backend\\venv\\Scripts\\python.exe`.

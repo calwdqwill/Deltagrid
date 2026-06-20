@@ -1,8 +1,16 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab`, локальный `v1.5.0` RC commit `0a43813` и handoff/regression commit; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC, release handoff и full local regression pass подготовлены; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
+**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab`, локальный `v1.5.0` RC commit `0a43813`, handoff/regression evidence и pre-merge validation; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC готов к ручному PR; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
 **Last Updated**: 2026-06-20
+
+## Обновление 2026-06-20 — v1.5.0 pre-merge validation
+
+- Выполнен pre-merge validation против `origin/main`: merge-base совпадает с `origin/main=2b6c830`, `git merge-tree origin/main HEAD` проходит без conflict output.
+- `git diff --check origin/main...HEAD` не нашёл whitespace errors; generated artifact paths в PR diff отсутствуют.
+- Backend files в PR diff отсутствуют; изменений API, БД, миграций и provider adapters нет.
+- Secret-like additions не найдены; targeted scan на включение forbidden capabilities пустой.
+- Handoff обновлён pre-merge результатами; merge/deploy/tag не выполнялись.
 
 ## Обновление 2026-06-20 — v1.5.0 full local regression pass
 

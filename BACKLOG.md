@@ -62,6 +62,7 @@
 - [x] Итерация 4: подготовить локальный `v1.5.0` RC/version bump, пройти release preflight, frontend build/audit и funding evidence validation без изменения production runtime.
 - [x] Итерация 5: подготовить PR/release handoff readiness без production runtime changes.
 - [x] Итерация 6: выполнить full local regression pass и обновить release handoff фактическими проверками.
+- [x] Итерация 7: выполнить pre-merge validation против `origin/main` и обновить handoff.
 - [ ] Финальный release gate после PR/review: preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
 
 ### Итерация 2 — Funding/Data QA product batch
@@ -127,6 +128,19 @@
 - [x] Пройти shell syntax для Funding release scripts.
 - [x] Пройти CI-like Funding evidence bundle на temp artifact.
 - [x] Обновить `deploy/v1.5.0-release-handoff.md` и docs фактическими regression results.
+
+### Итерация 7 — v1.5.0 pre-merge validation batch
+
+- [x] Проверить чистый worktree перед pre-merge validation.
+- [x] Проверить `merge-base`: branch основан на текущем `origin/main=2b6c830`.
+- [x] Выполнить `git merge-tree origin/main HEAD` и убедиться, что conflict output отсутствует.
+- [x] Проверить `git diff --check origin/main...HEAD`.
+- [x] Проверить, что backend files отсутствуют в PR diff.
+- [x] Проверить отсутствие generated artifact paths в PR diff.
+- [x] Проверить отсутствие secret-like additions.
+- [x] Проверить targeted forbidden capability enable scan.
+- [x] Обновить `deploy/v1.5.0-release-handoff.md` pre-merge результатами.
+- [x] Не выполнять merge в `main`/`preview`, production deploy или tag без отдельного release decision.
 
 ### Следующий Funding analytics read-only блок
 
