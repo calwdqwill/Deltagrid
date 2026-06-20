@@ -4,6 +4,14 @@
 **Status**: Production baseline `v1.5.0` выпущен на `deltagrid.pro`: PR #1 смержен в `main@3f6f3f7`, tag `v1.5.0` указывает на `3f6f3f7`, runtime `/opt/deltagrid` работает на `3f6f3f7` с `VERSION=1.5.0`, `https://deltagrid.pro/version` отдаёт `1.5.0`, production smoke прошёл. Funding release report на VPS прошёл с `release_gate_status=passed`, `funding_total_rows=3126`, `coinglass=3000`, `okx=126`, `missing_frontend_markers=0`. Перед deploy создан backup `/opt/deltagrid/backups/deploy/deltagrid-main_20260620T075400Z.sql.gz`. GitHub `Deploy Production` стартовал, но deploy step был skipped из-за отсутствующих `PROD_*` secrets; фактический deploy выполнен вручную по SSH через `scripts/deploy-compose-stack.sh`. Новая фаза `v1.6.0` работает в ветке `codex/v1.6.0-production-ops-data-reliability` и фокусируется на production operations, deploy readiness, release evidence и Funding/Data reliability без включения trading/routing/execution outputs.
 **Last Updated**: 2026-06-20
 
+## Обновление 2026-06-20 — v1.6.0 Funding/Data QA UX batch
+
+- `/funding?view=qa` получил `Funding QA Review Summary`: compact rollup по runway blockers, release decision, source coverage и thin/degraded states.
+- `Funding Data Quality Runway`, `Funding Release Checklist` и `Funding QA Drilldown` получили адаптивные карточки для mobile/tablet и сохранили подробные таблицы на широком desktop.
+- Empty/thin/degraded states стали видны сразу через summary/cards без изменения `funding_qa_v0`, backend API, БД, provider calls или smoke contract.
+- Frontend marker contract сохранён: `Funding QA`, `Funding Data Quality Runway`, `Funding Release Checklist` и `Funding QA Drilldown` остаются доступными для `scripts/funding-qa-smoke.sh`.
+- Следующая итерация: `v1.6.0` RC/release gate — поднять версии до `1.6.0`, обновить changelog, прогнать preflight/backend/frontend/funding evidence и подготовить PR.
+
 ## Обновление 2026-06-20 — v1.6.0 production evidence/report hardening
 
 - `scripts/deploy-compose-stack.sh` теперь после `server-smoke` проверяет frontend `/version` против `VERSION`, печатает compact `Deploy summary` и при `DEPLOY_SUMMARY_OUTPUT` сохраняет JSON `deploy_compose_stack_summary_v0`.

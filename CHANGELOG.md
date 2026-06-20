@@ -1,5 +1,9 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [PRODUCT/UI] - v1.6.0 Funding/Data QA UX batch
+- Скоуп батча закрыт как presentation-only Funding QA UX: 1) `/funding?view=qa` получил `Funding QA Review Summary`; 2) summary показывает runway blockers, release decision, source coverage и thin/degraded states; 3) `Funding Data Quality Runway` получил mobile/tablet карточки и desktop table; 4) `Funding Release Checklist` получил mobile/tablet карточки и desktop table; 5) `Funding QA Drilldown` получил адаптивные source cards и wide desktop table; 6) empty/thin/degraded states стали видны до глубоких таблиц; 7) marker strings для funding QA smoke сохранены; 8) frontend build проходит; 9) docs/runbook обновлены; 10) backend API, БД и provider calls не менялись.
+- Граница сохранена: trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps не включались.
+
 ## [2026-06-20] - [OPS] - v1.6.0 production evidence/report hardening
 - Скоуп батча закрыт как production release evidence hardening: 1) `scripts/deploy-compose-stack.sh` проверяет `/version` после `server-smoke`; 2) deploy script сравнивает frontend version с `VERSION`; 3) добавлен compact `deploy_compose_stack_summary_v0`; 4) summary фиксирует deploy method, commit, smoke/version status, backup status и backup path; 5) GitHub real deploy запускает remote script с `DEPLOY_METHOD=github_actions_ssh`; 6) workflow печатает remote `/tmp/deltagrid-deploy-summary.json` в job log; 7) safe-skip по `PROD_*` явно не создаёт deploy evidence; 8) README/release/runbook docs получили production smoke команды; 9) Funding report production artifact path зафиксирован; 10) локальные проверки подготовлены.
 - Production evidence для `v1.6.0` теперь должен ссылаться на `real_deploy_succeeded` или manual SSH deploy summary, а не на `skipped_missing_required_secrets`.

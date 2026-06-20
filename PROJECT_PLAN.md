@@ -29,7 +29,7 @@
 1. **Release/planning/runway batch** — зафиксировать scope, non-goals, release gates, факт `v1.5.0`, риск `PROD_*` secrets и безопасный release path: PR, CI, deploy readiness, backup, smoke, tag.
 2. **Production deploy automation readiness** — закрыто: `Deploy Production` получил readiness/result summary для `PROD_*`, expected production contract и явное разделение `skipped_missing_required_secrets` vs `real_deploy_succeeded/failed`; runbook/README/release policy обновлены без хранения secrets.
 3. **Production evidence/report hardening** — закрыто: deploy script после smoke проверяет `/version`, пишет compact `deploy_compose_stack_summary_v0`, GitHub real deploy печатает remote summary JSON, а runbook фиксирует production smoke и Funding report artifact path.
-4. **Funding/Data QA UX batch** — улучшить читаемость Funding QA, empty/thin/degraded states и Data Quality Runway без изменения backend API/provider calls и без trading/routing outputs.
+4. **Funding/Data QA UX batch** — закрыто: `/funding?view=qa` получил compact review summary, адаптивные карточки для Data Quality Runway, Release Checklist и QA Drilldown, а marker contract сохранён без backend API/provider calls и без trading/routing outputs.
 5. **`v1.6.0` RC/release gate** — поднять версии до `1.6.0`, обновить changelog, пройти release preflight/backend/frontend/funding evidence, открыть PR, дождаться CI и после подтверждения выполнить merge, backup/deploy/smoke и annotated tag `v1.6.0`.
 
 Release gates `v1.6.0`:

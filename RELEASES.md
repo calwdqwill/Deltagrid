@@ -246,6 +246,8 @@ sh scripts/funding-release-evidence-compare.sh artifacts/funding-release-base ar
 
 Funding QA contract должен включать panel id `funding_data_quality_runway`, `funding_release_checklist`, `funding_anomaly_detail`, `funding_history_diagnostics`, `funding_history_controls`, `funding_history_readiness` и `funding_qa_drilldown` вместе с `funding_source_status`, `funding_freshness_anomaly` и `funding_source_comparison`; frontend marker check должен также видеть `funding_qa_view` через `/funding?view=qa`. Это release-safety/data-QA contract, а не trading/routing gate.
 
+В `v1.6.0` Funding QA UX может показывать эти же данные как summary/cards на mobile и как таблицы на широком desktop. Это presentation-only слой: marker strings `Funding Data Quality Runway`, `Funding Release Checklist`, `Funding QA Drilldown` и `Funding QA` должны оставаться в HTML для `scripts/funding-qa-smoke.sh`, но backend contract и `funding_qa_v0.panel_ids` не меняются.
+
 Для `v1.5.0` Funding smoke contract также должен включать backend-only `contract.data_quality_runway` с `runway_version=funding_data_quality_runway_v0`, `status=ready|needs_review|blocked`, `gate_ids`, `gate_statuses`, `blocking_gate_ids`, `missing_sources`, `history_preview_rows`, `next_action` и `safe_boundary`. Этот summary нужен для release evidence и не зависит от frontend marker check; report-level gate `data_quality_runway` может быть blocked при пустых локальных rows, но это валидный release blocker, если validator проходит.
 
 5. Закоммитить изменения и запушить в `preview`.

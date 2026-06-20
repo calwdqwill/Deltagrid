@@ -11,6 +11,11 @@ import {
   toneText,
 } from "@/components/terminal/terminal-ui";
 import { getLiveFundingOverview } from "@/lib/terminal/live-data";
+import type {
+  FundingDataQualityRunwayRow,
+  FundingQaDrilldownRow,
+  FundingReleaseChecklistRow,
+} from "@/types/terminal";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +45,112 @@ function pointLabel(timestamp: number): string {
 type FundingPageProps = {
   searchParams?: Promise<{ view?: string; asset?: string; source?: string }>;
 };
+
+type QaTone = "positive" | "negative" | "warning" | "neutral";
+
+function toneFrame(tone?: QaTone): string {
+  if (tone === "positive") return "border-emerald-400/20 bg-emerald-400/[0.06]";
+  if (tone === "negative") return "border-rose-400/20 bg-rose-400/[0.07]";
+  if (tone === "warning") return "border-amber-300/20 bg-amber-300/[0.07]";
+  return "border-white/10 bg-white/[0.035]";
+}
+
+function hasBlocker(blocker?: string): boolean {
+  return Boolean(blocker && blocker.toLowerCase() !== "none");
+}
+
+function QaReviewCard({
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  tone: QaTone;
+}) {
+  return (
+    <div className={`min-h-28 min-w-0 rounded-lg border p-3 ${toneFrame(tone)}`}>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</div>
+      <div className={`mt-2 break-words text-sm font-semibold leading-5 ${toneText(tone)}`}>{value}</div>
+      <div className="mt-2 break-words text-xs leading-5 text-slate-400">{detail}</div>
+    </div>
+  );
+}
+
+function RunwayGateCard({ row }: { row: FundingDataQualityRunwayRow }) {
+  const blocker = hasBlocker(row.blocker);
+
+  return (
+    <div className={`min-w-0 rounded-lg border p-3 ${toneFrame(blocker ? "warning" : row.statusTone)}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="break-words text-sm font-semibold text-cyan-200">{row.gate}</div>
+          <div className={`mt-1 text-xs font-medium ${toneText(row.statusTone)}`}>{row.status}</div>
+        </div>
+        <StatusBadge label={blocker ? "Review" : "Clear"} tone={blocker ? "warning" : "positive"} />
+      </div>
+      <div className="mt-3 space-y-2 text-xs leading-5">
+        <div className="text-slate-400">{row.evidence}</div>
+        <div className={blocker ? "text-amber-200" : "text-emerald-300"}>{row.blocker}</div>
+        <div className="text-amber-200">{row.nextAction}</div>
+        <div className="text-slate-500">{row.boundary}</div>
+      </div>
+    </div>
+  );
+}
+
+function ReleaseChecklistCard({ row }: { row: FundingReleaseChecklistRow }) {
+  return (
+    <div className={`min-w-0 rounded-lg border p-3 ${toneFrame(row.statusTone)}`}>
+      <div className="break-words text-sm font-semibold text-cyan-200">{row.area}</div>
+      <div className={`mt-1 text-xs font-medium ${toneText(row.statusTone)}`}>{row.status}</div>
+      <div className="mt-3 space-y-2 text-xs leading-5">
+        <div className="text-slate-400">{row.evidence}</div>
+        <div className="text-amber-200">{row.nextAction}</div>
+        <div className="text-slate-500">{row.boundary}</div>
+      </div>
+    </div>
+  );
+}
+
+function QaDrilldownCard({ row }: { row: FundingQaDrilldownRow }) {
+  const degradedTone =
+    row.freshnessTone === "negative" || row.coverageTone === "negative" || row.syncTone === "negative"
+      ? "negative"
+      : row.freshnessTone === "warning" || row.coverageTone === "warning" || row.syncTone === "warning"
+        ? "warning"
+        : "positive";
+
+  return (
+    <div className={`min-w-0 rounded-lg border p-3 ${toneFrame(degradedTone)}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-slate-100">{row.asset}</div>
+          <div className="mt-1 text-xs text-slate-500">{row.source}</div>
+        </div>
+        <div className="font-mono text-xs text-slate-300">{row.loadedRows}</div>
+      </div>
+      <div className="mt-3 grid gap-2 text-xs leading-5 sm:grid-cols-3">
+        <div>
+          <div className={toneText(row.freshnessTone)}>{row.freshness}</div>
+          <div className="mt-1 text-slate-500">{row.freshnessReason}</div>
+        </div>
+        <div>
+          <div className={toneText(row.coverageTone)}>{row.coverage}</div>
+          <div className="mt-1 text-slate-500">{row.coverageReason}</div>
+        </div>
+        <div>
+          <div className={toneText(row.syncTone)}>{row.sync}</div>
+          <div className="mt-1 text-slate-500">{row.rowLatest}</div>
+        </div>
+      </div>
+      <div className="mt-3 text-xs text-amber-200">{row.nextAction}</div>
+      <div className="mt-2 text-xs text-slate-500">{row.boundary}</div>
+    </div>
+  );
+}
 
 export default async function FundingPage({ searchParams }: FundingPageProps) {
   const params = await searchParams;
@@ -327,6 +438,22 @@ export default async function FundingPage({ searchParams }: FundingPageProps) {
   ]);
   const historyEmptyState =
     data.historyReadiness.find((row) => row.check === "Chart Empty State") ?? data.historyReadiness[0];
+  const runwayBlockers = data.dataQualityRunway.filter((row) => hasBlocker(row.blocker));
+  const readyRunwayGates = data.dataQualityRunway.filter((row) => row.statusTone === "positive").length;
+  const releaseDecision =
+    data.releaseChecklist.find((row) => row.area === "Release Decision") ??
+    data.releaseChecklist[data.releaseChecklist.length - 1];
+  const sourceCoverage = data.releaseChecklist.find((row) => row.area === "Source Coverage");
+  const degradedQaRows = data.qaDrilldown.filter(
+    (row) =>
+      row.freshnessTone === "negative" ||
+      row.freshnessTone === "warning" ||
+      row.coverageTone === "negative" ||
+      row.coverageTone === "warning" ||
+      row.syncTone === "negative" ||
+      row.syncTone === "warning"
+  );
+  const firstRunwayAction = runwayBlockers[0]?.nextAction ?? releaseDecision?.nextAction ?? "Keep funding QA evidence current";
 
   const arbitrageRows = data.arbitrage.map((item) => [
     <span key="asset" className="font-semibold text-cyan-200">
@@ -394,23 +521,81 @@ export default async function FundingPage({ searchParams }: FundingPageProps) {
         {showQaPanels && (
           <div className="space-y-4">
             <TerminalPanel
+              title="Funding QA Review Summary"
+              caption="Compact release review status for Funding QA, data runway and degraded states"
+            >
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <QaReviewCard
+                  label="Runway gates"
+                  value={
+                    runwayBlockers.length
+                      ? `${runwayBlockers.length} need review`
+                      : `${readyRunwayGates}/${data.dataQualityRunway.length} clear`
+                  }
+                  detail={firstRunwayAction}
+                  tone={runwayBlockers.length ? "warning" : "positive"}
+                />
+                <QaReviewCard
+                  label="Release decision"
+                  value={releaseDecision?.status ?? "Unknown"}
+                  detail={releaseDecision?.evidence ?? "No release checklist row available"}
+                  tone={releaseDecision?.statusTone ?? "neutral"}
+                />
+                <QaReviewCard
+                  label="Source coverage"
+                  value={sourceCoverage?.status ?? "Unknown"}
+                  detail={sourceCoverage?.evidence ?? "Source coverage evidence is unavailable"}
+                  tone={sourceCoverage?.statusTone ?? "neutral"}
+                />
+                <QaReviewCard
+                  label="Thin/degraded states"
+                  value={degradedQaRows.length ? `${degradedQaRows.length} rows need review` : "No degraded rows"}
+                  detail={historyEmptyState?.evidence ?? "History readiness evidence is unavailable"}
+                  tone={degradedQaRows.length ? "warning" : (historyEmptyState?.statusTone ?? "neutral")}
+                />
+              </div>
+            </TerminalPanel>
+
+            <TerminalPanel
               title="Funding Data Quality Runway"
               caption="Read-only v1.5.0 gate summary from persisted funding rows and data health"
             >
-              <TerminalTable
-                columns={["Gate", "Status", "Evidence", "Blocker", "Next Action", "Boundary"]}
-                rows={dataQualityRunwayRows}
-              />
+              <div className="grid grid-cols-1 gap-3 xl:hidden">
+                {data.dataQualityRunway.length ? (
+                  data.dataQualityRunway.map((row) => <RunwayGateCard key={row.gate} row={row} />)
+                ) : (
+                  <div className="rounded-md border border-amber-300/20 bg-amber-300/[0.06] p-4 text-sm text-amber-100">
+                    Funding runway evidence is empty.
+                  </div>
+                )}
+              </div>
+              <div className="hidden xl:block">
+                <TerminalTable
+                  columns={["Gate", "Status", "Evidence", "Blocker", "Next Action", "Boundary"]}
+                  rows={dataQualityRunwayRows}
+                />
+              </div>
             </TerminalPanel>
 
             <TerminalPanel
               title="Funding Release Checklist"
               caption="Read-only release readiness checklist for funding QA smoke and preview rollout"
             >
-              <TerminalTable
-                columns={["Area", "Status", "Evidence", "Next Action", "Boundary"]}
-                rows={releaseChecklistRows}
-              />
+              <div className="grid grid-cols-1 gap-3 lg:hidden">
+                {data.releaseChecklist.length ? (
+                  data.releaseChecklist.map((row) => <ReleaseChecklistCard key={row.area} row={row} />)
+                ) : (
+                  <div className="rounded-md border border-amber-300/20 bg-amber-300/[0.06] p-4 text-sm text-amber-100">
+                    Funding release checklist is empty.
+                  </div>
+                )}
+              </div>
+              <div className="hidden lg:block">
+                <TerminalTable
+                  columns={["Area", "Status", "Evidence", "Next Action", "Boundary"]}
+                  rows={releaseChecklistRows}
+                />
+              </div>
             </TerminalPanel>
 
             <TerminalPanel
@@ -487,22 +672,35 @@ export default async function FundingPage({ searchParams }: FundingPageProps) {
               title="Funding QA Drilldown"
               caption="Per-symbol source reasons from freshness, coverage and sync health"
             >
-              <TerminalTable
-                columns={[
-                  "Asset",
-                  "Source",
-                  "Rows",
-                  "Latest",
-                  "Freshness",
-                  "Freshness Reason",
-                  "Coverage",
-                  "Coverage Reason",
-                  "Sync",
-                  "Next Action",
-                  "Boundary",
-                ]}
-                rows={qaDrilldownRows}
-              />
+              <div className="grid grid-cols-1 gap-3 2xl:hidden">
+                {data.qaDrilldown.length ? (
+                  data.qaDrilldown.map((row) => (
+                    <QaDrilldownCard key={`${row.asset}-${row.source}`} row={row} />
+                  ))
+                ) : (
+                  <div className="rounded-md border border-amber-300/20 bg-amber-300/[0.06] p-4 text-sm text-amber-100">
+                    Funding QA drilldown has no source rows.
+                  </div>
+                )}
+              </div>
+              <div className="hidden 2xl:block">
+                <TerminalTable
+                  columns={[
+                    "Asset",
+                    "Source",
+                    "Rows",
+                    "Latest",
+                    "Freshness",
+                    "Freshness Reason",
+                    "Coverage",
+                    "Coverage Reason",
+                    "Sync",
+                    "Next Action",
+                    "Boundary",
+                  ]}
+                  rows={qaDrilldownRows}
+                />
+              </div>
             </TerminalPanel>
           </div>
         )}

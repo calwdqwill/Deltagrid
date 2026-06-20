@@ -80,15 +80,15 @@
 
 ### Итерация 4 — Funding/Data QA UX batch
 
-- [ ] Улучшить читаемость Funding QA на desktop/mobile.
-- [ ] Не менять backend API и provider calls без необходимости.
-- [ ] Не добавлять trading/routing/execution signals.
-- [ ] Улучшить empty/thin/degraded states.
-- [ ] Сделать Data Quality Runway понятнее для release review.
-- [ ] Проверить marker contract.
-- [ ] Запустить frontend build.
-- [ ] Запустить funding release report/smoke.
-- [ ] Обновить docs и commit/push.
+- [x] Улучшить читаемость Funding QA на desktop/mobile.
+- [x] Не менять backend API и provider calls без необходимости.
+- [x] Не добавлять trading/routing/execution signals.
+- [x] Улучшить empty/thin/degraded states.
+- [x] Сделать Data Quality Runway понятнее для release review.
+- [x] Проверить marker contract.
+- [x] Запустить frontend build.
+- [x] Запустить funding release report/smoke.
+- [x] Обновить docs и commit/push.
 
 ### Итерация 5 — `v1.6.0` RC/release gate
 
