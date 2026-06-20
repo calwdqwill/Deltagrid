@@ -4,6 +4,15 @@
 **Status**: Production baseline `v1.5.0` выпущен на `deltagrid.pro`: PR #1 смержен в `main@3f6f3f7`, tag `v1.5.0` указывает на `3f6f3f7`, runtime `/opt/deltagrid` работает на `3f6f3f7` с `VERSION=1.5.0`, `https://deltagrid.pro/version` отдаёт `1.5.0`, production smoke прошёл. Funding release report на VPS прошёл с `release_gate_status=passed`, `funding_total_rows=3126`, `coinglass=3000`, `okx=126`, `missing_frontend_markers=0`. Перед deploy создан backup `/opt/deltagrid/backups/deploy/deltagrid-main_20260620T075400Z.sql.gz`. GitHub `Deploy Production` стартовал, но deploy step был skipped из-за отсутствующих `PROD_*` secrets; фактический deploy выполнен вручную по SSH через `scripts/deploy-compose-stack.sh`. Новая фаза `v1.6.0` работает в ветке `codex/v1.6.0-production-ops-data-reliability` и фокусируется на production operations, deploy readiness, release evidence и Funding/Data reliability без включения trading/routing/execution outputs.
 **Last Updated**: 2026-06-20
 
+## Обновление 2026-06-20 — v1.6.0 production deploy automation readiness
+
+- `Deploy Production` workflow получил единый шаг `Evaluate production deploy readiness` с `$GITHUB_STEP_SUMMARY` и outputs `deploy_ready`, `deploy_result_status`, `missing_required`.
+- Readiness/result статусы теперь явно разделяют `skipped_missing_required_secrets`, `ready_for_real_deploy`, `real_deploy_succeeded` и `real_deploy_failed`.
+- Expected production contract вынесен в workflow env и runbook: host `2.25.143.143`, user `root`, app dir `/opt/deltagrid`, deploy key fingerprint `SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg`.
+- Workflow не печатает private key, raw secret values, `.env.production` или provider payload; логируются только configured/missing, expected public values и result status.
+- `deploy/github-actions-secrets.md`, `README.md` и `RELEASES.md` обновлены под GitHub skipped-vs-real deploy evidence.
+- Следующая итерация: production evidence/report hardening — усилить runtime/version proof, `/version` after deploy и funding report production evidence path.
+
 ## Обновление 2026-06-20 — v1.6.0 release/planning/runway batch
 
 - Создана ветка `codex/v1.6.0-production-ops-data-reliability` от `origin/main=3f6f3f7`.

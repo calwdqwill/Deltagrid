@@ -56,15 +56,15 @@
 
 ### Итерация 2 — production deploy automation readiness
 
-- [ ] Проверить `.github/workflows/deploy-production.yml` без включения secrets в репозиторий.
-- [ ] Добавить или улучшить preflight для `PROD_*` secrets readiness.
-- [ ] Добавить runbook настройки GitHub Actions production secrets.
-- [ ] Добавить diagnostics, которые явно отличают skipped deploy от real deploy.
-- [ ] Зафиксировать expected production host/app dir/key fingerprint без публикации чувствительных данных.
-- [ ] Обновить `README.md`, `RELEASES.md` и `CURRENT_TASK.md`.
-- [ ] Проверить shell syntax и workflow diff.
-- [ ] Не менять реальные secrets и не коммитить чувствительные данные.
-- [ ] Commit/push.
+- [x] Проверить `.github/workflows/deploy-production.yml` без включения secrets в репозиторий.
+- [x] Добавить preflight для `PROD_*` secrets readiness через `Evaluate production deploy readiness`.
+- [x] Обновить runbook настройки GitHub Actions production secrets.
+- [x] Добавить diagnostics, которые явно отличают skipped deploy от real deploy.
+- [x] Зафиксировать expected production host/app dir/key fingerprint без публикации чувствительных данных.
+- [x] Обновить `README.md`, `RELEASES.md` и `CURRENT_TASK.md`.
+- [x] Проверить shell syntax и workflow diff.
+- [x] Не менять реальные secrets и не коммитить чувствительные данные.
+- [x] Commit/push.
 
 ### Итерация 3 — production evidence/report hardening
 

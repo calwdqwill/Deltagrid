@@ -261,8 +261,8 @@ RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.6.0
 10. Создать annotated tag:
 
 ```bash
-git tag -a v1.4.0 -m "DeltaGrid v1.4.0"
-git push origin v1.4.0
+git tag -a v1.6.0 -m "DeltaGrid v1.6.0"
+git push origin v1.6.0
 ```
 
 ## Документация релиза
@@ -286,6 +286,15 @@ Production evidence для `v1.5.0`:
 - backup перед deploy: `/opt/deltagrid/backups/deploy/deltagrid-main_20260620T075400Z.sql.gz`.
 
 Важная ops-граница после `v1.5.0`: GitHub `Deploy Production` стартовал, но deploy step был безопасно skipped из-за отсутствующих `PROD_*` secrets. Фактический production deploy выполнен вручную по SSH через `scripts/deploy-compose-stack.sh`. В release evidence это нужно разделять явно: skipped GitHub deploy не является real deploy, а manual SSH deploy должен иметь отдельные proof строки по runtime/version, backup и smoke.
+
+В `v1.6.0` workflow `Deploy Production` добавляет readiness/result summary для этого разделения:
+
+- `skipped_missing_required_secrets` — `PROD_*` не настроены, deploy не выполнялся;
+- `ready_for_real_deploy` — обязательные `PROD_*` есть, можно переходить к SSH/fingerprint/target checks;
+- `real_deploy_succeeded` — GitHub Actions реально выполнил SSH deploy через `scripts/deploy-compose-stack.sh`;
+- `real_deploy_failed` — real deploy был предпринят, но не прошёл после retry.
+
+Release notes и tag gate должны ссылаться на `real_deploy_succeeded` или на отдельный manual SSH deploy evidence; один только `skipped_missing_required_secrets` не считается production deploy evidence.
 
 Следующий production target: `v1.6.0` — Production Operations & Data Reliability release. Цель: довести GitHub production deploy readiness, production release evidence, Funding/Data health observability и Funding QA UX до воспроизводимого состояния без хранения secrets в репозитории и без изменения trading/routing/execution границ.
 

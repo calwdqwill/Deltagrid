@@ -399,11 +399,11 @@ GitHub Actions:
 RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
-Для docs-only подготовки следующего target до bump можно добавить `RELEASE_CHECK_DOCS=1`, например `RELEASE_TARGET=1.4.1 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh`.
+Для docs-only подготовки следующего target до bump можно добавить `RELEASE_CHECK_DOCS=1`, например `RELEASE_TARGET=1.6.0 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh`.
 
 Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
 На 2026-06-18 `Deploy Preview` для `preview@d3de35e` показал transient SSH reachability failure из GitHub runner: SSH port/login/app-dir diagnostics были нестабильны, а ручной запуск того же `scripts/deploy-compose-stack.sh` по SSH успешно обновил `/opt/deltagrid-preview` до `VERSION=1.3.2`. Workflow и deploy script усилены stage-aware diagnostics: при падении deploy выводит текущий этап, git/compose snapshot и последние backend/frontend logs без печати secrets. Для ручной проверки preview chart/asset candidates добавлен `scripts/preview-candidate-smoke.sh`; он проверяет `/charts`, `/assets`, OHLCV window endpoint для `HYPE/XRP/DOGE/ADA/LINK` и отсутствие candidate symbols на core-only страницах `Market Matrix`, `Arbitrage Scanner`, `Perp DEX`.
-Production auto-deploy пока не считается подтверждённым: hardening `Deploy Production` уже перенесён в `main`, а run `27619159104` для `main@0716f6a` подтвердил safe-skip из-за отсутствующих `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`. Read-only preflight к `/opt/deltagrid` зелёный; workflow поддерживает ручной `Run workflow` на ветке `main`, поэтому после добавления `PROD_*` можно проверить deploy без пустого push.
+Production auto-deploy пока не считается подтверждённым: `v1.5.0` на `main@3f6f3f7` доставлен вручную по SSH через `scripts/deploy-compose-stack.sh`, потому что GitHub `Deploy Production` сделал safe-skip из-за отсутствующих `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR`. Workflow теперь пишет в `$GITHUB_STEP_SUMMARY` явный readiness/result status: `skipped_missing_required_secrets` означает не-деплой, `ready_for_real_deploy` разрешает SSH checks, `real_deploy_succeeded` подтверждает настоящий GitHub SSH deploy, а `real_deploy_failed` фиксирует неуспешную попытку real deploy. Read-only preflight к `/opt/deltagrid` зелёный; workflow поддерживает ручной `Run workflow` на ветке `main`, поэтому после добавления `PROD_*` можно проверить deploy без пустого push.
 Подробный чеклист secrets: [deploy/github-actions-secrets.md](deploy/github-actions-secrets.md).
 
 Рекомендуемая схема стендов на VPS:

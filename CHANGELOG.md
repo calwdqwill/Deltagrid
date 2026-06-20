@@ -1,5 +1,10 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [OPS] - v1.6.0 production deploy automation readiness
+- Скоуп батча закрыт как production deploy readiness: 1) проверен `deploy-production.yml`; 2) добавлен шаг `Evaluate production deploy readiness`; 3) workflow outputs фиксируют `deploy_ready`, `deploy_result_status`, `missing_required`; 4) `$GITHUB_STEP_SUMMARY` показывает readiness/result; 5) statuses разделяют `skipped_missing_required_secrets`, `ready_for_real_deploy`, `real_deploy_succeeded`, `real_deploy_failed`; 6) expected host/user/app dir/fingerprint вынесены в workflow env; 7) runbook `deploy/github-actions-secrets.md` обновлён; 8) `README.md`, `RELEASES.md`, `CURRENT_TASK.md`, `BACKLOG.md` и `PROJECT_PLAN.md` обновлены; 9) shell/workflow checks подготовлены; 10) реальные secrets не менялись и не коммитились.
+- GitHub safe-skip теперь явно не считается real deploy evidence; release gate должен ссылаться на `real_deploy_succeeded` или отдельный manual SSH deploy proof.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps не включались.
+
 ## [2026-06-20] - [PLANNING] - v1.6.0 release runway batch
 - Скоуп батча закрыт как docs-only runway для `v1.6.0`: 1) проверен `git status`; 2) создана ветка `codex/v1.6.0-production-ops-data-reliability` от `origin/main=3f6f3f7`; 3) зафиксирован production факт `v1.5.0`; 4) зафиксирован Funding production evidence; 5) зафиксирован production backup перед deploy; 6) зафиксирован риск GitHub `Deploy Production` skipped из-за отсутствующих `PROD_*`; 7) определены scope, non-goals и release gates `v1.6.0`; 8) описан безопасный release path; 9) обновлены `PROJECT_PLAN.md`, `BACKLOG.md`, `CURRENT_TASK.md` и `RELEASES.md`; 10) runtime-код не менялся.
 - Цель `v1.6.0`: production operations, deploy automation readiness, release evidence hardening, Funding/Data health observability и Funding QA UX без хранения secrets в репозитории.

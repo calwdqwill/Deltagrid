@@ -45,7 +45,7 @@ PROD_SMOKE_FRONTEND_URL=http://127.0.0.1:3001
 
 Для MVP можно использовать один dedicated SSH key для обоих стендов. Позже лучше заменить `root` на отдельного пользователя `deploy` с ограниченными правами.
 
-Текущее состояние от 2026-06-14:
+Текущее состояние на 2026-06-20:
 
 - dedicated key уже создан локально в `outputs/deploy-keys/github-actions-deltagrid-deploy`;
 - public key добавлен на VPS в `/root/.ssh/authorized_keys`;
@@ -60,8 +60,30 @@ PROD_SMOKE_FRONTEND_URL=http://127.0.0.1:3001
 - Follow-up `preview@b257cc8` подтвердил preview auto-deploy end-to-end: GitHub CI `27746664616` и `Deploy Preview` `27746714283` прошли успешно, `/opt/deltagrid-preview` обновлён до `b257cc8`.
 - production deploy hardening перенесён в `main`; real auto-deploy пока не считается подтверждённым, потому что обязательные `PROD_*` repository secrets ещё не заведены.
 - production preflight от 2026-06-16: GitHub Actions run `27619159104` для `main@0716f6a` завершился успешным safe-skip. Шаги `Production secret SSH_HOST missing`, `SSH_USER missing`, `SSH_KEY missing`, `APP_DIR missing` прошли, а `Deploy production` был skipped.
+- production release `v1.5.0` на `main@3f6f3f7` был доставлен вручную по SSH через `scripts/deploy-compose-stack.sh`: GitHub `Deploy Production` стартовал, но deploy step был skipped из-за отсутствующих `PROD_*`; `/opt/deltagrid` работает на `VERSION=1.5.0`, `/version` возвращает `1.5.0`.
+- В `v1.6.0` workflow добавляет summary-статусы `skipped_missing_required_secrets`, `ready_for_real_deploy`, `real_deploy_succeeded` и `real_deploy_failed`, чтобы runbook не смешивал safe-skip с фактическим deploy.
 - локальный read-only preflight от 2026-06-16 подтвердил deploy contract: fingerprint ключа `SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg`, SSH к `root@2.25.143.143`, `/opt/deltagrid` на `main@0716f6a`, production containers healthy и `scripts/server-smoke.sh` зелёный.
 - deploy workflows логируют только readiness-состояние обязательных secrets как `configured/missing`; сами значения secrets в логах не печатаются.
+
+## Production deploy readiness contract
+
+Workflow `Deploy Production` проверяет следующие публичные expected values:
+
+```text
+expected_host=2.25.143.143
+expected_user=root
+expected_app_dir=/opt/deltagrid
+expected_deploy_key_fingerprint=SHA256:TYYi5IayfvNvxRGC3K/J637w8rkUw/+5QtyvtUFJGsg
+```
+
+Readiness/result статусы в `$GITHUB_STEP_SUMMARY`:
+
+- `skipped_missing_required_secrets` — один или несколько обязательных `PROD_*` отсутствуют; это успешный safe-skip и **не** реальный production deploy.
+- `ready_for_real_deploy` — обязательные `PROD_*` заведены; workflow переходит к SSH/fingerprint/target checks.
+- `real_deploy_succeeded` — `Deploy production` реально выполнил SSH deploy и remote `scripts/deploy-compose-stack.sh` завершился успешно.
+- `real_deploy_failed` — workflow попытался выполнить real deploy, но deploy step не прошёл после retry.
+
+В логах и summary разрешено показывать только names/statuses, expected host/user/app dir и fingerprint публичного deploy key. Private key, `.env.production`, raw secrets и provider payload печатать нельзя.
 
 На локальной машине:
 
@@ -103,11 +125,12 @@ Workflow также продолжит запускаться автоматич
 
 Контрольный `Deploy Production` должен пройти следующие признаки:
 
-- `Production secret ... configured` для `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `APP_DIR`;
+- `Deploy Production Readiness` в summary показывает `status=ready_for_real_deploy` и `missing_required=none`;
 - `Validate production deploy key fingerprint` — success;
-- expected value checks для `2.25.143.143`, `root`, `/opt/deltagrid` — success;
+- `Validate production target values` — success для `2.25.143.143`, `root`, `/opt/deltagrid`;
 - `Test production SSH login` и `Check production app directory` — success или понятный warning с последующим успешным deploy;
-- `Deploy production` — success, не skipped.
+- `Deploy production` — success, не skipped;
+- `Deploy Production Result` в summary показывает `result=real_deploy_succeeded`, `deploy method=github_actions_ssh` и `real deploy performed=true`.
 
 Перед реальным production deploy выполните свежий backup на сервере:
 
