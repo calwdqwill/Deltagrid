@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [RELEASE] - v1.6.0 local RC/release gate
+- Локальный RC `v1.6.0` подготовлен: 1) `VERSION` поднят до `1.6.0`; 2) `frontend/package.json` поднят до `1.6.0`; 3) root version в `frontend/package-lock.json` поднят до `1.6.0`; 4) `scripts/release-preflight.sh 1.6.0` проходит; 5) docs-check preflight проходит; 6) backend `compileall app` проходит; 7) backend tests проходят (`59 passed`); 8) frontend `npm run build` проходит; 9) `npm audit --audit-level=high` не находит high/critical blocker; 10) Funding evidence bundle проходит во временном каталоге.
+- Локальный `/version` через `next start` вернул `1.6.0`; Funding evidence показал `ci_final_status=passed`, `verification_status=passed`, `release_gate_status=passed`, `missing_frontend_markers=0` в локальном permissive режиме без production rows.
+- Production release не выполнялся: PR, CI, merge, production backup/deploy/smoke и annotated tag `v1.6.0` остаются отдельными gates после review.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps не включались.
+
 ## [2026-06-20] - [PRODUCT/UI] - v1.6.0 Funding/Data QA UX batch
 - Скоуп батча закрыт как presentation-only Funding QA UX: 1) `/funding?view=qa` получил `Funding QA Review Summary`; 2) summary показывает runway blockers, release decision, source coverage и thin/degraded states; 3) `Funding Data Quality Runway` получил mobile/tablet карточки и desktop table; 4) `Funding Release Checklist` получил mobile/tablet карточки и desktop table; 5) `Funding QA Drilldown` получил адаптивные source cards и wide desktop table; 6) empty/thin/degraded states стали видны до глубоких таблиц; 7) marker strings для funding QA smoke сохранены; 8) frontend build проходит; 9) docs/runbook обновлены; 10) backend API, БД и provider calls не менялись.
 - Граница сохранена: trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps не включались.

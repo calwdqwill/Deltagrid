@@ -92,12 +92,12 @@
 
 ### Итерация 5 — `v1.6.0` RC/release gate
 
-- [ ] Поднять `VERSION` и frontend package metadata до `1.6.0`.
-- [ ] Обновить `CHANGELOG.md`.
-- [ ] Прогнать release-preflight `1.6.0`.
-- [ ] Прогнать backend tests/compile.
-- [ ] Прогнать frontend build/audit.
-- [ ] Прогнать funding release evidence.
+- [x] Поднять `VERSION` и frontend package metadata до `1.6.0`.
+- [x] Обновить `CHANGELOG.md`.
+- [x] Прогнать release-preflight `1.6.0`.
+- [x] Прогнать backend tests/compile.
+- [x] Прогнать frontend build/audit.
+- [x] Прогнать funding release evidence.
 - [ ] Открыть PR.
 - [ ] Дождаться CI.
 - [ ] После подтверждения: merge `main`, production backup/deploy/smoke, tag `v1.6.0`.

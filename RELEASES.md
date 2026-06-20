@@ -287,6 +287,8 @@ Production evidence для `v1.5.0`:
 - `missing_frontend_markers=0`;
 - backup перед deploy: `/opt/deltagrid/backups/deploy/deltagrid-main_20260620T075400Z.sql.gz`.
 
+Локальный RC `v1.6.0` подготовлен в ветке `codex/v1.6.0-production-ops-data-reliability`: `VERSION`, `frontend/package.json` и root version в `frontend/package-lock.json` подняты до `1.6.0`; release preflight, backend compile/tests, frontend build/audit, локальный `/version` и Funding evidence bundle прошли. Это ещё не production release: production baseline остаётся `v1.5.0` до PR CI, merge, backup/deploy/smoke и tag.
+
 Важная ops-граница после `v1.5.0`: GitHub `Deploy Production` стартовал, но deploy step был безопасно skipped из-за отсутствующих `PROD_*` secrets. Фактический production deploy выполнен вручную по SSH через `scripts/deploy-compose-stack.sh`. В release evidence это нужно разделять явно: skipped GitHub deploy не является real deploy, а manual SSH deploy должен иметь отдельные proof строки по runtime/version, backup и smoke.
 
 В `v1.6.0` workflow `Deploy Production` добавляет readiness/result summary для этого разделения:
