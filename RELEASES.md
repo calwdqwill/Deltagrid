@@ -44,16 +44,16 @@ v1.4.0-rc.1  release candidate на preview
 RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
-Для промежуточного patch/tooling target вроде `v1.4.1` или docs-only runway target вроде `v1.5.0` можно сначала проверить, что release docs уже упоминают target, не меняя текущий `VERSION`:
+Для промежуточного patch/tooling target или docs-only runway target вроде `v1.6.0` можно сначала проверить, что release docs уже упоминают target, не меняя текущий `VERSION`:
 
 ```bash
-RELEASE_TARGET=1.4.1 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
+RELEASE_TARGET=1.6.0 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
-Для стартовой runway-проверки `v1.5.0`:
+Для стартовой runway-проверки `v1.6.0`:
 
 ```bash
-RELEASE_TARGET=1.5.0 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
+RELEASE_TARGET=1.6.0 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
 `RELEASE_CHECK_DOCS=1` требует `RELEASE_TARGET` или expected version и проверяет наличие `v<target>` в файлах из `RELEASE_DOCS_FILES`. По умолчанию проверяются `CHANGELOG.md`, `CURRENT_TASK.md`, `PROJECT_PLAN.md`, `BACKLOG.md` и `RELEASES.md`; `README.md` лучше добавлять в этот список только после фактического version bump.
@@ -255,7 +255,7 @@ Funding QA contract должен включать panel id `funding_data_quality
 9. На чистом дереве повторить preflight без `ALLOW_DIRTY`:
 
 ```bash
-RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.4.0
+RELEASE_BRANCH=main sh scripts/release-preflight.sh 1.6.0
 ```
 
 10. Создать annotated tag:
@@ -275,16 +275,29 @@ git push origin v1.4.0
 
 ## Текущий baseline
 
-`v1.4.0` — production minor release: зелёный preview/prod deploy path, Perp DEX read-only research cockpit, source-status/release smoke tooling, production backup tooling и `/version` verification endpoint.
+`v1.5.0` — production minor release на `deltagrid.pro`: PR #1 смержен в `main@3f6f3f7`, tag `v1.5.0` создан и запушен, `/opt/deltagrid` работает на `3f6f3f7` с `VERSION=1.5.0`, а `https://deltagrid.pro/version` возвращает `1.5.0`.
 
-Preview release runway для `v1.4.0` подтверждён на `preview@b257cc8`: CI `27746664616`, `Deploy Preview` `27746714283`, server release smoke на `8011/3012` зелёный. После Perp DEX depth freshness commit `4433f0b` GitHub CI `27761405255` зелёный, `Deploy Preview` `27761467202` упал на step `Deploy preview`, но ручной deploy тем же script и полный preview release smoke на `8011/3012` прошли. `main`, production deploy и tag `v1.3.2` не трогались.
+Production evidence для `v1.5.0`:
 
-Следующий production target: `v1.4.0` — minor release с зелёным deploy path, Perp DEX read-only research cockpit и production rollout на `deltagrid.pro`.
+- production smoke прошёл;
+- Funding release report на VPS прошёл с `release_gate_status=passed`;
+- `funding_total_rows=3126`, `coinglass=3000`, `okx=126`;
+- `missing_frontend_markers=0`;
+- backup перед deploy: `/opt/deltagrid/backups/deploy/deltagrid-main_20260620T075400Z.sql.gz`.
 
-На 2026-06-18 Perp DEX research cockpit для `v1.4.0` дополнен provider state empty/error states: Direct/Depth/CoinGlass panels показывают compact provider/source rows поверх `availability_summary`/`coverage_summary`, чтобы preview/prod QA видела provider unavailable, partial data, missing symbols и CoinGlass unavailable без включения route ranking, route selection, numeric route cost bps или execution.
+Важная ops-граница после `v1.5.0`: GitHub `Deploy Production` стартовал, но deploy step был безопасно skipped из-за отсутствующих `PROD_*` secrets. Фактический production deploy выполнен вручную по SSH через `scripts/deploy-compose-stack.sh`. В release evidence это нужно разделять явно: skipped GitHub deploy не является real deploy, а manual SSH deploy должен иметь отдельные proof строки по runtime/version, backup и smoke.
 
-`v1.4.0` выпущен в production: `main@3936c83`, tag `v1.4.0`, `/opt/deltagrid` обновлён до `3936c83`/`VERSION=1.4.0`, backup `/opt/deltagrid/backups/deltagrid-v140-production_20260618T210020Z.sql.gz` создан перед deploy, production `scripts/release-smoke.sh` и Browser QA desktop/mobile прошли.
+Следующий production target: `v1.6.0` — Production Operations & Data Reliability release. Цель: довести GitHub production deploy readiness, production release evidence, Funding/Data health observability и Funding QA UX до воспроизводимого состояния без хранения secrets в репозитории и без изменения trading/routing/execution границ.
 
-`v1.4.1` подготовлен в ветке `codex/v1.4.1-funding-release-tooling` как промежуточный patch/tooling target для Funding release evidence и CI/runbook hardening: `VERSION`, frontend package metadata и README подняты до `1.4.1`, commit `1f84fab` запушен, но PR ещё не смержен в `main`, tag `v1.4.1` не создан и production deploy не выполнялся.
+Safe release path для `v1.6.0`:
 
-Локальный `v1.5.0` RC подготовлен в той же ветке: `VERSION`, frontend package metadata, lockfile root version и README подняты до `1.5.0`; `v1.5.0` включает накопленный `v1.4.1` Funding release tooling scope, read-only `Funding Data Quality Runway` и `data_quality_runway` release evidence contract. Локально прошли release preflight, frontend build, high-level frontend audit и funding compact report validation. PR/release handoff сохранён в `deploy/v1.5.0-release-handoff.md`; открыть PR нужно вручную, потому что `gh` CLI и GitHub token в локальной сессии недоступны. Production runtime остаётся `v1.4.0` до финального release gate: review/merge, preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`. До отдельного продуктового решения запрещено включать trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps.
+1. Работать в feature branch `codex/v1.6.0-production-ops-data-reliability`.
+2. Открыть PR к `main` после локальных проверок и docs release-preflight.
+3. Дождаться PR CI.
+4. Проверить deploy readiness: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR` должны быть настроены в GitHub repository secrets, но не храниться в репозитории.
+5. Перед production deploy создать свежий PostgreSQL backup.
+6. Выполнить production deploy из `main`; evidence должно явно показать, был ли это GitHub real deploy или ручной SSH deploy.
+7. Проверить `/version`, runtime commit/version, `scripts/release-smoke.sh`, Funding release report и frontend markers.
+8. Только после успешного production evidence создать annotated tag `v1.6.0` и запушить tag.
+
+До отдельного продуктового решения запрещено включать trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps. `v1.6.0` не должен менять backend API, БД-схему и provider calls в runway/ops batch без отдельного обоснования.

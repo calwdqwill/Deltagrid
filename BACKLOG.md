@@ -4,8 +4,8 @@
 
 Текущий порядок итераций:
 
-1. **CI/CD и release safety** — закрыть `PROD_*`, подтвердить реальный `Deploy Production`, затем держать deploy path зелёным перед новыми product/data изменениями.
-2. **Production ops-наблюдаемость** — внешний uptime/readiness monitoring, backup PostgreSQL перед миграциями/деплоем, certbot email, отдельное окно reboot.
+1. **CI/CD и release safety** — в `v1.6.0` закрыть GitHub production deploy readiness: `v1.5.0` был доставлен вручную по SSH после safe-skip GitHub `Deploy Production` из-за отсутствующих `PROD_*`; следующий gate — настроить secrets вне репозитория и явно отличать skipped deploy от real deploy.
+2. **Production ops-наблюдаемость** — усилить release evidence после `v1.5.0`: runtime/version proof, `/version` после deploy, PostgreSQL backup перед деплоем, production smoke, Funding release report artifact path и внешний uptime/readiness monitoring.
 3. **Preview publication** — DNS `preview.deltagrid.pro`, SSL и public preview smoke, чтобы future data/product изменения проверять вне production.
 4. **Data promotion gate** — оценить 7d ingestion/backfill для `open_interest`, `basis_premium`, `spot_perp_price` по `HYPE/XRP/DOGE/ADA/LINK`; текущий вывод: эти потоки snapshot-only в MVP ingestion, поэтому candidates остаются в chart/asset mode до 7d накопления или отдельного historical source.
 5. **Product data adapters** — live Perp DEX venue adapters после стабильного data/ops слоя; Hyperliquid, dYdX, Lighter и Aster public snapshots v0 подключены read-only как normalized venue snapshots, GMX подключён как raw fixed-point snapshot с token decimals, pool token amount diagnostics, diagnostic USD OI/liquidity, source-backed rate semantics metadata, offline rate relation guardrails, `rate_relation_summary` и `rate_source_fields_summary`; live `/markets/info` показывает nonzero-borrowing relation `funding+borrowing`, zero-borrowing ambiguity и отсутствие helper inputs (`fundingFactorPerSecond`, `longsPayShorts`, side borrowing factors), поэтому требует отдельного mapping review до carry conversion. CoinGlass Perp DEX enrichment v0 добавлен как research-only third-party aggregate слой для DEX-like venues; `coverage_summary` показал `Lighter` и `Aster` как первые candidate hints, оба уже подключены как direct read-only adapters, но не являются ranking/execution input. Route model v0 добавлен как read-only checklist/formula skeleton; Lighter/Aster cost semantics metadata v0 уже различает display fee/top-of-book fields и route-ready inputs, а численный routing/execution остаются отдельными задачами.
@@ -38,6 +38,72 @@
 6. **Funding analytics read-only** — после `v1.4.0` начат отдельный безопасный funding block: `Funding Source Status` показывает OKX funding history и CoinGlass funding snapshots по loaded rows, latest age, freshness, coverage, sync и boundary. `Funding Freshness & Anomaly` добавляет per-symbol data QA по rows/latest/latest rate/last change/data status/statistical anomaly. `Funding Anomaly Detail` показывает baseline statistics и z-score QA labels без strategy signal. `Funding Source Comparison` сравнивает последние OKX/CoinGlass rows как provider QA без сортировки по выгоде. `Funding QA Drilldown` показывает freshness/coverage/sync reasons и next actions. `Funding QA View Grouping` добавляет отдельный `QA` view и не перегружает остальные Funding views. `Funding History Diagnostics` добавляет history-window QA в `Overview`/`History`. `Funding History Controls` добавляет URL `asset`/`source`, chart readiness, range/interval hints и next action для read-only history workflow. `Funding History Readiness` объясняет empty/thin history states через persisted rows, selected asset/source coverage, chart points, numeric rates и next action. `Funding QA Compare Summary` добавляет compact preview/prod drift summary в `scripts/funding-qa-smoke.sh`. `Funding Release Checklist` добавляет UI/readiness checklist для release smoke и preview rollout. `Funding Release Readiness Smoke Summary` добавляет `contract.release_readiness` для machine-readable release-prep. `Funding Release Readiness Hard Gate` добавляет optional `FAIL_ON_RELEASE_NOT_READY=1`. `Funding Release Smoke Wrapper` добавляет `scripts/funding-release-smoke.sh` как soft/strict runner вокруг funding QA smoke. `Funding Smoke JSON Output` добавляет `OUTPUT_JSON_ONLY=1` для CI-friendly parsing. `Funding Release Report` добавляет compact summary script поверх JSON smoke, `Funding Release Report JSON` добавляет `FUNDING_RELEASE_REPORT_FORMAT=json`, `Funding Release Report Context` добавляет `gate_status` и `run_context`, `Funding Release Report Evidence` добавляет readiness/source/compare evidence fields, `Funding Release Readiness Gate Report` добавляет `readiness_gate_status`, blockers и next actions, `Funding Report Require Ready Gate` добавляет optional report-level readiness failure, `Funding Report Require Compare Gate` добавляет optional report-level compare failure, `Funding Release Report CI Profile` добавляет `FUNDING_RELEASE_REPORT_PROFILE=ci` для JSON + readiness/compare gates одним preset, `Funding Release Report Exit Reason` добавляет `report_exit_code` и `exit_reason`, `Funding Release Gate Status` добавляет `release_gate_status=passed|blocked|failed`, `Funding Release Gate Checklist Batch` добавляет `release_gate_checks`/`release_gate_summary`, `Funding Release Gate Actions Batch` добавляет categories/blocker groups/first action, `Funding Release Report Artifact Output Batch` добавляет `FUNDING_RELEASE_REPORT_OUTPUT` для записи compact JSON artifact в файл, `Funding Release Report CI Integration Batch` добавляет CI wrapper, stricter preflight, `run_context.ci` и manual GitHub workflow с artifact upload, `Funding Release Report Artifact Validation Batch` добавляет schema/status/summary/safety/CI-context validation compact artifact, `Funding Release Report Evidence Bundle Batch` добавляет validation JSON и manifest JSON с statuses, blockers и checksums для release evidence, `Funding Release Bundle Manifest Validation Batch` добавляет standalone bundle validator и `funding-release-bundle-validation.json` для проверки manifest/checksum/exit-code invariants, `Funding Release Bundle Review Batch` добавляет standalone review helper и `funding-release-review.json` для runbook summary/next action, `Funding Release Review Summary Artifact Batch` добавляет standalone Markdown/text/JSON summary и `funding-release-summary.md` для GitHub step summary/release notes, `Funding Release Evidence Handoff Batch` добавляет standalone handoff и `funding-release-handoff.md` для release notes/runbook artifact checklist, `Funding Release Evidence Audit Batch` добавляет directory-level audit и `funding-release-audit.json` для проверки скачанного GitHub artifact bundle, `Funding Release Audit Summary CI Batch` добавляет `funding-release-audit.md` и GitHub summary audit readout, `Funding Release Evidence Index Batch` добавляет `funding-release-index.md`/`.json` как первый entrypoint для downloaded bundle review, `Funding Release Evidence Verify Batch` добавляет `funding-release-verify.md`/`.json` как финальный local verdict по index/audit consistency и release-notes/debug readiness, `Funding Release Evidence Notes Batch` добавляет `funding-release-notes.md`/`.json` как paste-ready snippet для release notes или debug review, а `Funding Release Evidence Compare Batch` добавляет offline compare двух downloaded bundles по verify/notes/status/blocker/artifact drift. Блок использует существующие `/data/funding` и `/data/health`, не добавляет provider calls, API endpoints, carry bps, route ranking, route selection или execution.
 7. **Strategy/backtest** — настоящий backtest engine и scheduler после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
 
+## План `v1.6.0` — 2026-06-20
+
+Цель `v1.6.0` — Production Operations & Data Reliability release после production `v1.5.0`: автоматизировать и задокументировать GitHub production deploy readiness без хранения secrets в репозитории, усилить production release evidence, улучшить Funding/Data health observability и Funding QA UX без изменения backend API, БД и provider calls, если это не потребуется отдельным продуктовым решением.
+
+### Итерация 1 — release/planning/runway batch
+
+- [x] Проверить `git status` перед стартом новой фазы.
+- [x] Создать ветку `codex/v1.6.0-production-ops-data-reliability` от актуального `origin/main=3f6f3f7`.
+- [x] Зафиксировать факт `v1.5.0`: PR #1 смержен, `main@3f6f3f7`, tag `v1.5.0`, production `/version=1.5.0`, smoke passed.
+- [x] Зафиксировать Funding production evidence: `release_gate_status=passed`, `funding_total_rows=3126`, `coinglass=3000`, `okx=126`, `missing_frontend_markers=0`.
+- [x] Зафиксировать backup перед deploy: `/opt/deltagrid/backups/deploy/deltagrid-main_20260620T075400Z.sql.gz`.
+- [x] Зафиксировать риск GitHub `Deploy Production`: deploy step был skipped из-за отсутствующих `PROD_*`, реальный deploy выполнен вручную по SSH.
+- [x] Зафиксировать scope, non-goals и release gates `v1.6.0`.
+- [x] Описать безопасный release path: PR, CI, deploy readiness, backup, smoke, Funding evidence, tag.
+- [x] Пройти docs release-preflight для `v1.6.0`, сделать commit/push итерации.
+
+### Итерация 2 — production deploy automation readiness
+
+- [ ] Проверить `.github/workflows/deploy-production.yml` без включения secrets в репозиторий.
+- [ ] Добавить или улучшить preflight для `PROD_*` secrets readiness.
+- [ ] Добавить runbook настройки GitHub Actions production secrets.
+- [ ] Добавить diagnostics, которые явно отличают skipped deploy от real deploy.
+- [ ] Зафиксировать expected production host/app dir/key fingerprint без публикации чувствительных данных.
+- [ ] Обновить `README.md`, `RELEASES.md` и `CURRENT_TASK.md`.
+- [ ] Проверить shell syntax и workflow diff.
+- [ ] Не менять реальные secrets и не коммитить чувствительные данные.
+- [ ] Commit/push.
+
+### Итерация 3 — production evidence/report hardening
+
+- [ ] Улучшить release evidence для production runtime/version.
+- [ ] Добавить compact deploy result summary, если это вписывается в текущие scripts.
+- [ ] Добавить проверку `/version` после deploy.
+- [ ] Добавить явное различие GitHub skipped deploy vs SSH/manual deploy.
+- [ ] Добавить runbook-команды для production smoke.
+- [ ] Добавить funding report production evidence path.
+- [ ] Обновить docs.
+- [ ] Запустить локальные проверки.
+- [ ] Commit/push.
+
+### Итерация 4 — Funding/Data QA UX batch
+
+- [ ] Улучшить читаемость Funding QA на desktop/mobile.
+- [ ] Не менять backend API и provider calls без необходимости.
+- [ ] Не добавлять trading/routing/execution signals.
+- [ ] Улучшить empty/thin/degraded states.
+- [ ] Сделать Data Quality Runway понятнее для release review.
+- [ ] Проверить marker contract.
+- [ ] Запустить frontend build.
+- [ ] Запустить funding release report/smoke.
+- [ ] Обновить docs и commit/push.
+
+### Итерация 5 — `v1.6.0` RC/release gate
+
+- [ ] Поднять `VERSION` и frontend package metadata до `1.6.0`.
+- [ ] Обновить `CHANGELOG.md`.
+- [ ] Прогнать release-preflight `1.6.0`.
+- [ ] Прогнать backend tests/compile.
+- [ ] Прогнать frontend build/audit.
+- [ ] Прогнать funding release evidence.
+- [ ] Открыть PR.
+- [ ] Дождаться CI.
+- [ ] После подтверждения: merge `main`, production backup/deploy/smoke, tag `v1.6.0`.
+
+Граница `v1.6.0`: не включать trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps без отдельного продуктового решения; не хранить secrets в репозитории; не менять backend API, БД и provider calls в runway/ops batch.
+
 ## План `v1.5.0` — 2026-06-20
 
 Цель `v1.5.0` — следующий production minor release после `v1.4.0` и промежуточного `v1.4.1` tooling branch: усилить Funding/Data QA и release evidence так, чтобы следующий product/data слой был проверяемым на preview/prod без изменения trading/routing границ.
@@ -66,7 +132,7 @@
 - [x] Итерация 8: включить GitHub CI для `codex/**` branch push без изменения deploy gates.
 - [x] Итерация 9: дождаться зелёного GitHub branch CI и обновить handoff ссылкой на run.
 - [x] Итерация 10: добавить release-specific PR template для ручного PR `v1.5.0`.
-- [ ] Финальный release gate после PR/review: preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
+- [x] Финальный release gate после PR/review: PR #1 смержен, production backup/deploy/smoke выполнены, Funding release report passed, annotated tag `v1.5.0` создан.
 
 ### Итерация 2 — Funding/Data QA product batch
 

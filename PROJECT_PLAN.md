@@ -4,24 +4,47 @@
 
 **MVP1 — Data Quality Gate и provider reliability** — следующая стадия после MVP0. Цель: сделать накопление рыночных данных наблюдаемым, свежим и устойчивым перед полноценными интерактивными графиками и backtest engine.
 
-## v1.5.0 release runway — 2026-06-20
+## v1.6.0 Production Operations & Data Reliability runway — 2026-06-20
 
-Текущее состояние перед стартом `v1.5.0`:
+Текущее состояние после выпуска `v1.5.0`:
 
-- Production minor release `v1.4.0` уже выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, production runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`; текущий `origin/main` находится на docs-only follow-up `2b6c830`.
-- Ветка `codex/v1.4.1-funding-release-tooling` запушена и содержит commit `1f84fab` с подготовленной patch/tooling-версией `v1.4.1`.
-- `v1.4.1` ещё не смержена в `main`, tag `v1.4.1` не создан, production deploy `v1.4.1` не запускался.
-- `v1.5.0` стартует как новая minor-фаза поверх накопленного Funding release tooling, но зависит от решения по `v1.4.1`: либо сначала смержить/выпустить patch, либо явно перенести его tooling scope в `v1.5.0` release branch.
-- Граница фазы: backend API, БД, provider calls и frontend product flow не меняются в runway-итерации; trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps остаются вне scope до отдельного продуктового решения.
+- PR #1 смержен в `main`; `origin/main` и tag `v1.5.0` указывают на `3f6f3f7`.
+- Production `/opt/deltagrid` работает на `3f6f3f7` с `VERSION=1.5.0`; `https://deltagrid.pro/version` отдаёт `1.5.0`.
+- Production smoke прошёл; Funding release report на VPS прошёл с `release_gate_status=passed`, `funding_total_rows=3126`, `coinglass=3000`, `okx=126`, `missing_frontend_markers=0`.
+- Перед deploy создан backup `/opt/deltagrid/backups/deploy/deltagrid-main_20260620T075400Z.sql.gz`.
+- GitHub `Deploy Production` стартовал, но deploy step был безопасно пропущен из-за отсутствующих `PROD_*` secrets; фактический deploy выполнен вручную по SSH через `scripts/deploy-compose-stack.sh`.
+- Рабочая ветка новой фазы: `codex/v1.6.0-production-ops-data-reliability` от `origin/main=3f6f3f7`.
 
-План крупных итераций до `v1.5.0`:
+Цель `v1.6.0` — production operations и data reliability release: закрыть GitHub production deploy readiness без хранения секретов в репозитории, усилить release evidence после `v1.5.0`, улучшить Funding/Data health observability и Funding QA UX без изменения backend API, БД и provider calls, если это не потребуется отдельным решением.
 
-1. **Release/planning/runway batch** — закрыто: зафиксированы scope, milestone, non-goals, release path, dependency от `v1.4.1`, required evidence и safe-start ограничения.
-2. **Funding/Data QA product batch** — закрыто: добавлен `Funding Data Quality Runway` поверх уже существующих `/data/funding` и `/data/health`, без новых provider calls и без strategy/trading signal.
-3. **Release evidence + preview validation batch** — закрыто локально: `funding_qa_v0` получил `data_quality_runway`, compact report/validator учитывают runway gates, а CI-like evidence bundle проверяет blocked/ready статусы как release evidence.
-4. **`v1.5.0` RC + production rollout batch** — локальный RC закрыт: версии подняты до `1.5.0`, release preflight, frontend build/audit и funding evidence validation проходят; production backup/deploy, Browser QA и tag остаются финальным release gate после review/merge.
+Границы и non-goals `v1.6.0`:
 
-Итерации 1–10 закрывают локальный путь до `v1.5.0` RC, handoff, regression evidence, pre-merge validation, branch CI evidence и PR template readiness: безопасная основа планирования, read-only product/data слой, machine-readable release evidence, согласованный version bump, `deploy/v1.5.0-release-handoff.md`, полный локальный regression pass (`59 passed` backend tests через project venv), conflict-free merge simulation против `origin/main`, `CI` trigger для `codex/**`, зелёный GitHub branch CI run `27863323158` и `.github/PULL_REQUEST_TEMPLATE/v1.5.0-funding-qa.md`. Backend API, БД-схема, provider adapters и внешние provider calls не менялись; frontend получил только новую QA-панель и smoke marker, а release scripts получили runway summary/report/validator. Следующий крупный блок вне локального RC — открыть PR, дождаться PR CI, получить preview evidence, затем отдельно пройти production backup/deploy, Browser QA и annotated tag `v1.5.0`.
+- Не хранить secrets, private keys, host credentials или raw provider payload в репозитории.
+- Не менять backend API, БД-схему, provider adapters и provider call topology без отдельного обоснования.
+- Не включать trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps без отдельного продуктового решения.
+- Не делать rewrite, смену стека или тяжёлые зависимости; изменения должны быть маленькими, проверяемыми и production-oriented.
+
+План крупных итераций до `v1.6.0`:
+
+1. **Release/planning/runway batch** — зафиксировать scope, non-goals, release gates, факт `v1.5.0`, риск `PROD_*` secrets и безопасный release path: PR, CI, deploy readiness, backup, smoke, tag.
+2. **Production deploy automation readiness** — проверить `Deploy Production` workflow без secrets, усилить preflight/diagnostics для `PROD_*`, оформить runbook настройки GitHub Actions secrets и отличать skipped deploy от real deploy.
+3. **Production evidence/report hardening** — усилить evidence по runtime/version, `/version` после deploy, skipped-vs-real deploy, production smoke runbook и Funding report artifact path.
+4. **Funding/Data QA UX batch** — улучшить читаемость Funding QA, empty/thin/degraded states и Data Quality Runway без изменения backend API/provider calls и без trading/routing outputs.
+5. **`v1.6.0` RC/release gate** — поднять версии до `1.6.0`, обновить changelog, пройти release preflight/backend/frontend/funding evidence, открыть PR, дождаться CI и после подтверждения выполнить merge, backup/deploy/smoke и annotated tag `v1.6.0`.
+
+Release gates `v1.6.0`:
+
+- `scripts/release-preflight.sh` проходит для target `1.6.0`; docs-check проходит уже на runway.
+- PR CI зелёный; production deploy readiness явно показывает, настроены ли `PROD_*`.
+- Перед production deploy создан свежий PostgreSQL backup.
+- После deploy `/version` и runtime commit/version соответствуют release target.
+- Production smoke, Funding release report и Funding frontend markers проходят без missing required markers.
+- GitHub skipped deploy и ручной SSH deploy не смешиваются в evidence: release notes должны явно показывать, какой deploy был фактическим.
+- Annotated tag `v1.6.0` создаётся только после merge, production backup/deploy, smoke и release evidence.
+
+## v1.5.0 release fact — 2026-06-20
+
+`v1.5.0` выпущен в production как Funding/Data QA release: PR #1 смержен в `main@3f6f3f7`, tag `v1.5.0` создан и запушен, `/opt/deltagrid` работает на `3f6f3f7` с `VERSION=1.5.0`, `/version` возвращает `1.5.0`, production smoke и Funding release report прошли. Backend API, БД-схема, provider adapters и внешние provider calls не менялись; добавлены read-only Funding QA UX и release evidence tooling. GitHub production workflow всё ещё требует настройки `PROD_*` secrets: в релизе `v1.5.0` workflow сделал safe-skip, а реальный deploy был выполнен вручную по SSH.
 
 ## Post-v1.4.0 funding analytics — 2026-06-19
 

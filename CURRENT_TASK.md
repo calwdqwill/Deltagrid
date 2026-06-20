@@ -1,8 +1,17 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab`, локальный `v1.5.0` RC commit `0a43813`, handoff/regression evidence, pre-merge validation, зелёный branch CI и release-specific PR template; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC готов к ручному PR; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
+**Status**: Production baseline `v1.5.0` выпущен на `deltagrid.pro`: PR #1 смержен в `main@3f6f3f7`, tag `v1.5.0` указывает на `3f6f3f7`, runtime `/opt/deltagrid` работает на `3f6f3f7` с `VERSION=1.5.0`, `https://deltagrid.pro/version` отдаёт `1.5.0`, production smoke прошёл. Funding release report на VPS прошёл с `release_gate_status=passed`, `funding_total_rows=3126`, `coinglass=3000`, `okx=126`, `missing_frontend_markers=0`. Перед deploy создан backup `/opt/deltagrid/backups/deploy/deltagrid-main_20260620T075400Z.sql.gz`. GitHub `Deploy Production` стартовал, но deploy step был skipped из-за отсутствующих `PROD_*` secrets; фактический deploy выполнен вручную по SSH через `scripts/deploy-compose-stack.sh`. Новая фаза `v1.6.0` работает в ветке `codex/v1.6.0-production-ops-data-reliability` и фокусируется на production operations, deploy readiness, release evidence и Funding/Data reliability без включения trading/routing/execution outputs.
 **Last Updated**: 2026-06-20
+
+## Обновление 2026-06-20 — v1.6.0 release/planning/runway batch
+
+- Создана ветка `codex/v1.6.0-production-ops-data-reliability` от `origin/main=3f6f3f7`.
+- Зафиксирован production факт `v1.5.0`: PR #1 смержен, tag `v1.5.0` создан и запушен, `/version=1.5.0`, production smoke и Funding release report прошли.
+- Зафиксирован главный ops-риск новой фазы: GitHub `Deploy Production` пока не выполняет real deploy без настроенных `PROD_*`; хранить secrets в репозитории нельзя.
+- Scope `v1.6.0`: production deploy automation readiness, release evidence hardening, Funding/Data health observability и Funding QA UX.
+- Non-goals: backend API, БД, provider calls, trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps не меняются без отдельного продуктового решения.
+- Следующая итерация: production deploy automation readiness — проверить workflow, preflight/diagnostics, runbook GitHub secrets и различение skipped deploy vs real deploy.
 
 ## Обновление 2026-06-20 — v1.5.0 PR template readiness
 
