@@ -1,8 +1,15 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab`, локальный `v1.5.0` RC commit `0a43813`, handoff/regression evidence, pre-merge validation и branch CI readiness; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC готов к ручному PR; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
+**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab`, локальный `v1.5.0` RC commit `0a43813`, handoff/regression evidence, pre-merge validation и зелёный branch CI run `27863265157`; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC готов к ручному PR; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
 **Last Updated**: 2026-06-20
+
+## Обновление 2026-06-20 — v1.5.0 branch CI success
+
+- После расширения `CI` workflow на `codex/**` push GitHub Actions запустил branch CI для commit `9bc6dd7`.
+- Run `27863265157` завершился `success`: `https://github.com/calwdqwill/Deltagrid/actions/runs/27863265157`.
+- Это предварительное GitHub evidence для feature branch; PR review, preview evidence, production backup/deploy, smoke, Browser QA и tag остаются отдельными release gates.
+- Handoff обновлён ссылкой на зелёный branch CI.
 
 ## Обновление 2026-06-20 — v1.5.0 branch CI readiness
 

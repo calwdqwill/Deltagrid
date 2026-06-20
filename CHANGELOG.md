@@ -1,5 +1,10 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [CI] - v1.5.0 branch CI success
+- Скоуп батча закрыт как CI evidence update: 1) branch push на `codex/v1.4.1-funding-release-tooling` запустил GitHub `CI`; 2) commit `9bc6dd7` проверен; 3) run id `27863265157`; 4) run завершился `success`; 5) handoff обновлён ссылкой на run; 6) `CURRENT_TASK.md` обновлён; 7) `BACKLOG.md` обновлён; 8) `PROJECT_PLAN.md` обновлён; 9) `CHANGELOG.md` обновлён; 10) merge/deploy/tag не выполнялись.
+- Branch CI является предварительным evidence для feature branch, но не заменяет PR review, preview evidence, production backup/deploy, smoke, Browser QA и annotated tag.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-20] - [CI] - v1.5.0 branch CI readiness
 - Скоуп батча закрыт как CI-only release readiness: 1) `.github/workflows/ci.yml` теперь запускается на push в `codex/**`; 2) `preview` и `main` push triggers сохранены; 3) pull request triggers сохранены; 4) deploy workflows не менялись; 5) branch CI можно использовать как предварительное evidence до ручного PR; 6) PR review не заменяется branch CI; 7) production deploy gate не менялся; 8) handoff обновлён; 9) release docs обновлены; 10) runtime не трогался.
 - Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
