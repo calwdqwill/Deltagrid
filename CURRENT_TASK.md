@@ -1,8 +1,20 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab`, локальный `v1.5.0` RC commit `0a43813`, handoff/regression evidence, pre-merge validation, зелёный branch CI и release-specific PR template; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC готов к ручному PR; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
+**Status**: Production baseline `v1.5.0` выпущен на `deltagrid.pro`: `origin/main=3f6f3f7`, tag `v1.5.0` указывает на release `3f6f3f7`, а `https://deltagrid.pro/version` отдаёт `1.5.0`. Локальный RC `v1.6.0` подготовлен в ветке `codex/v1.6.0-production-ops-data-reliability` на commit `e0bcbc6`; GitHub CI run `27872800819` завершился `success`, но PR к `main` не найден, tag `v1.6.0` отсутствует, production merge/deploy/smoke/tag `v1.6.0` не выполнялись. Новая ветка `codex/v1.7.0-data-quality-observability` создана от `origin/main=3f6f3f7`; она не содержит изменения локального RC `v1.6.0` автоматически. Цель `v1.7.0` — Data Quality Observability & Funding Reliability: усилить funding/data health review, evidence checks и диагностику thin/empty/degraded states без изменения backend API, БД, provider calls и без включения trading/routing/execution outputs.
 **Last Updated**: 2026-06-20
+
+## Обновление 2026-06-20 — v1.7.0 release planning & baseline audit
+
+- Проверен стартовый `git status`: рабочее дерево было чистым; исходная ветка перед стартом — `codex/v1.6.0-production-ops-data-reliability`.
+- Актуальный remote baseline: `origin/main=3f6f3f7`, tag `v1.5.0` есть, tag `v1.6.0` отсутствует.
+- Ветка `v1.6.0` существует как `origin/codex/v1.6.0-production-ops-data-reliability=e0bcbc6` и содержит 5 commits поверх `origin/main`.
+- GitHub PR по `codex/v1.6.0-production-ops-data-reliability` к `main` не найден; GitHub CI для `e0bcbc6` зелёный (`27872800819`, `success`).
+- Production `/version` возвращает `1.5.0`, поэтому `v1.6.0` не считается production release.
+- Создана ветка `codex/v1.7.0-data-quality-observability` от `origin/main=3f6f3f7`.
+- Зафиксированы scope, non-goals и release gates `v1.7.0`: Funding/Data Quality observability и evidence hardening без backend API/БД/provider changes и без trading/routing/execution outputs.
+- Риск: если понадобится использовать изменения локального RC `v1.6.0`, их нужно переносить в `v1.7.0` осознанно через merge/cherry-pick и повторную проверку; production deploy/tag `v1.6.0` или `v1.7.0` не выполнять без отдельного подтверждения.
+- Следующая итерация: funding/data health evidence hardening — compact summaries по rows/provider/stale/thin/empty states и явное разделение local permissive vs production evidence.
 
 ## Обновление 2026-06-20 — v1.5.0 PR template readiness
 

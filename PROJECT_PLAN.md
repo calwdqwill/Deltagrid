@@ -4,6 +4,44 @@
 
 **MVP1 — Data Quality Gate и provider reliability** — следующая стадия после MVP0. Цель: сделать накопление рыночных данных наблюдаемым, свежим и устойчивым перед полноценными интерактивными графиками и backtest engine.
 
+## v1.7.0 Data Quality Observability & Funding Reliability runway — 2026-06-20
+
+Фактический baseline перед стартом `v1.7.0`:
+
+- Рабочая ветка `codex/v1.7.0-data-quality-observability` создана от актуального `origin/main=3f6f3f7`.
+- Production baseline остаётся `v1.5.0`: tag `v1.5.0` указывает на release `3f6f3f7`, а `https://deltagrid.pro/version` отдаёт `1.5.0`.
+- Локальный RC `v1.6.0` подготовлен в ветке `codex/v1.6.0-production-ops-data-reliability` на commit `e0bcbc6`; ветка содержит 5 commits поверх `origin/main`.
+- GitHub CI для `v1.6.0` зелёный: run `27872800819` завершился `success` для `e0bcbc6`.
+- PR для `codex/v1.6.0-production-ops-data-reliability` к `main` через GitHub API не найден; tag `v1.6.0` отсутствует; production merge/deploy/smoke/tag для `v1.6.0` не выполнялись.
+- Ветка `v1.7.0` стартует от production `main`, поэтому изменения локального RC `v1.6.0` не входят в неё автоматически. Это явный release-risk: перед переносом отдельных идей из `v1.6.0` нужно cherry-pick/merge решение и отдельная проверка.
+
+Цель `v1.7.0` — Data Quality Observability & Funding Reliability release: сделать funding/data health понятнее для release review, усилить local/production evidence checks, улучшить диагностику thin/empty/degraded data states и UX Funding QA/Data Quality review без изменения backend API, БД, provider calls и без включения trading/routing/execution outputs.
+
+Границы и non-goals `v1.7.0`:
+
+- Не выполнять production deploy/tag `v1.6.0` или `v1.7.0` без отдельного подтверждения владельца.
+- Не включать trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps без отдельного продуктового решения.
+- Не менять backend API, БД-схему, provider adapters и topology provider calls в planning/evidence итерациях.
+- Не хранить secrets, private keys, raw provider payload или `.env.production` в репозитории.
+- Использовать существующие Funding/Data Health contracts и release scripts как основной путь, если не потребуется локальное минимальное расширение tooling.
+
+План крупных итераций до `v1.7.0`:
+
+1. **Release planning & baseline audit** — текущая итерация: зафиксировать фактическое состояние `v1.6.0`, scope/non-goals/gates `v1.7.0`, обновить release docs и пройти docs checks.
+2. **Funding/data health evidence hardening** — усилить compact summary по total rows, provider rows, stale/thin/empty states, разделить local permissive evidence и production release evidence, при необходимости добавить machine-readable summary artifact без изменения API/БД.
+3. **Data quality observability UX** — улучшить visual hierarchy Funding QA/Data Quality, thin/empty/degraded states и блок “что блокирует release” без новых backend calls и без trading/routing outputs.
+4. **Production runbook & CI readiness** — усилить runbook PR → CI → backup → deploy → smoke → evidence → tag, добавить явные команды `/version`, funding evidence и frontend markers после deploy.
+5. **`v1.7.0` RC/release gate** — поднять версии до `1.7.0`, пройти release-preflight/backend/frontend/funding evidence, открыть PR и только после отдельного подтверждения выполнять merge, production backup/deploy/smoke и annotated tag.
+
+Release gates `v1.7.0`:
+
+- Docs release-preflight проходит для target `1.7.0`.
+- `v1.6.0` baseline зафиксирован отдельно: если PR/tag/deploy всё ещё отсутствуют, это не маскируется как completed production release.
+- Funding/Data evidence различает local permissive mode и production release evidence.
+- Frontend marker contract Funding QA не ломается.
+- Backend API, БД, provider calls, trading/routing/execution boundaries остаются неизменными без отдельного решения.
+- Production deploy/tag выполняются только после PR CI, свежего backup, `/version`, smoke, funding evidence и ручного подтверждения владельца.
+
 ## v1.5.0 release runway — 2026-06-20
 
 Текущее состояние перед стартом `v1.5.0`:

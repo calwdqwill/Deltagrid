@@ -1,5 +1,11 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [PLANNING] - v1.7.0 release planning & baseline audit
+- Скоуп итерации закрыт как docs-only baseline audit: 1) проверен `git status`; 2) проверен `origin/main=3f6f3f7`; 3) подтверждён production `/version=1.5.0`; 4) подтверждено наличие tag `v1.5.0`; 5) подтверждено отсутствие tag `v1.6.0`; 6) зафиксирована ветка `codex/v1.6.0-production-ops-data-reliability=e0bcbc6`; 7) GitHub CI `27872800819` для `e0bcbc6` зелёный; 8) PR `v1.6.0` к `main` не найден; 9) создана ветка `codex/v1.7.0-data-quality-observability` от `origin/main`; 10) docs preflight для `1.7.0` проходит.
+- `v1.6.0` зафиксирован как локальный RC, а не production release: PR, merge, production deploy/smoke и tag не выполнялись.
+- Цель `v1.7.0`: Data Quality Observability & Funding Reliability без изменения backend API, БД, provider calls и без включения trading/routing/execution outputs.
+- Граница сохранена: production deploy/tag не выполнялись; trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps не включались.
+
 ## [2026-06-20] - [RELEASE] - v1.5.0 PR template readiness
 - Скоуп батча закрыт как PR ergonomics tooling: 1) добавлен `.github/PULL_REQUEST_TEMPLATE/v1.5.0-funding-qa.md`; 2) template содержит scope; 3) template содержит checks; 4) template содержит safety boundary; 5) template содержит release gate после PR; 6) handoff получил URL с `template=v1.5.0-funding-qa.md`; 7) `CURRENT_TASK.md` обновлён; 8) `BACKLOG.md` обновлён; 9) `PROJECT_PLAN.md` обновлён; 10) deploy/runtime не трогались.
 - Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
