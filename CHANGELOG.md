@@ -1,5 +1,9 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [CI] - v1.5.0 branch CI readiness
+- Скоуп батча закрыт как CI-only release readiness: 1) `.github/workflows/ci.yml` теперь запускается на push в `codex/**`; 2) `preview` и `main` push triggers сохранены; 3) pull request triggers сохранены; 4) deploy workflows не менялись; 5) branch CI можно использовать как предварительное evidence до ручного PR; 6) PR review не заменяется branch CI; 7) production deploy gate не менялся; 8) handoff обновлён; 9) release docs обновлены; 10) runtime не трогался.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-20] - [QA] - v1.5.0 pre-merge validation
 - Скоуп батча закрыт как pre-merge validation: 1) worktree чистый; 2) `merge-base` совпадает с `origin/main=2b6c830`; 3) `git merge-tree origin/main HEAD` проходит без conflict output; 4) `git diff --check origin/main...HEAD` чистый; 5) backend files в PR diff отсутствуют; 6) generated artifact paths в PR diff отсутствуют; 7) secret-like additions не найдены; 8) targeted forbidden capability enable scan пустой; 9) `deploy/v1.5.0-release-handoff.md` обновлён; 10) merge/deploy/tag не выполнялись.
 - Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.

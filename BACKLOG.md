@@ -63,6 +63,7 @@
 - [x] Итерация 5: подготовить PR/release handoff readiness без production runtime changes.
 - [x] Итерация 6: выполнить full local regression pass и обновить release handoff фактическими проверками.
 - [x] Итерация 7: выполнить pre-merge validation против `origin/main` и обновить handoff.
+- [x] Итерация 8: включить GitHub CI для `codex/**` branch push без изменения deploy gates.
 - [ ] Финальный release gate после PR/review: preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
 
 ### Итерация 2 — Funding/Data QA product batch
@@ -141,6 +142,15 @@
 - [x] Проверить targeted forbidden capability enable scan.
 - [x] Обновить `deploy/v1.5.0-release-handoff.md` pre-merge результатами.
 - [x] Не выполнять merge в `main`/`preview`, production deploy или tag без отдельного release decision.
+
+### Итерация 8 — v1.5.0 branch CI readiness batch
+
+- [x] Расширить `.github/workflows/ci.yml` на push branch pattern `codex/**`.
+- [x] Не менять `Deploy Preview`: он остаётся завязан на успешный `CI` для branch `preview`.
+- [x] Не менять `Deploy Production`: production gate остаётся через `main`/manual release path.
+- [x] Обновить release handoff: branch CI является предварительным evidence, но не заменяет PR review.
+- [x] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md` и `CHANGELOG.md`.
+- [x] Сохранить запрет на backend API, БД, provider calls, trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps.
 
 ### Следующий Funding analytics read-only блок
 
