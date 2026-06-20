@@ -248,6 +248,26 @@ export const fundingFixture: FundingData = {
   ],
   venues: ["Binance", "OKX", "Bybit", "Hyperliquid", "dYdX", "Drift"],
   assets: ["BTC", "ETH", "SOL", "BNB", "XRP", "AVAX"],
+  dataQualityRunway: [
+    {
+      gate: "Data Health",
+      status: "Fixture only",
+      statusTone: "neutral",
+      evidence: "Static preview data only",
+      blocker: "Use live data for release evidence",
+      nextAction: "Run live funding QA smoke",
+      boundary: "Fixture QA gate only; no trading, routing or execution signal",
+    },
+    {
+      gate: "v1.5.0 Preview Gate",
+      status: "Needs live evidence",
+      statusTone: "warning",
+      evidence: "Fixture cannot promote release",
+      blocker: "Live smoke evidence required",
+      nextAction: "Use PostgreSQL funding rows and /data/health",
+      boundary: "Fixture release gate only; no execution path",
+    },
+  ],
   releaseChecklist: [
     {
       area: "Data Health",

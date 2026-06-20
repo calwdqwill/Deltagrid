@@ -2,6 +2,7 @@ import { fetchServerApi } from "@/lib/server-api";
 import {
   FundingData,
   FundingAnomalyDetailRow,
+  FundingDataQualityRunwayRow,
   FundingFreshnessAnomalyRow,
   FundingHistoryControlRow,
   FundingHistoryDiagnosticRow,
@@ -939,6 +940,100 @@ function buildFundingReleaseChecklist(
   ];
 }
 
+function buildFundingDataQualityRunway(
+  rows: DataFundingRow[],
+  health: DataHealthPayload | null,
+  selectedHistoryRows: DataFundingRow[]
+): FundingDataQualityRunwayRow[] {
+  const totalRows = rows.length;
+  const rowsBySource = FUNDING_EXCHANGES.reduce<Record<FundingExchange, number>>(
+    (summary, exchange) => ({
+      ...summary,
+      [exchange]: rows.filter((row) => row.exchange.toLowerCase() === exchange).length,
+    }),
+    { okx: 0, coinglass: 0 }
+  );
+  const missingSources = FUNDING_EXCHANGES.filter((exchange) => rowsBySource[exchange] === 0).map(venueLabel);
+  const fundingFreshnessRows =
+    health?.freshness?.streams?.filter((row) => row.stream === "funding_rates") ?? [];
+  const fundingCoverageRows = health?.coverage?.rows?.filter((row) => row.stream === "funding_rates") ?? [];
+  const freshness = summarizeStatuses(fundingFreshnessRows, "Freshness not tracked");
+  const coverage = summarizeStatuses(fundingCoverageRows, "Coverage not tracked");
+  const syncRows = FUNDING_EXCHANGES.map((exchange) => fundingSyncHealth(health, exchange)).filter(
+    (row): row is SyncTypeHealth => row !== null
+  );
+  const syncTone = syncRows.length ? worstTone(syncRows.map((row) => statusTone(row.status))) : "neutral";
+  const syncEvidence = syncRows.length
+    ? syncRows.map((row) => `${venueLabel(row.provider_name)} ${row.status}`).join(" / ")
+    : "Sync health not tracked";
+  const qualityScore = health?.data_quality?.score ?? 0;
+  const qualityTone = health === null ? "warning" : qualityScore >= 80 ? "positive" : "warning";
+  const historyReady = selectedHistoryRows.length > 1;
+  const readyForPreview = health !== null && totalRows > 0 && missingSources.length === 0 && historyReady;
+
+  return [
+    {
+      gate: "Data Health",
+      status: health !== null ? "Health payload loaded" : "Health missing",
+      statusTone: health !== null ? qualityTone : "warning",
+      evidence: health !== null ? `Data quality ${qualityScore.toFixed(0)}/100` : "No /data/health payload",
+      blocker: health !== null ? "None" : "Backend health evidence is missing",
+      nextAction: health !== null ? "Keep /data/health in smoke evidence" : "Fix health endpoint before preview smoke",
+      boundary: "Read-only QA gate; no trading, routing or execution signal",
+    },
+    {
+      gate: "Funding Rows",
+      status: totalRows > 0 ? "Rows present" : "Rows missing",
+      statusTone: totalRows > 0 ? "positive" : "warning",
+      evidence: `OKX ${formatRows(rowsBySource.okx)} / CoinGlass ${formatRows(rowsBySource.coinglass)}`,
+      blocker: totalRows > 0 ? "None" : "No persisted funding rows",
+      nextAction: totalRows > 0 ? "Keep MIN_TOTAL_ROWS guard enabled" : "Run funding sync before QA smoke",
+      boundary: "Availability gate only; not a strategy signal",
+    },
+    {
+      gate: "Source Coverage",
+      status: missingSources.length === 0 ? "Sources covered" : "Partial sources",
+      statusTone: missingSources.length === 0 ? "positive" : "warning",
+      evidence:
+        missingSources.length === 0
+          ? "OKX and CoinGlass rows are present"
+          : `Missing rows: ${missingSources.join(", ")}`,
+      blocker: missingSources.length === 0 ? "None" : "Source rows are incomplete",
+      nextAction: missingSources.length === 0 ? "Run provider comparison QA" : "Inspect source sync and mapping",
+      boundary: "Coverage gate only; not provider ranking",
+    },
+    {
+      gate: "Freshness & Coverage",
+      status: worstTone([freshness.tone, coverage.tone, syncTone]) === "positive" ? "Tracked" : "Needs review",
+      statusTone: worstTone([freshness.tone, coverage.tone, syncTone]),
+      evidence: `${freshness.label}; ${coverage.label}; ${syncEvidence}`,
+      blocker: worstTone([freshness.tone, coverage.tone, syncTone]) === "negative" ? "Health status degraded" : "None",
+      nextAction: "Review source status and anomaly panels before release",
+      boundary: "Data QA only; not market recommendation",
+    },
+    {
+      gate: "History Preview",
+      status: historyReady ? "Chart-ready rows selected" : "History thin",
+      statusTone: historyReady ? "positive" : "warning",
+      evidence: `${formatRows(selectedHistoryRows.length)} selected history rows`,
+      blocker: historyReady ? "None" : "Selected history line may render empty",
+      nextAction: historyReady ? "Capture preview evidence" : "Collect enough observations or use fallback source",
+      boundary: "Chart readiness only; not strategy signal",
+    },
+    {
+      gate: "v1.5.0 Preview Gate",
+      status: readyForPreview ? "Ready for preview smoke" : "Needs QA evidence",
+      statusTone: readyForPreview ? "positive" : "warning",
+      evidence: readyForPreview
+        ? "Health, source rows and history preview are present"
+        : "One or more read-only QA gates need evidence",
+      blocker: readyForPreview ? "None" : "Do not promote without smoke evidence",
+      nextAction: readyForPreview ? "Run preview/prod compare smoke" : "Close blockers and rerun smoke",
+      boundary: "Release gate only; no execution path",
+    },
+  ];
+}
+
 function sourcePairStatus(okxRate: number | null, coinglassRate: number | null): { label: string; tone: StatusTone } {
   if (okxRate === null && coinglassRate === null) return { label: "No source pair", tone: "warning" };
   if (okxRate === null) return { label: "Missing OKX side", tone: "warning" };
@@ -1325,6 +1420,7 @@ function buildFundingData(
     kpis,
     venues,
     assets,
+    dataQualityRunway: buildFundingDataQualityRunway(rows, health, selectedHistoryRows),
     releaseChecklist: buildFundingReleaseChecklist(rows, health, selectedHistoryRows),
     sourceStatus: buildFundingSourceStatus(rows, health),
     freshnessAnomalies: buildFundingFreshnessAnomalies(rows, health),

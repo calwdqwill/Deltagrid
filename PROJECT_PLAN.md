@@ -4,6 +4,25 @@
 
 **MVP1 — Data Quality Gate и provider reliability** — следующая стадия после MVP0. Цель: сделать накопление рыночных данных наблюдаемым, свежим и устойчивым перед полноценными интерактивными графиками и backtest engine.
 
+## v1.5.0 release runway — 2026-06-20
+
+Текущее состояние перед стартом `v1.5.0`:
+
+- Production minor release `v1.4.0` уже выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на `main@3936c83`, production runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`.
+- Ветка `codex/v1.4.1-funding-release-tooling` запушена и содержит commit `1f84fab` с подготовленной patch/tooling-версией `v1.4.1`.
+- `v1.4.1` ещё не смержена в `main`, tag `v1.4.1` не создан, production deploy `v1.4.1` не запускался.
+- `v1.5.0` стартует как новая minor-фаза поверх накопленного Funding release tooling, но зависит от решения по `v1.4.1`: либо сначала смержить/выпустить patch, либо явно перенести его tooling scope в `v1.5.0` release branch.
+- Граница фазы: backend API, БД, provider calls и frontend product flow не меняются в runway-итерации; trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps остаются вне scope до отдельного продуктового решения.
+
+План крупных итераций до `v1.5.0`:
+
+1. **Release/planning/runway batch** — закрыто: зафиксированы scope, milestone, non-goals, release path, dependency от `v1.4.1`, required evidence и safe-start ограничения.
+2. **Funding/Data QA product batch** — закрыто: добавлен `Funding Data Quality Runway` поверх уже существующих `/data/funding` и `/data/health`, без новых provider calls и без strategy/trading signal.
+3. **Release evidence + preview validation batch** — закрыто локально: `funding_qa_v0` получил `data_quality_runway`, compact report/validator учитывают runway gates, а CI-like evidence bundle проверяет blocked/ready статусы как release evidence.
+4. **`v1.5.0` RC + production rollout batch** — локальный RC закрыт: версии подняты до `1.5.0`, release preflight, frontend build/audit и funding evidence validation проходят; production backup/deploy, Browser QA и tag остаются финальным release gate после review/merge.
+
+Итерации 1–4 закрывают локальный путь до `v1.5.0` RC: безопасная основа планирования, read-only product/data слой, machine-readable release evidence и согласованный version bump. Backend API, БД-схема, provider adapters и внешние provider calls не менялись; frontend получил только новую QA-панель и smoke marker, а release scripts получили runway summary/report/validator. Следующий крупный блок вне локального RC — review/PR, preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
+
 ## Post-v1.4.0 funding analytics — 2026-06-19
 
 - Первая безопасная итерация после `v1.4.0` начата с `Funding Source Status v0`.

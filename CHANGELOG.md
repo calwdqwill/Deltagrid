@@ -1,5 +1,25 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [RELEASE] - v1.5.0 local RC/version bump
+- Скоуп батча закрыт как локальный release candidate: 1) `VERSION` поднят до `1.5.0`; 2) `frontend/package.json` поднят до `1.5.0`; 3) root version в `frontend/package-lock.json` поднят до `1.5.0`; 4) README показывает текущую версию `v1.5.0`; 5) release docs обновлены; 6) `scripts/release-preflight.sh 1.5.0` проходит с `ALLOW_DIRTY=1`; 7) frontend `npm run build` проходит; 8) `npm audit --audit-level=high` не находит high/critical blocker; 9) funding compact report + validator проходят на temp artifact; 10) production runtime, tag и deploy не трогались.
+- `v1.5.0` включает накопленный `v1.4.1` Funding release tooling scope, read-only `Funding Data Quality Runway` и `data_quality_runway` release evidence contract; отдельный patch release `v1.4.1` больше не обязателен для локального RC, если этот branch идёт как minor PR.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [OPS] - v1.5.0 Funding runway evidence contract batch
+- Скоуп батча закрыт одним release-evidence блоком: 1) `scripts/funding-qa-smoke.sh` добавляет contract field `data_quality_runway`; 2) summary фиксирует runway version, gate ids, gate statuses, blocking gate ids, missing sources, history preview rows и next action; 3) summary остаётся backend-only и не зависит от frontend marker check; 4) `scripts/funding-release-report.sh` выводит `data_quality_runway` в compact report; 5) release gate checks получили `data_quality_runway`; 6) `blocking_reasons` и `next_actions` учитывают runway blockers; 7) `scripts/funding-release-report-validate.sh` проверяет schema нового summary; 8) CI-like temp evidence bundle проходит; 9) docs/runbook обновлены; 10) production runtime не трогался.
+- Локальный evidence run с `ALLOW_UNAVAILABLE=1`, `RUN_FRONTEND_CHECK=0` и temp artifact dir подтвердил форму `funding-release-report.json`, validation, manifest, bundle validation, review, summary, handoff, audit, index, verify, notes, archive и CI final status.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT] - v1.5.0 Funding Data Quality Runway batch
+- Скоуп батча закрыт одним read-only блоком: 1) добавлен тип `FundingDataQualityRunwayRow`; 2) live Funding builder собирает `dataQualityRunway` из уже загруженных `/data/funding` и `/data/health`; 3) `/funding` получил панель `Funding Data Quality Runway` в `Overview` и `QA`; 4) fixture path обновлён как preview-only; 5) funding QA smoke получил marker `funding_data_quality_runway`; 6) `panel_ids` smoke-контракта расширен новым panel id; 7) backend API не менялся; 8) БД и provider calls не менялись; 9) frontend build проходит; 10) docs обновлены под Итерацию 2.
+- Новый runway-блок сводит health, funding rows, source coverage, freshness/coverage/sync, history preview и `v1.5.0` preview gate в одну таблицу для релизного QA.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PLANNING] - v1.5.0 release runway batch
+- Скоуп батча закрыт одним блоком: 1) проверена чистая ветка `codex/v1.4.1-funding-release-tooling`; 2) зафиксирован production baseline `v1.4.0` на `main@3936c83`; 3) зафиксирована зависимость от unsmerged `v1.4.1` commit `1f84fab`; 4) определён target `v1.5.0`; 5) scope ограничен Funding/Data QA и release evidence; 6) non-goals явно исключают backend API, БД, provider calls и frontend product flow в runway; 7) путь до релиза разбит на 4 крупные итерации; 8) release path описан через preview evidence, main, production backup/deploy, smoke, Browser QA и tag; 9) docs-only preflight для `v1.5.0` добавлен в release policy; 10) runtime-код и версии не менялись.
+- `v1.5.0` стартует как minor release runway после production `v1.4.0`; финальный RC зависит от решения по `v1.4.1`: отдельный patch release или перенос tooling scope в `v1.5.0`.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-20] - [RELEASE] - v1.4.1 local intermediate
 - Скоуп батча закрыт одним блоком: 1) `VERSION` поднят до `1.4.1`; 2) `frontend/package.json` поднят до `1.4.1`; 3) root version в `frontend/package-lock.json` поднят до `1.4.1`; 4) README показывает текущую версию `v1.4.1`; 5) release docs фиксируют локальный intermediate статус; 6) `RELEASE_CHECK_DOCS=1` включён в финальный preflight; 7) funding CI status artifact остаётся частью evidence bundle; 8) ожидаемый локальный blocker `needs_funding_rows` не считается tooling bug; 9) production baseline `v1.4.0` не объявлялся обновлённым; 10) commit/tag/deploy не выполнялись.
 - `v1.4.1` подготовлен как локальная промежуточная patch/tooling версия для Funding release evidence и CI/runbook hardening.

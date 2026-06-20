@@ -125,6 +125,7 @@ required_top_fields = [
     "readiness_gate_status",
     "readiness_status",
     "readiness_checks",
+    "data_quality_runway",
     "blocking_reasons",
     "next_actions",
     "funding_total_rows",
@@ -163,6 +164,7 @@ release_gate_summary = require_dict(report, "release_gate_summary", "report")
 release_gate_checks = require_list(report, "release_gate_checks", "report")
 run_context = require_dict(report, "run_context", "report")
 readiness_checks = require_dict(report, "readiness_checks", "report")
+data_quality_runway = require_dict(report, "data_quality_runway", "report")
 require_list(report, "blocking_reasons", "report")
 require_list(report, "next_actions", "report")
 require_int(report, "funding_total_rows", "report")
@@ -194,6 +196,23 @@ if safety_status == "locked" and unsafe_flags:
     add_error("unsafe_flags must be empty when safety_status is locked")
 if safety_status == "unsafe" and not unsafe_flags:
     add_error("unsafe_flags must be non-empty when safety_status is unsafe")
+
+runway_version = require_str(data_quality_runway, "runway_version", "report.data_quality_runway")
+if runway_version != "funding_data_quality_runway_v0":
+    add_error("data_quality_runway.runway_version must be funding_data_quality_runway_v0")
+require_enum(data_quality_runway, "status", {"ready", "needs_review", "blocked"}, "report.data_quality_runway")
+runway_gate_ids = require_list(data_quality_runway, "gate_ids", "report.data_quality_runway")
+runway_gate_statuses = require_dict(data_quality_runway, "gate_statuses", "report.data_quality_runway")
+runway_blocking_gate_ids = require_list(data_quality_runway, "blocking_gate_ids", "report.data_quality_runway")
+require_list(data_quality_runway, "missing_sources", "report.data_quality_runway")
+require_int(data_quality_runway, "history_preview_rows", "report.data_quality_runway")
+require_str(data_quality_runway, "next_action", "report.data_quality_runway")
+require_str(data_quality_runway, "safe_boundary", "report.data_quality_runway")
+if runway_gate_ids and sorted(runway_gate_ids) != sorted(runway_gate_statuses):
+    add_error("data_quality_runway.gate_ids must match gate_statuses keys")
+unknown_runway_blockers = sorted(set(runway_blocking_gate_ids) - set(runway_gate_ids))
+if unknown_runway_blockers:
+    add_error(f"data_quality_runway.blocking_gate_ids contains unknown gates: {', '.join(unknown_runway_blockers)}")
 
 summary_status = release_gate_summary.get("status")
 if summary_status != release_gate_status:

@@ -1,8 +1,43 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: MVP0 зафиксирован как production-ready demo: PostgreSQL runtime, Alembic, `deltagrid.pro`, Cloudflare/Nginx/SSL, live terminal screens и data-layer endpoints работают. На production VPS Binance Futures API возвращает HTTP `451`, поэтому primary CEX perp data path для MVP1 выбран как OKX USDT Swap без прокси/VPN. MVP1 data quality gate задеплоен на production: freshness SLA в `/api/v1/data/health`, health по `sync_type`, cron/data-sync diagnostics, coverage matrix и production universe readiness доступны в `/data-health`. 72h и 7d OKX backfill BTC/ETH/SOL по `1m/5m/1h` завершены с `errors=0` и `gaps=0`. Charts v0 и OHLCV window endpoint задеплоены. Working production baseline `v1.3.0` зафиксирован в GitHub; `main` и `preview` синхронизированы на baseline. Preview/dev stack поднят отдельно от production, но публичный HTTPS `preview.deltagrid.pro` ещё ждёт DNS `A preview -> 2.25.143.143`. Preview CI/CD снова подтверждён end-to-end после SSH hardening. Provider inventory v0, provider discovery v1, alias expansion, 24h preview sync dry-run, candidate freshness scope и 72h/7d preview backfill первой малой группы завершены. Preview chart/asset candidate selectors для `HYPE/XRP/DOGE/ADA/LINK` включены; full analytics universe promotion теперь явно отделён от `chart_ready` и требует `complete_history`. Patch release `v1.3.1` оформлен и задеплоен вручную на production; `main` находится на `0716f6a`, tag `v1.3.1` указывает на этот commit. Production deploy hardening уже есть в `main`, но `Deploy Production` run `27619159104` сделал safe-skip, потому что обязательные GitHub secrets `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` и `PROD_APP_DIR` пока отсутствуют.
+**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на `main@3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Ветка `codex/v1.4.1-funding-release-tooling` содержит commit `1f84fab` с подготовленной patch/tooling-версией `v1.4.1`; PR ещё не смержен в `main`, tag `v1.4.1` не создан, production deploy `v1.4.1` не запускался. Локальный `v1.5.0` RC подготовлен: закрыты Итерации 1–4, версии подняты до `1.5.0`, release preflight, frontend build/audit и funding evidence validation проходят. Production runtime, production deploy и annotated tag `v1.5.0` ещё не выполнялись.
 **Last Updated**: 2026-06-20
+
+## Обновление 2026-06-20 — v1.5.0 local RC/version bump
+
+- Итерация 4 закрыта локально: `VERSION`, `frontend/package.json`, root version в `frontend/package-lock.json` и текущая версия в `README.md` подняты до `1.5.0`.
+- `v1.5.0` локально включает накопленный `v1.4.1` Funding release tooling scope, `Funding Data Quality Runway` и `data_quality_runway` release evidence contract.
+- Проверки: `ALLOW_DIRTY=1 ./scripts/release-preflight.sh 1.5.0` прошёл; `npm run build` во `frontend` прошёл; `npm audit --audit-level=high` не нашёл high/critical blocker; funding compact report + validator прошли на temp artifact.
+- Финальный release gate не выполнялся из feature branch: preview deploy/smoke, production backup/deploy, production Browser QA и annotated tag `v1.5.0` остаются шагами после review/merge.
+- Граница сохранена: backend API, БД, provider calls, торговые/routing outputs и численные route/carry outputs не включались.
+
+## Обновление 2026-06-20 — v1.5.0 Funding runway evidence contract batch
+
+- Итерация 3 закрыта одним release-evidence batch: `scripts/funding-qa-smoke.sh` добавляет `contract.data_quality_runway` с gate ids/statuses, blockers, missing sources, history preview rows, next action и safe boundary.
+- `scripts/funding-release-report.sh` выводит `data_quality_runway` как top-level compact report field, добавляет release gate check и учитывает runway blockers в `blocking_reasons`/`next_actions`.
+- `scripts/funding-release-report-validate.sh` проверяет schema `funding_data_quality_runway_v0`, включая enum статусов, соответствие gate ids/statuses и subset для blocking gate ids.
+- Локальный CI-like temp evidence bundle прошёл с `ALLOW_UNAVAILABLE=1`, `RUN_FRONTEND_CHECK=0` и отдельной artifact directory; blocked runway без локальных rows считается валидным release blocker, а не ошибкой tooling.
+- Следующая итерация: `v1.5.0` RC/version bump и финальные проверки; preview/prod rollout, backup, Browser QA и tag остаются отдельным release gate после review/merge.
+- Граница сохранена: backend API, БД, provider calls, торговые/routing outputs и численные route/carry outputs не включались.
+
+## Обновление 2026-06-20 — v1.5.0 Funding/Data QA product batch
+
+- Итерация 2 закрыта одним безопасным batch: `Funding Data Quality Runway` добавлен в live Funding data, frontend QA view, preview fixture и funding QA smoke contract.
+- Панель сводит `Data Health`, funding rows, source coverage, freshness/coverage/sync, history preview и `v1.5.0` preview gate как release QA evidence.
+- Smoke marker `funding_data_quality_runway` и panel id добавлены в `scripts/funding-qa-smoke.sh`, чтобы frontend marker check видел новый read-only слой.
+- Проверки: `npm run build` во `frontend` прошёл; `bash -n scripts/funding-qa-smoke.sh` прошёл.
+- Следующая итерация: собрать release evidence bundle и preview/prod validation, не меняя production runtime.
+- Граница сохранена: backend API, БД, provider calls, торговые/routing outputs и численные route/carry outputs не включались.
+
+## Обновление 2026-06-20 — v1.5.0 release/planning/runway batch
+
+- Рабочее дерево на старте чистое, текущая ветка — `codex/v1.4.1-funding-release-tooling`, `HEAD=1f84fab`.
+- До `v1.5.0` запланированы 4 крупные итерации: 1) release/planning/runway; 2) один read-only Funding/Data QA product batch; 3) release evidence и preview/prod validation; 4) `v1.5.0` RC, production backup/deploy, smoke, Browser QA и tag.
+- `v1.5.0` зависит от решения по `v1.4.1`: перед финальным RC нужно либо смержить/выпустить `v1.4.1`, либо явно включить его release tooling scope в `v1.5.0`.
+- Итерация 1 фиксирует safe-start основу: scope, milestone, non-goals, release path, evidence gates, docs ownership и запрет на runtime changes.
+- Следующий product batch должен использовать существующие `/data/funding` и `/data/health` либо уже имеющиеся smoke/evidence scripts; новые backend endpoints, provider calls, миграции и торговые/routing signals требуют отдельного решения.
+- Проверка этой итерации: docs diff, `git diff --check` и docs-only release preflight `RELEASE_TARGET=1.5.0 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1`.
 
 ## Обновление 2026-06-20 — v1.4.1 local intermediate
 

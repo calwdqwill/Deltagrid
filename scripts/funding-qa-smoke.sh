@@ -270,10 +270,82 @@ def funding_release_readiness(
     }
 
 
+def runway_status_from_health(freshness_statuses, coverage_statuses, sync_statuses):
+    observed = []
+    for values in freshness_statuses.values():
+        observed.extend(values)
+    for values in coverage_statuses.values():
+        observed.extend(values)
+    observed.extend(value for value in sync_statuses.values() if value)
+
+    if not observed:
+        return "not_tracked"
+    if any(value in {"degraded", "missing", "failed", "failure", "error"} for value in observed):
+        return "degraded"
+    if any(value in {"stale", "partial", "warning", "unknown"} for value in observed):
+        return "needs_review"
+    return "tracked"
+
+
+def funding_data_quality_runway(
+    health_success,
+    total_rows,
+    funding_rows_by_source,
+    funding_rows_by_symbol_exchange,
+    freshness_statuses,
+    coverage_statuses,
+    sync_statuses,
+):
+    missing_sources = [
+        exchange for exchange, rows in sorted(funding_rows_by_source.items())
+        if rows <= 0
+    ]
+    history_rows = funding_rows_by_symbol_exchange.get("BTC:coinglass", 0)
+    health_observability = runway_status_from_health(
+        freshness_statuses,
+        coverage_statuses,
+        sync_statuses,
+    )
+    gate_statuses = {
+        "data_health": "ready" if health_success else "missing",
+        "funding_rows": "loaded" if total_rows > 0 else "empty",
+        "source_coverage": "covered" if not missing_sources else "partial",
+        "freshness_coverage_sync": health_observability,
+        "history_preview": "chart_ready" if history_rows > 1 else "thin",
+    }
+    blocking_gate_ids = [
+        gate_id for gate_id in ["data_health", "funding_rows", "source_coverage"]
+        if gate_statuses[gate_id] not in {"ready", "loaded", "covered"}
+    ]
+
+    if blocking_gate_ids:
+        status = "blocked"
+        next_action = "Resolve blocking data-health, row or source coverage gates"
+    elif health_observability in {"degraded", "not_tracked"}:
+        status = "needs_review"
+        next_action = "Review freshness, coverage and sync evidence before preview"
+    else:
+        status = "ready"
+        next_action = "Run preview/prod funding evidence compare"
+
+    return {
+        "runway_version": "funding_data_quality_runway_v0",
+        "status": status,
+        "gate_ids": list(gate_statuses),
+        "gate_statuses": gate_statuses,
+        "blocking_gate_ids": blocking_gate_ids,
+        "missing_sources": missing_sources,
+        "history_preview_rows": history_rows,
+        "next_action": next_action,
+        "safe_boundary": "read-only funding data QA; not trading, routing or execution evidence",
+    }
+
+
 def compact_contract(root_url, frontend_root_url=None):
     failures = []
     endpoints = {}
     funding_rows_by_source = {}
+    funding_rows_by_symbol_exchange = {}
     latest_by_symbol_exchange = {}
     latest_rates_by_symbol_exchange = {}
 
@@ -299,6 +371,7 @@ def compact_contract(root_url, frontend_root_url=None):
             latest = latest_row(rows)
             latest_rate = funding_rate(latest) if latest else None
             funding_rows_by_source[exchange] += len(rows)
+            funding_rows_by_symbol_exchange[f"{symbol}:{exchange}"] = len(rows)
             latest_by_symbol_exchange[f"{symbol}:{exchange}"] = latest.get("timestamp") if latest else None
             latest_rates_by_symbol_exchange[f"{symbol}:{exchange}"] = latest_rate
             endpoints[endpoint_id] = {
@@ -341,6 +414,7 @@ def compact_contract(root_url, frontend_root_url=None):
         combined_html = f"{html}\n{qa_html}"
         frontend_markers = {
             "funding_qa_view": "Funding QA" in qa_html,
+            "funding_data_quality_runway": "Funding Data Quality Runway" in combined_html,
             "funding_release_checklist": "Funding Release Checklist" in combined_html,
             "funding_history_diagnostics": "Funding History Diagnostics" in combined_html,
             "funding_history_controls": "Funding History Controls" in combined_html,
@@ -385,6 +459,7 @@ def compact_contract(root_url, frontend_root_url=None):
     contract = {
         "funding_qa_contract_version": "funding_qa_v0",
         "panel_ids": [
+            "funding_data_quality_runway",
             "funding_release_checklist",
             "funding_source_status",
             "funding_freshness_anomaly",
@@ -408,6 +483,15 @@ def compact_contract(root_url, frontend_root_url=None):
         "coverage_statuses": coverage_statuses,
         "sync_statuses": sync_statuses,
         "source_pair_statuses": source_pair_statuses,
+        "data_quality_runway": funding_data_quality_runway(
+            bool_payload_success(health_payload),
+            total_rows,
+            funding_rows_by_source,
+            funding_rows_by_symbol_exchange,
+            freshness_statuses,
+            coverage_statuses,
+            sync_statuses,
+        ),
         "frontend_markers": frontend_markers,
         "frontend_checked": run_frontend_check and bool(frontend_root_url),
         "frontend_http_status": frontend_status_code,

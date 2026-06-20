@@ -70,6 +70,27 @@ export default async function FundingPage({ searchParams }: FundingPageProps) {
   const activeHistorySourceLabel =
     live.historySelection.source === "all" ? "All" : live.historySelection.source === "okx" ? "OKX" : "CoinGlass";
 
+  const dataQualityRunwayRows = data.dataQualityRunway.map((row) => [
+    <span key="gate" className="font-semibold text-cyan-200">
+      {row.gate}
+    </span>,
+    <span key="status" className={toneText(row.statusTone)}>
+      {row.status}
+    </span>,
+    <span key="evidence" className="text-slate-400">
+      {row.evidence}
+    </span>,
+    <span key="blocker" className={row.blocker === "None" ? "text-emerald-300" : "text-amber-200"}>
+      {row.blocker}
+    </span>,
+    <span key="nextAction" className="text-amber-200">
+      {row.nextAction}
+    </span>,
+    <span key="boundary" className="text-slate-400">
+      {row.boundary}
+    </span>,
+  ]);
+
   const releaseChecklistRows = data.releaseChecklist.map((row) => [
     <span key="area" className="font-semibold text-cyan-200">
       {row.area}
@@ -372,6 +393,16 @@ export default async function FundingPage({ searchParams }: FundingPageProps) {
 
         {showQaPanels && (
           <div className="space-y-4">
+            <TerminalPanel
+              title="Funding Data Quality Runway"
+              caption="Read-only v1.5.0 gate summary from persisted funding rows and data health"
+            >
+              <TerminalTable
+                columns={["Gate", "Status", "Evidence", "Blocker", "Next Action", "Boundary"]}
+                rows={dataQualityRunwayRows}
+              />
+            </TerminalPanel>
+
             <TerminalPanel
               title="Funding Release Checklist"
               caption="Read-only release readiness checklist for funding QA smoke and preview rollout"

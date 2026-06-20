@@ -44,10 +44,16 @@ v1.4.0-rc.1  release candidate на preview
 RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
-Для промежуточного patch/tooling target вроде `v1.4.1` можно сначала проверить, что release docs уже упоминают target, не меняя текущий `VERSION`:
+Для промежуточного patch/tooling target вроде `v1.4.1` или docs-only runway target вроде `v1.5.0` можно сначала проверить, что release docs уже упоминают target, не меняя текущий `VERSION`:
 
 ```bash
 RELEASE_TARGET=1.4.1 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
+```
+
+Для стартовой runway-проверки `v1.5.0`:
+
+```bash
+RELEASE_TARGET=1.5.0 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
 
 `RELEASE_CHECK_DOCS=1` требует `RELEASE_TARGET` или expected version и проверяет наличие `v<target>` в файлах из `RELEASE_DOCS_FILES`. По умолчанию проверяются `CHANGELOG.md`, `CURRENT_TASK.md`, `PROJECT_PLAN.md`, `BACKLOG.md` и `RELEASES.md`; `README.md` лучше добавлять в этот список только после фактического version bump.
@@ -106,7 +112,7 @@ BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 OUTPUT_JSON_ON
 BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/funding-release-report.sh
 ```
 
-Report должен показывать `readiness_status`, `funding_total_rows`, `funding_rows_by_source`, `compare_status` и `safety_status`; exit code должен совпадать с underlying smoke.
+Report должен показывать `readiness_status`, `funding_total_rows`, `funding_rows_by_source`, `compare_status`, `safety_status` и `data_quality_runway_status`; exit code должен совпадать с underlying smoke.
 
 Для compact JSON report:
 
@@ -148,7 +154,7 @@ cat artifacts/funding-release/funding-release-ci-status.json
 sh scripts/funding-release-report-validate.sh artifacts/funding-release/funding-release-report.json
 ```
 
-`scripts/funding-release-ci-report.sh` запускает эту validation автоматически, если `FUNDING_RELEASE_CI_VALIDATE_ARTIFACT=1` (default). Validator проверяет required fields, status enum'ы, consistency `release_gate_summary`/`release_gate_checks`, safety invariants и `run_context.ci`; blocked report считается валидным artifact, если его форма корректна. Для отдельного hard-check на зелёный artifact используйте `FUNDING_RELEASE_REPORT_VALIDATE_REQUIRE_PASSED=1`.
+`scripts/funding-release-ci-report.sh` запускает эту validation автоматически, если `FUNDING_RELEASE_CI_VALIDATE_ARTIFACT=1` (default). Validator проверяет required fields, status enum'ы, consistency `release_gate_summary`/`release_gate_checks`, safety invariants, `data_quality_runway` schema и `run_context.ci`; blocked report считается валидным artifact, если его форма корректна. Для отдельного hard-check на зелёный artifact используйте `FUNDING_RELEASE_REPORT_VALIDATE_REQUIRE_PASSED=1`.
 
 Manifest/checksum validation запускается отдельно:
 
@@ -232,13 +238,15 @@ sh scripts/funding-release-evidence-compare.sh artifacts/funding-release-base ar
 
 `funding-release-manifest.json` должен быть первым файлом для runbook/evidence review: он содержит `bundle_exit_code`, `report_exit_code`, `validation_exit_code`, release/validation statuses, required/optional blockers, `first_blocking_action`, `first_optional_action`, `run_context` и checksum/size для report/stdout/validation files. Если `validation_exit_code=0`, но `bundle_exit_code` non-zero, это означает корректный artifact с реальным release blocker, а не поломку tooling.
 
-`FUNDING_RELEASE_REPORT_PROFILE=ci` по умолчанию включает JSON report, `FUNDING_RELEASE_REPORT_REQUIRE_READY=1` и `FUNDING_RELEASE_REPORT_REQUIRE_COMPARE=1`; явные env overrides сохраняют приоритет для локальных исключений. Compact report должен включать `report_version=funding_release_report_v0`, `gate_status`, `release_gate_status`, `report_exit_code`, `exit_reason`, `release_gate_summary`, `release_gate_checks`, `readiness_gate_status`, `blocking_reasons`, `next_actions`, `run_context`, `readiness_checks`, `source_pair_statuses` и `compare_diff_fields`, чтобы release artifact фиксировал режим запуска smoke, output path, CI/GitHub context, итоговый artifact status, итоговый exit, normalized release-check blockers, blocker groups и first blocking action.
+`FUNDING_RELEASE_REPORT_PROFILE=ci` по умолчанию включает JSON report, `FUNDING_RELEASE_REPORT_REQUIRE_READY=1` и `FUNDING_RELEASE_REPORT_REQUIRE_COMPARE=1`; явные env overrides сохраняют приоритет для локальных исключений. Compact report должен включать `report_version=funding_release_report_v0`, `gate_status`, `release_gate_status`, `report_exit_code`, `exit_reason`, `release_gate_summary`, `release_gate_checks`, `readiness_gate_status`, `blocking_reasons`, `next_actions`, `run_context`, `readiness_checks`, `source_pair_statuses`, `compare_diff_fields` и `data_quality_runway`, чтобы release artifact фиксировал режим запуска smoke, output path, CI/GitHub context, итоговый artifact status, итоговый exit, normalized release-check blockers, blocker groups, Funding runway gates и first blocking action.
 
 Для report-level readiness gate можно добавить `FUNDING_RELEASE_REPORT_REQUIRE_READY=1`; это не меняет smoke contract, а только делает report non-zero, если `readiness_gate_status=not_ready` при успешном underlying smoke.
 
 Для report-level compare gate можно добавить `FUNDING_RELEASE_REPORT_REQUIRE_COMPARE=1`; это полезно для preview/prod, где отсутствие `COMPARE_BASE_URL` должно считаться неготовым release artifact.
 
-Funding QA contract должен включать panel id `funding_release_checklist`, `funding_anomaly_detail`, `funding_history_diagnostics`, `funding_history_controls`, `funding_history_readiness` и `funding_qa_drilldown` вместе с `funding_source_status`, `funding_freshness_anomaly` и `funding_source_comparison`; frontend marker check должен также видеть `funding_qa_view` через `/funding?view=qa`. Это release-safety/data-QA contract, а не trading/routing gate.
+Funding QA contract должен включать panel id `funding_data_quality_runway`, `funding_release_checklist`, `funding_anomaly_detail`, `funding_history_diagnostics`, `funding_history_controls`, `funding_history_readiness` и `funding_qa_drilldown` вместе с `funding_source_status`, `funding_freshness_anomaly` и `funding_source_comparison`; frontend marker check должен также видеть `funding_qa_view` через `/funding?view=qa`. Это release-safety/data-QA contract, а не trading/routing gate.
+
+Для `v1.5.0` Funding smoke contract также должен включать backend-only `contract.data_quality_runway` с `runway_version=funding_data_quality_runway_v0`, `status=ready|needs_review|blocked`, `gate_ids`, `gate_statuses`, `blocking_gate_ids`, `missing_sources`, `history_preview_rows`, `next_action` и `safe_boundary`. Этот summary нужен для release evidence и не зависит от frontend marker check; report-level gate `data_quality_runway` может быть blocked при пустых локальных rows, но это валидный release blocker, если validator проходит.
 
 5. Закоммитить изменения и запушить в `preview`.
 6. CI на GitHub и `Deploy Preview` должны пройти.
@@ -277,4 +285,6 @@ Preview release runway для `v1.4.0` подтверждён на `preview@b257
 
 `v1.4.0` выпущен в production: `main@3936c83`, tag `v1.4.0`, `/opt/deltagrid` обновлён до `3936c83`/`VERSION=1.4.0`, backup `/opt/deltagrid/backups/deltagrid-v140-production_20260618T210020Z.sql.gz` создан перед deploy, production `scripts/release-smoke.sh` и Browser QA desktop/mobile прошли.
 
-`v1.4.1` подготовлен локально как промежуточный patch/tooling target для Funding release evidence и CI/runbook hardening: `VERSION`, frontend package metadata и README уже подняты до `1.4.1`, но commit, tag, push и production deploy не выполнялись в рамках подготовки.
+`v1.4.1` подготовлен в ветке `codex/v1.4.1-funding-release-tooling` как промежуточный patch/tooling target для Funding release evidence и CI/runbook hardening: `VERSION`, frontend package metadata и README подняты до `1.4.1`, commit `1f84fab` запушен, но PR ещё не смержен в `main`, tag `v1.4.1` не создан и production deploy не выполнялся.
+
+Локальный `v1.5.0` RC подготовлен в той же ветке: `VERSION`, frontend package metadata, lockfile root version и README подняты до `1.5.0`; `v1.5.0` включает накопленный `v1.4.1` Funding release tooling scope, read-only `Funding Data Quality Runway` и `data_quality_runway` release evidence contract. Локально прошли release preflight, frontend build, high-level frontend audit и funding compact report validation. Production runtime остаётся `v1.4.0` до финального release gate: review/merge, preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`. До отдельного продуктового решения запрещено включать trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps.

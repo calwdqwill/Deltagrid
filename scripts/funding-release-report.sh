@@ -217,6 +217,8 @@ source_rows = contract.get("funding_rows_by_source")
 source_rows = source_rows if isinstance(source_rows, dict) else {}
 source_pair_statuses = contract.get("source_pair_statuses")
 source_pair_statuses = source_pair_statuses if isinstance(source_pair_statuses, dict) else {}
+data_quality_runway = contract.get("data_quality_runway")
+data_quality_runway = data_quality_runway if isinstance(data_quality_runway, dict) else {}
 readiness_checks = readiness.get("checks")
 readiness_checks = readiness_checks if isinstance(readiness_checks, dict) else {}
 
@@ -270,6 +272,10 @@ sources_with_rows_text = ", ".join(str(source) for source in sources_with_rows) 
 readiness_status = readiness.get("status", "unknown")
 readiness_next_action = readiness.get("next_action", "unknown")
 readiness_gate_status = "ready" if readiness_status == "ready_for_preview_smoke" else "not_ready"
+runway_status = data_quality_runway.get("status", "unknown")
+runway_next_action = data_quality_runway.get("next_action", "unknown")
+runway_blocking_gate_ids = data_quality_runway.get("blocking_gate_ids")
+runway_blocking_gate_ids = runway_blocking_gate_ids if isinstance(runway_blocking_gate_ids, list) else []
 ready_statuses_by_check = {
     "data_health": {"ready"},
     "funding_rows": {"loaded"},
@@ -281,6 +287,8 @@ ready_statuses_by_check = {
 blocking_reasons = []
 if readiness_gate_status != "ready":
     blocking_reasons.append(f"release_readiness={readiness_status}")
+if runway_status == "blocked":
+    blocking_reasons.append("data_quality_runway=blocked")
 for key, status in readiness_check_statuses.items():
     ready_statuses = ready_statuses_by_check.get(key)
     if ready_statuses and status not in ready_statuses:
@@ -290,6 +298,8 @@ blocking_text = ", ".join(blocking_reasons) or "none"
 next_actions = []
 if readiness_next_action and readiness_next_action != "unknown":
     next_actions.append(readiness_next_action)
+if runway_status in {"blocked", "needs_review"} and runway_next_action and runway_next_action != "unknown":
+    next_actions.append(runway_next_action)
 for key, action in readiness_check_next_actions.items():
     status = readiness_check_statuses.get(key, "unknown")
     ready_statuses = ready_statuses_by_check.get(key)
@@ -360,6 +370,7 @@ def clean_action(value):
 gate_check_categories = {
     "smoke_contract": "smoke",
     "release_readiness": "readiness",
+    "data_quality_runway": "readiness",
     "compare_alignment": "compare",
     "data_health": "data",
     "funding_rows": "data",
@@ -395,6 +406,14 @@ add_gate_check(
     required=report_require_ready,
     blocking=report_require_ready and readiness_gate_status != "ready",
     next_action=readiness_next_action,
+)
+add_gate_check(
+    release_gate_checks,
+    "data_quality_runway",
+    runway_status,
+    required=report_require_ready,
+    blocking=report_require_ready and runway_status == "blocked",
+    next_action=runway_next_action,
 )
 add_gate_check(
     release_gate_checks,
@@ -527,6 +546,7 @@ compact_report = {
     "readiness_status": readiness_status,
     "readiness_next_action": readiness_next_action,
     "readiness_checks": readiness_check_statuses,
+    "data_quality_runway": data_quality_runway,
     "blocking_reasons": blocking_reasons,
     "next_actions": deduped_next_actions,
     "sources_with_rows": sources_with_rows,
@@ -589,6 +609,8 @@ print(f"- readiness_gate_status: {compact_report['readiness_gate_status']}")
 print(f"- readiness_status: {compact_report['readiness_status']}")
 print(f"- readiness_next_action: {compact_report['readiness_next_action']}")
 print(f"- readiness_checks: {readiness_check_text}")
+print(f"- data_quality_runway_status: {runway_status}")
+print(f"- data_quality_runway_blocking_gates: {', '.join(str(item) for item in runway_blocking_gate_ids) or 'none'}")
 print(f"- blocking_reasons: {blocking_text}")
 print(f"- next_actions: {next_action_text}")
 print(f"- sources_with_rows: {sources_with_rows_text}")

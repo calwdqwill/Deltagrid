@@ -130,6 +130,7 @@ export interface FundingData {
   kpis: KpiMetric[];
   venues: string[];
   assets: string[];
+  dataQualityRunway: FundingDataQualityRunwayRow[];
   releaseChecklist: FundingReleaseChecklistRow[];
   sourceStatus: FundingSourceStatusRow[];
   freshnessAnomalies: FundingFreshnessAnomalyRow[];
@@ -144,6 +145,16 @@ export interface FundingData {
   arbitrage: FundingOpportunity[];
   longShortLegs: LongShortLeg[];
   predicted: FundingRate[];
+}
+
+export interface FundingDataQualityRunwayRow {
+  gate: string;
+  status: string;
+  statusTone: "positive" | "negative" | "warning" | "neutral";
+  evidence: string;
+  blocker: string;
+  nextAction: string;
+  boundary: string;
 }
 
 export interface FundingSourceStatusRow {
