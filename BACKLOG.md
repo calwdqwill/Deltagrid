@@ -68,15 +68,15 @@
 
 ### Итерация 3 — production evidence/report hardening
 
-- [ ] Улучшить release evidence для production runtime/version.
-- [ ] Добавить compact deploy result summary, если это вписывается в текущие scripts.
-- [ ] Добавить проверку `/version` после deploy.
-- [ ] Добавить явное различие GitHub skipped deploy vs SSH/manual deploy.
-- [ ] Добавить runbook-команды для production smoke.
-- [ ] Добавить funding report production evidence path.
-- [ ] Обновить docs.
-- [ ] Запустить локальные проверки.
-- [ ] Commit/push.
+- [x] Улучшить release evidence для production runtime/version.
+- [x] Добавить compact deploy result summary, если это вписывается в текущие scripts.
+- [x] Добавить проверку `/version` после deploy.
+- [x] Добавить явное различие GitHub skipped deploy vs SSH/manual deploy.
+- [x] Добавить runbook-команды для production smoke.
+- [x] Добавить funding report production evidence path.
+- [x] Обновить docs.
+- [x] Запустить локальные проверки.
+- [x] Commit/push.
 
 ### Итерация 4 — Funding/Data QA UX batch
 

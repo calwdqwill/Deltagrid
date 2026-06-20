@@ -296,6 +296,28 @@ Production evidence для `v1.5.0`:
 
 Release notes и tag gate должны ссылаться на `real_deploy_succeeded` или на отдельный manual SSH deploy evidence; один только `skipped_missing_required_secrets` не считается production deploy evidence.
 
+Production deploy evidence для `v1.6.0` должен включать compact deploy summary. При GitHub deploy workflow запускает remote script с `DEPLOY_METHOD=github_actions_ssh` и печатает `/tmp/deltagrid-deploy-summary.json` в job log. При ручном SSH deploy используйте тот же script с явным method и artifact path:
+
+```bash
+cd /opt/deltagrid
+BRANCH=main DEPLOY_METHOD=manual_ssh DEPLOY_SUMMARY_OUTPUT=artifacts/production-release/v1.6.0/deploy-summary.json sh scripts/deploy-compose-stack.sh
+cat artifacts/production-release/v1.6.0/deploy-summary.json
+```
+
+Summary `deploy_compose_stack_summary_v0` должен показывать `deploy_status=succeeded`, фактический `deploy_method`, `commit`, `expected_version`, `actual_version`, `version_status=matched`, `smoke_status=passed`, `backup_status` и `backup_path`. Это не заменяет release notes, но даёт компактный machine-readable proof, что deploy был фактическим, а не GitHub safe-skip.
+
+После deploy зафиксируйте production smoke и Funding evidence:
+
+```bash
+cd /opt/deltagrid
+curl -fsS http://127.0.0.1:3001/version
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/server-smoke.sh
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/release-smoke.sh
+mkdir -p artifacts/production-release/v1.6.0
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 FUNDING_RELEASE_REPORT_OUTPUT=artifacts/production-release/v1.6.0/funding-release-report.json sh scripts/funding-release-report.sh
+sh scripts/funding-release-report-validate.sh artifacts/production-release/v1.6.0/funding-release-report.json
+```
+
 Следующий production target: `v1.6.0` — Production Operations & Data Reliability release. Цель: довести GitHub production deploy readiness, production release evidence, Funding/Data health observability и Funding QA UX до воспроизводимого состояния без хранения secrets в репозитории и без изменения trading/routing/execution границ.
 
 Safe release path для `v1.6.0`:
@@ -306,7 +328,7 @@ Safe release path для `v1.6.0`:
 4. Проверить deploy readiness: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY`, `PROD_APP_DIR` должны быть настроены в GitHub repository secrets, но не храниться в репозитории.
 5. Перед production deploy создать свежий PostgreSQL backup.
 6. Выполнить production deploy из `main`; evidence должно явно показать, был ли это GitHub real deploy или ручной SSH deploy.
-7. Проверить `/version`, runtime commit/version, `scripts/release-smoke.sh`, Funding release report и frontend markers.
+7. Проверить deploy summary, `/version`, runtime commit/version, `scripts/release-smoke.sh`, Funding release report и frontend markers.
 8. Только после успешного production evidence создать annotated tag `v1.6.0` и запушить tag.
 
 До отдельного продуктового решения запрещено включать trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps. `v1.6.0` не должен менять backend API, БД-схему и provider calls в runway/ops batch без отдельного обоснования.

@@ -83,6 +83,8 @@ Readiness/result статусы в `$GITHUB_STEP_SUMMARY`:
 - `real_deploy_succeeded` — `Deploy production` реально выполнил SSH deploy и remote `scripts/deploy-compose-stack.sh` завершился успешно.
 - `real_deploy_failed` — workflow попытался выполнить real deploy, но deploy step не прошёл после retry.
 
+При `real_deploy_succeeded` remote script дополнительно проверяет `/version` после `server-smoke` и пишет compact JSON `deploy_compose_stack_summary_v0` в `/tmp/deltagrid-deploy-summary.json`; workflow печатает этот файл в job log. При `skipped_missing_required_secrets` такого файла быть не должно, потому что deploy не выполнялся.
+
 В логах и summary разрешено показывать только names/statuses, expected host/user/app dir и fingerprint публичного deploy key. Private key, `.env.production`, raw secrets и provider payload печатать нельзя.
 
 На локальной машине:
@@ -130,7 +132,8 @@ Workflow также продолжит запускаться автоматич
 - `Validate production target values` — success для `2.25.143.143`, `root`, `/opt/deltagrid`;
 - `Test production SSH login` и `Check production app directory` — success или понятный warning с последующим успешным deploy;
 - `Deploy production` — success, не skipped;
-- `Deploy Production Result` в summary показывает `result=real_deploy_succeeded`, `deploy method=github_actions_ssh` и `real deploy performed=true`.
+- `Deploy Production Result` в summary показывает `result=real_deploy_succeeded`, `deploy method=github_actions_ssh`, `real deploy performed=true` и path `/tmp/deltagrid-deploy-summary.json`;
+- deploy log содержит JSON summary с `deploy_status=succeeded`, `deploy_method=github_actions_ssh`, `version_status=matched`, `smoke_status=passed` и backup status/path.
 
 Перед реальным production deploy выполните свежий backup на сервере:
 
@@ -174,5 +177,9 @@ Production:
 cd /opt/deltagrid
 git status --short --branch
 docker compose --env-file .env.production -f docker-compose.prod.yml ps
+curl -fsS http://127.0.0.1:3001/version
 BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/server-smoke.sh
+mkdir -p artifacts/production-release/v1.6.0
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 FUNDING_RELEASE_REPORT_OUTPUT=artifacts/production-release/v1.6.0/funding-release-report.json sh scripts/funding-release-report.sh
+sh scripts/funding-release-report-validate.sh artifacts/production-release/v1.6.0/funding-release-report.json
 ```

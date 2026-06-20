@@ -221,7 +221,11 @@ jobs:
                 COMPOSE_PROJECT_NAME='${COMPOSE_PROJECT_NAME:-deltagrid}' \
                 BASE_URL='${SMOKE_BASE_URL:-http://127.0.0.1:8000}' \
                 FRONTEND_URL='${SMOKE_FRONTEND_URL:-http://127.0.0.1:3001}' \
+                DEPLOY_METHOD=github_actions_ssh \
+                DEPLOY_SUMMARY_OUTPUT=/tmp/deltagrid-deploy-summary.json \
                 sh scripts/deploy-compose-stack.sh
+              echo 'remote deploy summary json:'
+              cat /tmp/deltagrid-deploy-summary.json || true
             "; then
               echo "::endgroup::"
               echo "Production deploy result: real_deploy_succeeded"
@@ -234,6 +238,7 @@ jobs:
                 echo "- app dir: \`$EXPECTED_APP_DIR\`"
                 echo "- backend smoke URL: \`${SMOKE_BASE_URL:-http://127.0.0.1:8000}\`"
                 echo "- frontend smoke URL: \`${SMOKE_FRONTEND_URL:-http://127.0.0.1:3001}\`"
+                echo "- deploy summary: \`/tmp/deltagrid-deploy-summary.json\` printed in job log"
               } >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi

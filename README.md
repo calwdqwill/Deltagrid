@@ -169,6 +169,15 @@ cd /opt/deltagrid-preview
 BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 FUNDING_RELEASE_REPORT_OUTPUT=funding-release-report.json sh scripts/funding-release-report.sh
 ```
 
+Для production release evidence сохраняйте Funding report в отдельный каталог релиза:
+
+```bash
+cd /opt/deltagrid
+mkdir -p artifacts/production-release/v1.6.0
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 FUNDING_RELEASE_REPORT_OUTPUT=artifacts/production-release/v1.6.0/funding-release-report.json sh scripts/funding-release-report.sh
+sh scripts/funding-release-report-validate.sh artifacts/production-release/v1.6.0/funding-release-report.json
+```
+
 Для CI/release artifact можно использовать готовый профиль: он по умолчанию включает JSON report, require-ready и require-compare, а явные env overrides могут ослабить отдельный gate при локальной проверке:
 
 ```bash
@@ -411,7 +420,7 @@ Production auto-deploy пока не считается подтверждённ
 - production: `/opt/deltagrid`, branch `main`, env `.env.production`, Compose project `deltagrid`, ports `8000/3001`, домен `https://deltagrid.pro`;
 - preview: `/opt/deltagrid-preview`, branch `preview`, env `.env.preview`, Compose project `deltagrid-preview`, ports `8011/3012`, будущий домен `https://preview.deltagrid.pro`.
 
-Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview. Для `BRANCH=main` он по умолчанию создаёт PostgreSQL backup в `backups/deploy/` перед пересозданием backend/frontend containers; для preview backup включается только явно через `BACKUP_BEFORE_DEPLOY=1`.
+Шаблон preview env лежит в `.env.preview.example`. Общий deploy-скрипт `scripts/deploy-compose-stack.sh` используется и для production, и для preview. Для `BRANCH=main` он по умолчанию создаёт PostgreSQL backup в `backups/deploy/` перед пересозданием backend/frontend containers; для preview backup включается только явно через `BACKUP_BEFORE_DEPLOY=1`. После server smoke deploy-скрипт проверяет frontend `/version` против файла `VERSION`, печатает compact строку `Deploy summary` и при заданном `DEPLOY_SUMMARY_OUTPUT` сохраняет JSON `deploy_compose_stack_summary_v0` с commit, method, smoke/version/backup status и backup path.
 
 Текущее preview-состояние от 2026-06-14: stack поднят на VPS, GitHub Actions auto-deploy проверен, smoke-check проходит, 7d BTC/ETH/SOL data sync выполнен в отдельную preview БД. Preview Nginx HTTP site `deltagrid-preview` уже включён и проверен через `Host: preview.deltagrid.pro`; внешний HTTPS-домен ждёт DNS-запись `preview -> 2.25.143.143` и выпуск SSL по чеклисту [deploy/dns/preview.deltagrid.pro.md](deploy/dns/preview.deltagrid.pro.md).
 
@@ -423,6 +432,15 @@ BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/rel
 ```
 
 Он последовательно запускает `server-smoke`, `perp-dex-policy-smoke`, `perp-dex-direct-smoke` и `coinglass-perp-dex-coverage-smoke`. Raw provider payload и secrets не печатаются.
+
+Минимальный production evidence после deploy:
+
+```bash
+cd /opt/deltagrid
+curl -fsS http://127.0.0.1:3001/version
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/server-smoke.sh
+BASE_URL=http://127.0.0.1:8000 FRONTEND_URL=http://127.0.0.1:3001 sh scripts/release-smoke.sh
+```
 
 Для ручной загрузки свежих market data в production PostgreSQL:
 

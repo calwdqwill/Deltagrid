@@ -1,5 +1,10 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [OPS] - v1.6.0 production evidence/report hardening
+- Скоуп батча закрыт как production release evidence hardening: 1) `scripts/deploy-compose-stack.sh` проверяет `/version` после `server-smoke`; 2) deploy script сравнивает frontend version с `VERSION`; 3) добавлен compact `deploy_compose_stack_summary_v0`; 4) summary фиксирует deploy method, commit, smoke/version status, backup status и backup path; 5) GitHub real deploy запускает remote script с `DEPLOY_METHOD=github_actions_ssh`; 6) workflow печатает remote `/tmp/deltagrid-deploy-summary.json` в job log; 7) safe-skip по `PROD_*` явно не создаёт deploy evidence; 8) README/release/runbook docs получили production smoke команды; 9) Funding report production artifact path зафиксирован; 10) локальные проверки подготовлены.
+- Production evidence для `v1.6.0` теперь должен ссылаться на `real_deploy_succeeded` или manual SSH deploy summary, а не на `skipped_missing_required_secrets`.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps не включались.
+
 ## [2026-06-20] - [OPS] - v1.6.0 production deploy automation readiness
 - Скоуп батча закрыт как production deploy readiness: 1) проверен `deploy-production.yml`; 2) добавлен шаг `Evaluate production deploy readiness`; 3) workflow outputs фиксируют `deploy_ready`, `deploy_result_status`, `missing_required`; 4) `$GITHUB_STEP_SUMMARY` показывает readiness/result; 5) statuses разделяют `skipped_missing_required_secrets`, `ready_for_real_deploy`, `real_deploy_succeeded`, `real_deploy_failed`; 6) expected host/user/app dir/fingerprint вынесены в workflow env; 7) runbook `deploy/github-actions-secrets.md` обновлён; 8) `README.md`, `RELEASES.md`, `CURRENT_TASK.md`, `BACKLOG.md` и `PROJECT_PLAN.md` обновлены; 9) shell/workflow checks подготовлены; 10) реальные secrets не менялись и не коммитились.
 - GitHub safe-skip теперь явно не считается real deploy evidence; release gate должен ссылаться на `real_deploy_succeeded` или отдельный manual SSH deploy proof.
