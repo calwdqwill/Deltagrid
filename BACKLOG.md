@@ -60,7 +60,8 @@
 - [x] Итерация 2: выбрать и реализовать один read-only Funding/Data QA product batch поверх существующих данных.
 - [x] Итерация 3: собрать release evidence bundle, preview/prod compare-ready contract и список blockers без изменения production runtime.
 - [x] Итерация 4: подготовить локальный `v1.5.0` RC/version bump, пройти release preflight, frontend build/audit и funding evidence validation без изменения production runtime.
-- [ ] Финальный release gate после review/merge: preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
+- [x] Итерация 5: подготовить PR/release handoff readiness без production runtime changes.
+- [ ] Финальный release gate после PR/review: preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
 
 ### Итерация 2 — Funding/Data QA product batch
 
@@ -100,6 +101,18 @@
 - [x] Пройти `npm audit --audit-level=high`; известный moderate `postcss` внутри Next.js остаётся неблокирующим tech debt.
 - [x] Пройти funding compact report + validator на temp artifact с `data_quality_runway`.
 - [x] Не выполнять production deploy, production backup, Browser QA production и annotated tag из feature branch без отдельного release decision.
+
+### Итерация 5 — v1.5.0 PR/release handoff readiness batch
+
+- [x] Проверить `git status` после push `0a43813`.
+- [x] Сверить remote refs: `origin/main=2b6c830`, `origin/preview=5f8ad89`, feature branch `0a43813`.
+- [x] Проверить, что `v1.5.0` и `v1.4.1` tags отсутствуют, а `v1.4.0` tag существует.
+- [x] Проверить, что открытого PR для `codex/v1.4.1-funding-release-tooling` нет.
+- [x] Зафиксировать, что `gh` CLI и локальный GitHub token недоступны, поэтому PR нельзя создать из этой сессии.
+- [x] Проверить CI trigger policy: branch push в `codex/*` не запускает `CI`; нужен PR к `preview`/`main` или push в `preview`/`main`.
+- [x] Добавить `deploy/v1.5.0-release-handoff.md` с PR URL, body, checks, preview evidence и production gate.
+- [x] Уточнить docs wording: `3936c83` является release/runtime commit `v1.4.0`, а не текущим `origin/main`.
+- [x] Не выполнять merge в `preview`/`main`, production deploy или tag без отдельного release decision.
 
 ### Следующий Funding analytics read-only блок
 

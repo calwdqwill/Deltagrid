@@ -1,5 +1,10 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [RELEASE] - v1.5.0 PR/release handoff readiness
+- Скоуп батча закрыт как docs-only release handoff: 1) проверены remote refs `origin/main=2b6c830`, `origin/preview=5f8ad89`, branch `0a43813`; 2) подтверждено отсутствие tags `v1.4.1`/`v1.5.0`; 3) подтверждено отсутствие открытого PR; 4) зафиксировано отсутствие `gh` CLI и локального GitHub token; 5) проверено, что CI не запускается на `codex/*` push; 6) добавлен `deploy/v1.5.0-release-handoff.md`; 7) handoff содержит PR URL/body; 8) handoff содержит checks и preview evidence path; 9) handoff фиксирует production release gate; 10) merge/deploy/tag не выполнялись.
+- Уточнена формулировка baseline: `3936c83` является release/runtime commit для `v1.4.0`, а текущий `origin/main` находится на docs-only follow-up `2b6c830`.
+- Граница сохранена: backend API, БД, provider calls, trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-20] - [RELEASE] - v1.5.0 local RC/version bump
 - Скоуп батча закрыт как локальный release candidate: 1) `VERSION` поднят до `1.5.0`; 2) `frontend/package.json` поднят до `1.5.0`; 3) root version в `frontend/package-lock.json` поднят до `1.5.0`; 4) README показывает текущую версию `v1.5.0`; 5) release docs обновлены; 6) `scripts/release-preflight.sh 1.5.0` проходит с `ALLOW_DIRTY=1`; 7) frontend `npm run build` проходит; 8) `npm audit --audit-level=high` не находит high/critical blocker; 9) funding compact report + validator проходят на temp artifact; 10) production runtime, tag и deploy не трогались.
 - `v1.5.0` включает накопленный `v1.4.1` Funding release tooling scope, read-only `Funding Data Quality Runway` и `data_quality_runway` release evidence contract; отдельный patch release `v1.4.1` больше не обязателен для локального RC, если этот branch идёт как minor PR.

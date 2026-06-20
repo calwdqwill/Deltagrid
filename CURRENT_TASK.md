@@ -1,8 +1,16 @@
 # Current Task — DeltaGrid
 
 **Phase**: MVP1 — Data Quality Gate и provider reliability
-**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на `main@3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Ветка `codex/v1.4.1-funding-release-tooling` содержит commit `1f84fab` с подготовленной patch/tooling-версией `v1.4.1`; PR ещё не смержен в `main`, tag `v1.4.1` не создан, production deploy `v1.4.1` не запускался. Локальный `v1.5.0` RC подготовлен: закрыты Итерации 1–4, версии подняты до `1.5.0`, release preflight, frontend build/audit и funding evidence validation проходят. Production runtime, production deploy и annotated tag `v1.5.0` ещё не выполнялись.
+**Status**: Production baseline `v1.4.0` выпущен на `deltagrid.pro`: tag `v1.4.0` указывает на release commit `3936c83`, runtime `/opt/deltagrid` работает на `3936c83` с `VERSION=1.4.0`, production release smoke и Browser QA прошли. Текущий `origin/main` находится на `2b6c830` с docs-only follow-up по `v1.4.0`. Ветка `codex/v1.4.1-funding-release-tooling` содержит `v1.4.1` tooling commit `1f84fab` и локальный `v1.5.0` RC commit `0a43813`; PR ещё не открыт, tags `v1.4.1`/`v1.5.0` не созданы, production deploy `v1.5.0` не запускался. Локальный `v1.5.0` RC и release handoff подготовлены; финальный release gate остаётся после PR/review, preview evidence, merge, production backup/deploy, smoke, Browser QA и tag.
 **Last Updated**: 2026-06-20
+
+## Обновление 2026-06-20 — v1.5.0 PR/release handoff readiness
+
+- Проверено remote состояние: `origin/main=2b6c830`, ветка `codex/v1.4.1-funding-release-tooling=0a43813`, merge-base совпадает с `origin/main`, tag `v1.5.0` отсутствует.
+- Открытый PR для ветки не найден; `gh` CLI и `GITHUB_TOKEN`/`GH_TOKEN` в локальной сессии недоступны, поэтому реальный PR нужно открыть вручную.
+- Добавлен handoff: `deploy/v1.5.0-release-handoff.md` с PR URL, готовым PR body, checks, preview evidence path, production release gate и safety boundary.
+- GitHub CI не стартует на push в `codex/*`: текущий `CI` workflow запускается на PR к `preview`/`main` и push в `preview`/`main`.
+- Production deploy/tag не выполнялись; следующий безопасный внешний шаг - открыть PR и дождаться CI.
 
 ## Обновление 2026-06-20 — v1.5.0 local RC/version bump
 
