@@ -5,6 +5,7 @@ on:
     branches:
       - preview
       - main
+      - "codex/**"
   pull_request:
     branches:
       - preview

@@ -35,7 +35,195 @@
    Perp DEX Lighter/Aster fee schedule evidence v0 добавлен как следующий read-only слой: `summary.fee_schedule_evidence_summary`, `summary.fee_schedule_evidence_checklist`, UI `Route Diagnostic Fee Schedule Evidence`/`Route Diagnostic Fee Schedule Checklist` и compact smoke `fee_schedule_evidence_*` показывают account tier/order intent/manual approval gates без fee bps total, route scoring или execution.
    Perp DEX Source Status compare contract v0 добавлен как release/readiness слой: `scripts/perp-dex-source-status-smoke.sh` собирает direct venues, GMX raw, CoinGlass enrichment, route policy/model и release-smoke checklist в compact source-status contract, поддерживает `COMPARE_BASE_URL`/`FAIL_ON_DIFF=1` и показывает preview/prod drift без полного payload, ranking, route selection, cost bps или execution.
    Perp DEX provider state empty/error states v0 добавлен как UI-readiness слой: `Direct Perp DEX Market Snapshots`, `Depth Diagnostics` и `CoinGlass Perp DEX Enrichment` теперь показывают compact state rows по provider availability, partial data, missing symbols, depth freshness и research-only boundary даже при пустых detail rows; новых provider calls, route ranking, route selection, numeric route cost bps или execution не добавлено.
-6. **Strategy/backtest** — настоящий backtest engine и scheduler после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
+6. **Funding analytics read-only** — после `v1.4.0` начат отдельный безопасный funding block: `Funding Source Status` показывает OKX funding history и CoinGlass funding snapshots по loaded rows, latest age, freshness, coverage, sync и boundary. `Funding Freshness & Anomaly` добавляет per-symbol data QA по rows/latest/latest rate/last change/data status/statistical anomaly. `Funding Anomaly Detail` показывает baseline statistics и z-score QA labels без strategy signal. `Funding Source Comparison` сравнивает последние OKX/CoinGlass rows как provider QA без сортировки по выгоде. `Funding QA Drilldown` показывает freshness/coverage/sync reasons и next actions. `Funding QA View Grouping` добавляет отдельный `QA` view и не перегружает остальные Funding views. `Funding History Diagnostics` добавляет history-window QA в `Overview`/`History`. `Funding History Controls` добавляет URL `asset`/`source`, chart readiness, range/interval hints и next action для read-only history workflow. `Funding History Readiness` объясняет empty/thin history states через persisted rows, selected asset/source coverage, chart points, numeric rates и next action. `Funding QA Compare Summary` добавляет compact preview/prod drift summary в `scripts/funding-qa-smoke.sh`. `Funding Release Checklist` добавляет UI/readiness checklist для release smoke и preview rollout. `Funding Release Readiness Smoke Summary` добавляет `contract.release_readiness` для machine-readable release-prep. `Funding Release Readiness Hard Gate` добавляет optional `FAIL_ON_RELEASE_NOT_READY=1`. `Funding Release Smoke Wrapper` добавляет `scripts/funding-release-smoke.sh` как soft/strict runner вокруг funding QA smoke. `Funding Smoke JSON Output` добавляет `OUTPUT_JSON_ONLY=1` для CI-friendly parsing. `Funding Release Report` добавляет compact summary script поверх JSON smoke, `Funding Release Report JSON` добавляет `FUNDING_RELEASE_REPORT_FORMAT=json`, `Funding Release Report Context` добавляет `gate_status` и `run_context`, `Funding Release Report Evidence` добавляет readiness/source/compare evidence fields, `Funding Release Readiness Gate Report` добавляет `readiness_gate_status`, blockers и next actions, `Funding Report Require Ready Gate` добавляет optional report-level readiness failure, `Funding Report Require Compare Gate` добавляет optional report-level compare failure, `Funding Release Report CI Profile` добавляет `FUNDING_RELEASE_REPORT_PROFILE=ci` для JSON + readiness/compare gates одним preset, `Funding Release Report Exit Reason` добавляет `report_exit_code` и `exit_reason`, `Funding Release Gate Status` добавляет `release_gate_status=passed|blocked|failed`, `Funding Release Gate Checklist Batch` добавляет `release_gate_checks`/`release_gate_summary`, `Funding Release Gate Actions Batch` добавляет categories/blocker groups/first action, `Funding Release Report Artifact Output Batch` добавляет `FUNDING_RELEASE_REPORT_OUTPUT` для записи compact JSON artifact в файл, `Funding Release Report CI Integration Batch` добавляет CI wrapper, stricter preflight, `run_context.ci` и manual GitHub workflow с artifact upload, `Funding Release Report Artifact Validation Batch` добавляет schema/status/summary/safety/CI-context validation compact artifact, `Funding Release Report Evidence Bundle Batch` добавляет validation JSON и manifest JSON с statuses, blockers и checksums для release evidence, `Funding Release Bundle Manifest Validation Batch` добавляет standalone bundle validator и `funding-release-bundle-validation.json` для проверки manifest/checksum/exit-code invariants, `Funding Release Bundle Review Batch` добавляет standalone review helper и `funding-release-review.json` для runbook summary/next action, `Funding Release Review Summary Artifact Batch` добавляет standalone Markdown/text/JSON summary и `funding-release-summary.md` для GitHub step summary/release notes, `Funding Release Evidence Handoff Batch` добавляет standalone handoff и `funding-release-handoff.md` для release notes/runbook artifact checklist, `Funding Release Evidence Audit Batch` добавляет directory-level audit и `funding-release-audit.json` для проверки скачанного GitHub artifact bundle, `Funding Release Audit Summary CI Batch` добавляет `funding-release-audit.md` и GitHub summary audit readout, `Funding Release Evidence Index Batch` добавляет `funding-release-index.md`/`.json` как первый entrypoint для downloaded bundle review, `Funding Release Evidence Verify Batch` добавляет `funding-release-verify.md`/`.json` как финальный local verdict по index/audit consistency и release-notes/debug readiness, `Funding Release Evidence Notes Batch` добавляет `funding-release-notes.md`/`.json` как paste-ready snippet для release notes или debug review, а `Funding Release Evidence Compare Batch` добавляет offline compare двух downloaded bundles по verify/notes/status/blocker/artifact drift. Блок использует существующие `/data/funding` и `/data/health`, не добавляет provider calls, API endpoints, carry bps, route ranking, route selection или execution.
+7. **Strategy/backtest** — настоящий backtest engine и scheduler после стабилизации исторических рядов и формального описания формул PnL/drawdown/trades.
+
+## План `v1.5.0` — 2026-06-20
+
+Цель `v1.5.0` — следующий production minor release после `v1.4.0` и промежуточного `v1.4.1` tooling branch: усилить Funding/Data QA и release evidence так, чтобы следующий product/data слой был проверяемым на preview/prod без изменения trading/routing границ.
+
+### Итерация 1 — release/planning/runway batch
+
+- [x] Проверить чистоту рабочей копии и текущую ветку перед стартом `v1.5.0`.
+- [x] Зафиксировать факт: production runtime остаётся `v1.4.0` на `3936c83`, а `v1.4.1` находится в unsmerged branch `codex/v1.4.1-funding-release-tooling`.
+- [x] Определить dependency policy: перед финальным `v1.5.0` нужно решить, будет ли `v1.4.1` смержена/выпущена отдельно или включена в `v1.5.0`.
+- [x] Зафиксировать scope `v1.5.0`: Funding/Data QA и release evidence поверх существующих data-layer endpoints.
+- [x] Зафиксировать non-goals: backend API, БД, provider calls, frontend product flow, trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps не меняются в runway.
+- [x] Разбить путь до `v1.5.0` на 4 крупных итерации: runway, read-only product/data batch, release evidence/preview validation, RC/production rollout.
+- [x] Определить release path: feature branch → PR/review → preview evidence → main → production backup/deploy → smoke/Browser QA → annotated tag.
+- [x] Зафиксировать required evidence: release preflight, docs-check, Funding release report, preview/prod compare и отсутствие safety boundary drift.
+- [x] Обновить русскую проектную документацию: `PROJECT_PLAN.md`, `BACKLOG.md`, `CURRENT_TASK.md`, `RELEASES.md`, `CHANGELOG.md`.
+- [x] Не менять runtime-код, версии, API-контракты, миграции, provider adapters и UI flow в этой итерации.
+
+### Следующие итерации до `v1.5.0`
+
+- [x] Итерация 2: выбрать и реализовать один read-only Funding/Data QA product batch поверх существующих данных.
+- [x] Итерация 3: собрать release evidence bundle, preview/prod compare-ready contract и список blockers без изменения production runtime.
+- [x] Итерация 4: подготовить локальный `v1.5.0` RC/version bump, пройти release preflight, frontend build/audit и funding evidence validation без изменения production runtime.
+- [x] Итерация 5: подготовить PR/release handoff readiness без production runtime changes.
+- [x] Итерация 6: выполнить full local regression pass и обновить release handoff фактическими проверками.
+- [x] Итерация 7: выполнить pre-merge validation против `origin/main` и обновить handoff.
+- [x] Итерация 8: включить GitHub CI для `codex/**` branch push без изменения deploy gates.
+- [x] Итерация 9: дождаться зелёного GitHub branch CI и обновить handoff ссылкой на run.
+- [x] Итерация 10: добавить release-specific PR template для ручного PR `v1.5.0`.
+- [ ] Финальный release gate после PR/review: preview deploy/smoke, production backup/deploy, Browser QA и annotated tag `v1.5.0`.
+
+### Итерация 2 — Funding/Data QA product batch
+
+- [x] Выбрать локальный read-only scope: `Funding Data Quality Runway` поверх уже загруженных `/data/funding` и `/data/health`.
+- [x] Добавить `FundingDataQualityRunwayRow` в frontend-типы без изменения backend API.
+- [x] Собрать runway rows из health, funding rows, source coverage, freshness/coverage/sync и selected history rows.
+- [x] Подключить `dataQualityRunway` в live Funding builder.
+- [x] Обновить preview fixture как static/preview-only данные, чтобы `FundingData` оставался типобезопасным.
+- [x] Добавить панель `Funding Data Quality Runway` в `Overview` и `QA` view.
+- [x] Добавить marker `funding_data_quality_runway` в `scripts/funding-qa-smoke.sh`.
+- [x] Расширить `panel_ids` smoke-контракта новым read-only panel id.
+- [x] Прогнать frontend build и shell syntax check для funding smoke.
+- [x] Обновить русскую документацию по scope, проверкам, архитектурной границе и следующей итерации.
+
+### Итерация 3 — release evidence + preview/local validation batch
+
+- [x] Добавить `contract.data_quality_runway` в `scripts/funding-qa-smoke.sh` как backend-only summary поверх уже проверяемых `/data/health` и `/data/funding`.
+- [x] Зафиксировать `runway_version=funding_data_quality_runway_v0`, gate ids, gate statuses, blocking gate ids, missing sources, history preview rows, next action и safe boundary.
+- [x] Не привязывать runway summary к frontend marker check, чтобы отсутствие `FRONTEND_URL` не создавало ложный drift в backend evidence.
+- [x] Протянуть `data_quality_runway` в `scripts/funding-release-report.sh` как top-level compact report field.
+- [x] Добавить release gate check `data_quality_runway` и включить runway blockers в `blocking_reasons`/`next_actions`.
+- [x] Расширить `scripts/funding-release-report-validate.sh` schema-check для `funding_data_quality_runway_v0`.
+- [x] Проверить shell syntax для funding smoke/report/validator/CI wrapper.
+- [x] Прогнать локальный CI-like temp evidence bundle с `ALLOW_UNAVAILABLE=1`, `RUN_FRONTEND_CHECK=0` и отдельной artifact directory.
+- [x] Проверить standalone compact report + validator: локальный blocked runway считается валидным release blocker, а не поломкой tooling.
+- [x] Обновить русскую документацию по evidence contract, release report, validator и границам preview/prod gate.
+
+### Итерация 4 — v1.5.0 RC/version bump batch
+
+- [x] Поднять `VERSION` до `1.5.0`.
+- [x] Поднять `frontend/package.json` до `1.5.0`.
+- [x] Поднять root version в `frontend/package-lock.json` до `1.5.0`.
+- [x] Обновить текущую версию в `README.md` до `v1.5.0`.
+- [x] Зафиксировать, что `v1.5.0` включает накопленный `v1.4.1` Funding tooling scope, если этот branch идёт как minor PR.
+- [x] Пройти `scripts/release-preflight.sh 1.5.0` с `ALLOW_DIRTY=1` на dirty RC tree.
+- [x] Пройти frontend production build `npm run build`.
+- [x] Пройти `npm audit --audit-level=high`; известный moderate `postcss` внутри Next.js остаётся неблокирующим tech debt.
+- [x] Пройти funding compact report + validator на temp artifact с `data_quality_runway`.
+- [x] Не выполнять production deploy, production backup, Browser QA production и annotated tag из feature branch без отдельного release decision.
+
+### Итерация 5 — v1.5.0 PR/release handoff readiness batch
+
+- [x] Проверить `git status` после push `0a43813`.
+- [x] Сверить remote refs: `origin/main=2b6c830`, `origin/preview=5f8ad89`, feature branch `0a43813`.
+- [x] Проверить, что `v1.5.0` и `v1.4.1` tags отсутствуют, а `v1.4.0` tag существует.
+- [x] Проверить, что открытого PR для `codex/v1.4.1-funding-release-tooling` нет.
+- [x] Зафиксировать, что `gh` CLI и локальный GitHub token недоступны, поэтому PR нельзя создать из этой сессии.
+- [x] Проверить CI trigger policy: branch push в `codex/*` не запускает `CI`; нужен PR к `preview`/`main` или push в `preview`/`main`.
+- [x] Добавить `deploy/v1.5.0-release-handoff.md` с PR URL, body, checks, preview evidence и production gate.
+- [x] Уточнить docs wording: `3936c83` является release/runtime commit `v1.4.0`, а не текущим `origin/main`.
+- [x] Не выполнять merge в `preview`/`main`, production deploy или tag без отдельного release decision.
+
+### Итерация 6 — v1.5.0 full local regression pass
+
+- [x] Повторить `scripts/release-preflight.sh 1.5.0` на чистом tree.
+- [x] Повторить docs-check preflight для `RELEASE_TARGET=1.5.0`.
+- [x] Пройти backend compileall через проектный venv.
+- [x] Пройти backend pytest через проектный venv: `59 passed`.
+- [x] Зафиксировать, что системный Python 3.12 не содержит `pytest`; backend checks запускать через `backend\\venv\\Scripts\\python.exe`.
+- [x] Пройти frontend `npm run build`.
+- [x] Пройти frontend `npm audit --audit-level=high`; high/critical blocker нет, known moderate `postcss` остаётся tech debt.
+- [x] Пройти shell syntax для Funding release scripts.
+- [x] Пройти CI-like Funding evidence bundle на temp artifact.
+- [x] Обновить `deploy/v1.5.0-release-handoff.md` и docs фактическими regression results.
+
+### Итерация 7 — v1.5.0 pre-merge validation batch
+
+- [x] Проверить чистый worktree перед pre-merge validation.
+- [x] Проверить `merge-base`: branch основан на текущем `origin/main=2b6c830`.
+- [x] Выполнить `git merge-tree origin/main HEAD` и убедиться, что conflict output отсутствует.
+- [x] Проверить `git diff --check origin/main...HEAD`.
+- [x] Проверить, что backend files отсутствуют в PR diff.
+- [x] Проверить отсутствие generated artifact paths в PR diff.
+- [x] Проверить отсутствие secret-like additions.
+- [x] Проверить targeted forbidden capability enable scan.
+- [x] Обновить `deploy/v1.5.0-release-handoff.md` pre-merge результатами.
+- [x] Не выполнять merge в `main`/`preview`, production deploy или tag без отдельного release decision.
+
+### Итерация 8 — v1.5.0 branch CI readiness batch
+
+- [x] Расширить `.github/workflows/ci.yml` на push branch pattern `codex/**`.
+- [x] Не менять `Deploy Preview`: он остаётся завязан на успешный `CI` для branch `preview`.
+- [x] Не менять `Deploy Production`: production gate остаётся через `main`/manual release path.
+- [x] Обновить release handoff: branch CI является предварительным evidence, но не заменяет PR review.
+- [x] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md` и `CHANGELOG.md`.
+- [x] Сохранить запрет на backend API, БД, provider calls, trading, execution, route ranking, route selection, route cost bps и diagnostic carry bps.
+
+### Итерация 9 — v1.5.0 branch CI success batch
+
+- [x] Запушить `CI` trigger для `codex/**`.
+- [x] Дождаться GitHub Actions run для commit `9bc6dd7`.
+- [x] Зафиксировать run id `27863265157`.
+- [x] Подтвердить conclusion `success`.
+- [x] Обновить release handoff ссылкой на branch CI evidence.
+- [x] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md` и `CHANGELOG.md`.
+- [x] Не выполнять PR merge, preview deploy, production deploy или tag.
+
+### Итерация 10 — v1.5.0 PR template readiness batch
+
+- [x] Добавить `.github/PULL_REQUEST_TEMPLATE/v1.5.0-funding-qa.md`.
+- [x] Включить в template scope, checks, safety boundary и release gate.
+- [x] Обновить `deploy/v1.5.0-release-handoff.md` ссылкой с `template=v1.5.0-funding-qa.md`.
+- [x] Обновить `CURRENT_TASK.md`, `BACKLOG.md`, `PROJECT_PLAN.md` и `CHANGELOG.md`.
+- [x] Не менять deploy workflows, backend API, БД, provider calls или production runtime.
+
+### Следующий Funding analytics read-only блок
+
+- [x] Добавить `Funding Data Quality Runway`: сводный gate по health, funding rows, source coverage, freshness/coverage/sync, history preview и `v1.5.0` preview readiness.
+- [x] Добавить `Funding Source Status`: источник, свежесть, coverage, sync и boundary по OKX funding history и CoinGlass funding snapshots без новых provider calls.
+- [x] Добавить read-only funding freshness/anomaly summary поверх persisted funding rows и `/data/health`.
+- [x] Добавить funding venue/source comparison только как исследовательский статус источников, без route ranking, route selection и production trading signal.
+- [x] Добавить compact funding QA smoke/release-safety check для новых Funding panels без полного payload и без trading/routing outputs.
+- [x] Добавить Funding QA drilldown по freshness/coverage/sync reasons и next actions без trading/routing outputs.
+- [x] Добавить Funding Anomaly Detail с samples/latest/baseline/range/z-score как QA-only labels без strategy signal.
+- [x] Добавить Funding QA view grouping: отдельный `QA` view, overview compatibility и скрытие QA block из non-QA views.
+- [x] Добавить Funding History Diagnostics: observations/window/latest/interval/average/range/status/next action для `Overview` и `History`.
+- [x] Добавить Funding History Controls: URL `asset`/`source`, chart readiness, range/interval hints и next action без strategy signal.
+- [x] Добавить Funding History Readiness: empty-state/readiness rows, chart placeholder evidence и next action без strategy signal.
+- [x] Добавить Funding QA Compare Summary: compact `COMPARE_BASE_URL` status/diff fields/safety alignment без full payload.
+- [x] Добавить Funding Release Checklist: data health, rows guard, source coverage, history workflow, panel contract, compare smoke и safety boundary.
+- [x] Добавить Funding Release Readiness Smoke Summary: `contract.release_readiness` с health/rows/source/frontend/compare/safety checks без full payload.
+- [x] Добавить Funding Release Readiness Hard Gate: optional `FAIL_ON_RELEASE_NOT_READY=1` без изменения soft default.
+- [x] Добавить Funding Release Smoke Wrapper: `scripts/funding-release-smoke.sh` с soft/strict presets для preview/prod release smoke.
+- [x] Добавить Funding Smoke JSON Output: `OUTPUT_JSON_ONLY=1` для чистого JSON contract output без human prefix/suffix.
+- [x] Добавить Funding Release Report: compact summary script поверх JSON smoke с сохранением smoke exit code.
+- [x] Добавить Funding Release Report JSON: `FUNDING_RELEASE_REPORT_FORMAT=json` для compact machine-readable summary.
+- [x] Добавить Funding Release Report Context: `report_version`, `gate_status` и `run_context` в compact report.
+- [x] Добавить Funding Release Report Evidence: readiness checks, source-pair statuses и compare diff fields в compact report.
+- [x] Добавить Funding Release Readiness Gate Report: `readiness_gate_status`, `blocking_reasons` и `next_actions`.
+- [x] Добавить Funding Report Require Ready Gate: `FUNDING_RELEASE_REPORT_REQUIRE_READY=1` для report-level CI failure при not-ready readiness.
+- [x] Добавить Funding Report Require Compare Gate: `FUNDING_RELEASE_REPORT_REQUIRE_COMPARE=1` для report-level CI failure при missing/non-aligned compare.
+- [x] Добавить Funding Release Report CI Profile: `FUNDING_RELEASE_REPORT_PROFILE=ci` включает JSON report, require-ready и require-compare одним preset.
+- [x] Добавить Funding Release Report Exit Reason: `report_exit_code` и `exit_reason` для объяснения итогового CI artifact.
+- [x] Добавить Funding Release Gate Status: `release_gate_status=passed|blocked|failed` для верхнеуровневого CI/dashboard статуса.
+- [x] Добавить Funding Release Gate Checklist Batch: `release_gate_checks` и `release_gate_summary` с required/blocking ids и status counts.
+- [x] Добавить Funding Release Gate Actions Batch: categories, blocker groups, required/optional blockers, first action и action map.
+- [x] Добавить Funding Release Report Artifact Output Batch: `FUNDING_RELEASE_REPORT_OUTPUT` для записи compact JSON artifact в файл.
+- [x] Добавить Funding Release Report CI Integration Batch: `scripts/funding-release-ci-report.sh`, stricter validation, `run_context.ci` и manual GitHub workflow с artifact upload.
+- [x] Добавить Funding Release Report Artifact Validation Batch: `scripts/funding-release-report-validate.sh` для schema/status/summary/safety/CI-context validation compact artifact.
+- [x] Добавить Funding Release Report Evidence Bundle Batch: `funding-release-validation.json` и `funding-release-manifest.json` с statuses, blockers и checksums.
+- [x] Добавить Funding Release Bundle Manifest Validation Batch: `scripts/funding-release-bundle-validate.sh` и `funding-release-bundle-validation.json` для проверки manifest/checksum/exit-code invariants.
+- [x] Добавить Funding Release Bundle Review Batch: `scripts/funding-release-bundle-review.sh` и `funding-release-review.json` для runbook summary и next action.
+- [x] Добавить Funding Release Review Summary Artifact Batch: `scripts/funding-release-review-summary.sh` и `funding-release-summary.md` для GitHub step summary/release notes.
+- [x] Добавить Funding Release Evidence Handoff Batch: `scripts/funding-release-evidence-handoff.sh` и `funding-release-handoff.md` для release notes/runbook artifact checklist.
+- [x] Добавить Funding Release Evidence Audit Batch: `scripts/funding-release-evidence-audit.sh` и `funding-release-audit.json` для directory-level проверки скачанного evidence bundle.
+- [x] Добавить Funding Release Audit Summary CI Batch: `funding-release-audit.md` и GitHub summary readout для audit status/evidence status.
+- [x] Добавить Funding Release Evidence Index Batch: `scripts/funding-release-evidence-index.sh`, `funding-release-index.md` и `funding-release-index.json` как первый entrypoint для downloaded evidence bundle.
+- [x] Добавить Funding Release Evidence Verify Batch: `scripts/funding-release-evidence-verify.sh`, `funding-release-verify.md` и `funding-release-verify.json` как финальный local verdict для downloaded evidence bundle.
+- [x] Добавить Funding Release Evidence Notes Batch: `scripts/funding-release-evidence-notes.sh`, `funding-release-notes.md` и `funding-release-notes.json` как paste-ready release/debug snippet после verify.
+- [x] Добавить Funding Release Evidence Compare Batch: `scripts/funding-release-evidence-compare.sh` для offline diff двух downloaded bundles по verify/notes/status/blocker/artifact drift.
+- [x] Добавить Funding Release Evidence Archive Batch: `scripts/funding-release-evidence-archive.sh`, `funding-release-archive.md` и `funding-release-archive.json` как финальный checksum/readout manifest для downloaded evidence bundle.
+- [x] Добавить Funding Release CI Final Status Batch: `funding-release-ci-status.json`, `final_status`, `final_stage` и stage exit codes для wrapper/runbook review.
+- [x] Подготовить `v1.4.1` release candidate docs/runbook и optional `RELEASE_CHECK_DOCS=1` для release-preflight.
+- [x] Поднять локальную версию до `1.4.1` в `VERSION`, `frontend/package.json`, root `frontend/package-lock.json` и README.
+- [ ] Сохранять запрет на carry bps, diagnostic carry bps, numeric route cost bps, execution и любые routing decisions до отдельного продуктового решения.
+- [ ] При решении выпускать `v1.4.1` выполнить commit/tag/deploy после зелёных локальных и preview/prod evidence checks.
+- [ ] Прогнать Funding release-prep CI report на preview/prod URLs и сохранить evidence bundle как release evidence, только read-only.
 
 ### Следующий Perp DEX route-model observability блок
 

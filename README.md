@@ -2,7 +2,7 @@
 
 Production-ready crypto research terminal для анализа spot/perp рынков CEX и DEX, RWA, treasury, funding, market matrix и strategy research workflows.
 
-**Текущая версия**: `v1.4.0`
+**Текущая версия**: `v1.5.0`
 
 ## Архитектура
 
@@ -94,6 +94,8 @@ Frontend runs at `http://127.0.0.1:3000`
 
 `Market Overview`, `Assets`, `Funding`, `Charts`, `Market Matrix`, `Arbitrage Scanner` и `/data-health` уже читают live backend/PostgreSQL data-layer через backend API. `Market Overview` использует CoinGecko global/markets, alternative.me Fear & Greed, CoinGlass funding, price-first heatmap и логотипы CoinGecko. `Assets` поддерживает `BTC`, `ETH` и `SOL`, показывает live spot/funding/OHLCV и CoinGlass aggregated liquidations, когда в таблице `liquidations` есть строки; fake order book/liquidations не подмешиваются.
 
+`Funding` дополнительно показывает `Funding Data Quality Runway`: сводный read-only gate по `/data/health`, funding rows, source coverage, freshness/coverage/sync, history preview и `v1.5.0` preview readiness. `Funding Source Status`: OKX funding history и CoinGlass funding snapshots сведены в read-only rows со статусом loaded rows, latest age, freshness, coverage, sync и boundary. `Funding Release Checklist` показывает release-readiness для funding QA smoke и preview rollout: data health, funding rows guard, source coverage, history workflow, panel contract, compare smoke и safety boundary. `Funding Freshness & Anomaly` показывает per-symbol data QA для `BTC/ETH/SOL`: rows, latest age, latest rate, last change, data status и statistical anomaly status. `Funding Anomaly Detail` показывает samples, latest rate, baseline average, observed range и z-score как QA-only detail. `Funding Source Comparison` сравнивает последние OKX/CoinGlass funding rows как provider QA: source delta, latest pair, data note и alignment status без сортировки по выгоде. `Funding QA Drilldown` показывает freshness reason, coverage reason, sync status и next action для каждого `BTC/ETH/SOL × OKX/CoinGlass`. Эти QA panels доступны в `Overview` и отдельном `QA` view (`/funding?view=qa`), но не перегружают остальные Funding views. `Funding History Diagnostics` дополнительно показывает observations/window/latest/interval/average/range/status/next action в `Overview` и `History`. `Funding History Controls` добавляет URL-driven `asset`/`source` controls, chart readiness, interval/range hints и next action в `Overview`/`History`. `Funding History Readiness` объясняет empty/thin history states для выбранных `asset`/`source`: persisted rows, selected asset/source coverage, chart points, numeric rates и next action. Эти панели используют уже загруженные `/data/funding` и `/data/health`; новых provider calls, backend endpoints, БД-записей, carry bps, route ranking, route selection или execution signals не добавляется.
+
 `Perp DEX` показывает live Hyperliquid, dYdX, Lighter и Aster public snapshots, если backend/provider доступны: mark/display price, funding, open interest, 24h volume и metadata читаются через read-only endpoints. Lighter подключён через public `orderBooks`, `orderBookDetails`, `orderBookOrders` и `funding-rates`: rows показывают last trade price, funding, OI USD estimate, 24h volume, trades, maker/taker fee, margin fractions, tick/step size, best bid/ask, display spread и top-order depth summaries, но не участвуют в route scoring. Aster подключён через public Futures market-data endpoints `exchangeInfo`, `premiumIndex`, `ticker/24hr`, `openInterest`, `ticker/bookTicker` и `fapi/v3/depth`: rows показывают mark/index/mid price, funding, OI USD estimate, 24h volume, trades, top-of-book, top-level depth summaries, tick/step size и min notional, но fee tiers, slippage и carry conversion не считаются production signal. Route policy/model теперь отдельно показывают Lighter/Aster cost semantics metadata: Lighter `maker_fee`/`taker_fee` и top resting order depth, а также Aster top-of-book и depth ladder являются display fields, но не route-ready numeric cost inputs без account tier, order intent, depth aggregation policy, stale-depth policy, slippage model и carry horizon. GMX подключён как read-only raw snapshot через `markets/info`: rate fields сохраняются как raw strings, `poolAmountLong/Short` масштабируются в token units, а `openInterestLong/Short` и `availableLiquidityLong/Short` масштабируются через `1e30` в diagnostic-only USD fields. Для GMX rates endpoint также возвращает `rate_semantics_status`, `rate_relation_diagnostics`, `rate_relation_summary` и `rate_source_fields_summary`: offline guardrails проверяют ожидаемую source relation `netRate* = fundingRate* - borrowingRate*` и observed live-shape fixture, а live `/markets/info` сейчас показывает `raw_rate_relation_plus_with_zero_borrowing`: nonzero-borrowing sides совпадают с `funding+borrowing`, zero-borrowing sides помечаются ambiguous. Current `/markets/info` payload не содержит helper inputs `fundingFactorPerSecond`, `borrowingFactorPerSecondForLongs/Shorts` и `longsPayShorts`, поэтому всё это не конвертируется в percent, bps или carry cost. Эти GMX diagnostics не заполняют production `open_interest_usd` и не участвуют в liquidity ranking. Route/execution граница вынесена в `GET /api/v1/perp-dex/route-constraints`: текущий статус `research_only`, liquidity ranking, route-level pricing и execution заблокированы; policy также возвращает `gmx_formula_validation` с source-backed diagnostic notes и списком GMX fields, заблокированных для production signal. `GET /api/v1/perp-dex/route-model` добавляет read-only checklist/formula skeleton для route-level fees/slippage/routing и metadata `gmx_rate_semantics`: GMX interface считает ticker rates за 1h, а relation guardrail закрепляет ожидаемую `netRate* = fundingRate* - borrowingRate*`, но numeric cost estimates, carry conversion, route ranking и order submission остаются выключены. Историзация DEX snapshots пока не подключена, поэтому multi-DEX volume/OI/liquidity не выдаются за полный production signal. `Strategy Lab` показывает readiness live inputs, но не показывает fake PnL/trades до появления реального backtest engine. Order book aggregation, per-order liquidation tape и execution-grade slippage остаются отдельными provider задачами.
 
 `Route Diagnostic Components Summary`, `Route Diagnostic Venue Breakdown`, `Route Diagnostic Blocker Breakdown`, `Route Diagnostic Required Input Breakdown`, `Route Diagnostic Source Fields Breakdown`, `Route Diagnostic Source Input Actions`, `Route Diagnostic Evidence Checklist`, `Route Diagnostic Fee Schedule Evidence`, `Route Diagnostic Fee Schedule Checklist`, `Route Diagnostic Venue Evidence Status`, `GMX Rate Mapping Review`, `GMX Rate Mapping Blockers`, `GMX Rate Fixture Readiness`, `GMX Rate Side-aware Fixtures`, `GMX Rate Mapping Decision Checklist`, `GMX Rate Carry Readiness Summary`, `GMX Rate Carry Input Checklist`, `GMX Rate Carry Evidence Summary`, `GMX Rate Carry Evidence Checklist`, `GMX Rate Live Helper Source Review`, `Route Diagnostic Safe Use Breakdown`, `Route Diagnostic Readiness Rollup`, `Route Diagnostic Depth/Staleness Policy`, `Route Diagnostic Policy Inputs`, `Route Diagnostic Next Actions` и `Route Cost Diagnostics v0` в `Perp DEX` показывают только component-level readiness: backend `diagnostic_cost_estimate_v0.summary` даёт counts/id-списки по display-only/blocked/sourced components, `summary.venue_breakdown` группирует эти компоненты по Lighter/Aster/cross-venue, `summary.blocker_breakdown` группирует повторяющиеся `blocked_by` причины, `summary.required_input_breakdown` связывает components с обязательными входами route model, `summary.source_field_breakdown` показывает sourced display fields, `summary.source_input_action_coverage` связывает source fields с required inputs и mapped next actions, `summary.route_ready_evidence_checklist` группирует fee/order/depth/carry/risk evidence gates и явные `cost/rank/exec=false`, `summary.fee_schedule_evidence_summary` и `summary.fee_schedule_evidence_checklist` показывают Lighter/Aster account tier/order intent/manual approval gates перед любым fee bps, `summary.venue_evidence_status` разделяет Lighter/Aster/GMX/cross-venue evidence gaps, `gmx_rate_mapping_review_v0` показывает GMX mapping review поверх `rate_relation_summary`/`rate_source_fields_summary`, `gmx_rate_mapping_review_v0.blocker_breakdown` группирует repeated GMX mapping blockers, `gmx_rate_mapping_review_v0.fixture_readiness_matrix` показывает side-aware fixture cases, `gmx_rate_mapping_review_v0.side_aware_fixture_expectations` перечисляет `longsPayShorts` long/short paying/receiving cases, `gmx_rate_mapping_review_v0.mapping_decision_checklist` показывает source/fixture/review/manual approval checks перед diagnostic carry bps, `gmx_rate_mapping_review_v0.carry_readiness_summary` и `carry_input_checklist` показывают horizon/notional/sign/source/display gates перед carry bps, `gmx_rate_mapping_review_v0.carry_source_evidence_summary` и `carry_source_evidence_checklist` показывают source/fixture/runtime/manual evidence gates перед carry bps, а `gmx_rate_mapping_review_v0.live_helper_source_summary` и `live_helper_source_checklist` показывают live `/markets/info` rate output evidence, missing helper source inputs, side-direction fields и manual review gate перед carry conversion, `summary.safe_use_breakdown` группирует display boundaries, `summary.readiness_rollup` показывает compact fee/depth/carry/risk readiness, `summary.depth_staleness_policy_checklist` фиксирует freshness/stale-depth gates для Lighter/Aster depth diagnostics, `summary.required_policy_input_breakdown` показывает matrix required policy inputs для этих gates, а `summary.next_action_breakdown` группирует planning actions из этих слоёв. Детальная таблица показывает Aster display-only top-of-book spread, Aster depth ladder diagnostics, published USDT-perp fee defaults как metadata, Lighter raw fee fields и Lighter top resting order depth diagnostics. UI не считает total cost bps, не сортирует venues и не включает execution.
@@ -110,6 +112,179 @@ BASE_URL=http://127.0.0.1:8011 COMPARE_BASE_URL=http://127.0.0.1:8000 sh scripts
 ```
 
 Если нужно сделать preview/prod drift hard gate, добавьте `FAIL_ON_DIFF=1`. Compact `contract` включает `source_status_row_ids`, `source_status_statuses`, direct venue rows/statuses/depth freshness/provider error classes, CoinGlass matched exchanges/candidate hints/route-input statuses, route policy/model blocker ids и safety flags. Эти поля нужны только для release/readiness observability; они не являются route ranking, route selection, numeric route cost bps, diagnostic carry bps или execution signal.
+
+Для server-side проверки Funding QA panels используйте `scripts/funding-qa-smoke.sh`. Скрипт проверяет `/data/health`, `/data/funding` для `BTC/ETH/SOL` по OKX/CoinGlass, опционально проверяет frontend `/funding` markers, печатает compact `funding_qa_v0` contract и не выводит full payload или secrets:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/funding-qa-smoke.sh
+```
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 COMPARE_BASE_URL=http://127.0.0.1:8000 RUN_FRONTEND_CHECK=0 sh scripts/funding-qa-smoke.sh
+```
+
+Для release-prep запуска используйте wrapper с тем же contract, но с воспроизводимыми soft/strict presets:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/funding-release-smoke.sh
+```
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 COMPARE_BASE_URL=http://127.0.0.1:8000 FUNDING_RELEASE_STRICT=1 sh scripts/funding-release-smoke.sh
+```
+
+`scripts/funding-release-smoke.sh` по умолчанию сохраняет soft mode. `FUNDING_RELEASE_STRICT=1` включает `FAIL_ON_DIFF=1` и `FAIL_ON_RELEASE_NOT_READY=1`, если эти флаги не заданы явно; это release/readiness preset, а не новый data contract.
+
+Для CI/report artifacts можно включить чистый JSON output без human prefix/suffix:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 OUTPUT_JSON_ONLY=1 sh scripts/funding-release-smoke.sh > funding-release-smoke.json
+```
+
+Для короткого human-readable release artifact поверх того же JSON contract используйте:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 sh scripts/funding-release-report.sh
+```
+
+`scripts/funding-release-report.sh` показывает readiness status, total/source rows, frontend marker count, compare status, safety status и `data_quality_runway_status`, но сохраняет exit code исходного smoke.
+
+Compact report можно сохранить как JSON:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 FUNDING_RELEASE_REPORT_FORMAT=json sh scripts/funding-release-report.sh > funding-release-report.json
+```
+
+Если нужно сохранить compact JSON artifact в файл и оставить human-readable stdout, используйте `FUNDING_RELEASE_REPORT_OUTPUT`:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 FUNDING_RELEASE_REPORT_OUTPUT=funding-release-report.json sh scripts/funding-release-report.sh
+```
+
+Для CI/release artifact можно использовать готовый профиль: он по умолчанию включает JSON report, require-ready и require-compare, а явные env overrides могут ослабить отдельный gate при локальной проверке:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 COMPARE_BASE_URL=http://127.0.0.1:8000 FUNDING_RELEASE_REPORT_PROFILE=ci sh scripts/funding-release-report.sh > funding-release-report.json
+```
+
+Для локального CI-like запуска с готовыми artifact defaults используйте wrapper:
+
+```bash
+cd /opt/deltagrid-preview
+BASE_URL=http://127.0.0.1:8011 FRONTEND_URL=http://127.0.0.1:3012 COMPARE_BASE_URL=http://127.0.0.1:8000 sh scripts/funding-release-ci-report.sh
+```
+
+Wrapper создаёт evidence bundle в `artifacts/funding-release`: `funding-release-index.md`, `funding-release-index.json`, `funding-release-verify.md`, `funding-release-verify.json`, `funding-release-notes.md`, `funding-release-notes.json`, `funding-release-archive.md`, `funding-release-archive.json`, `funding-release-ci-status.json`, `funding-release-report.json`, optional stdout JSON, `funding-release-validation.json`, `funding-release-manifest.json`, `funding-release-bundle-validation.json`, `funding-release-review.json`, `funding-release-summary.md`, `funding-release-handoff.md`, `funding-release-audit.json` и `funding-release-audit.md`. Он задаёт `FUNDING_RELEASE_REPORT_PROFILE=ci` и не меняет `funding_qa_v0`. Compact report включает `data_quality_runway` как release-evidence summary по Funding runway gates; локальный `blocked` статус при пустых rows считается валидным release blocker, если validator проходит. Для GitHub есть manual workflow `Funding Release Report`: он принимает base/frontend/compare URL, загружает artifact bundle и только после upload фейлит job при `release_gate_status=blocked|failed`. `funding-release-ci-status.json` показывает итог wrapper-а: `final_status`, `final_exit_code`, `final_stage` и exit codes всех evidence-стадий.
+
+Compact artifact можно проверить отдельно без повторного smoke:
+
+```bash
+cd /opt/deltagrid-preview
+sh scripts/funding-release-report-validate.sh artifacts/funding-release/funding-release-report.json
+```
+
+В CI wrapper validation включена по умолчанию через `FUNDING_RELEASE_CI_VALIDATE_ARTIFACT=1`. Валидатор проверяет обязательные поля, status enum'ы, consistency `release_gate_summary` с `release_gate_checks`, safety invariants и `run_context.ci`; он не требует `release_gate_status=passed`, если явно не задан `FUNDING_RELEASE_REPORT_VALIDATE_REQUIRE_PASSED=1`.
+
+Bundle manifest и file checksums можно проверить отдельно:
+
+```bash
+cd /opt/deltagrid-preview
+sh scripts/funding-release-bundle-validate.sh artifacts/funding-release/funding-release-manifest.json
+```
+
+В CI wrapper bundle validation включена по умолчанию через `FUNDING_RELEASE_CI_VALIDATE_BUNDLE=1` и пишет `funding-release-bundle-validation.json`. Валидатор проверяет `manifest_version`, bundle/report/validation exit-code semantics, required/optional blockers, наличие report/validation files, `size_bytes`, `sha256` и `json_valid`. Blocked report остаётся валидным bundle, если manifest и checksums корректны.
+
+Runbook review можно вывести отдельно без повторного smoke:
+
+```bash
+cd /opt/deltagrid-preview
+sh scripts/funding-release-bundle-review.sh artifacts/funding-release/funding-release-manifest.json
+```
+
+Markdown summary для GitHub step summary или release notes:
+
+```bash
+sh scripts/funding-release-review-summary.sh artifacts/funding-release/funding-release-review.json
+```
+
+В CI wrapper review включён по умолчанию через `FUNDING_RELEASE_CI_WRITE_REVIEW=1` и пишет `funding-release-review.json`. Markdown summary включён по умолчанию через `FUNDING_RELEASE_CI_WRITE_SUMMARY=1` и пишет `funding-release-summary.md`. Review собирает `review_status`, `recommended_next_action`, bundle/report/validation exit codes, validation statuses, required/optional blockers, first actions, run context и file integrity summary без чтения full smoke payload. Summary форматирует эти поля как `markdown`, `text` или `json`, не валидирует bundle заново и не читает full smoke payload. GitHub summary сначала использует `funding-release-summary.md`, затем fallback-читает review/manifest/report.
+
+Release handoff для evidence bundle:
+
+```bash
+sh scripts/funding-release-evidence-handoff.sh artifacts/funding-release/funding-release-review.json
+```
+
+В CI wrapper handoff включён по умолчанию через `FUNDING_RELEASE_CI_WRITE_HANDOFF=1` и пишет `funding-release-handoff.md`. Handoff читает `funding-release-review.json`, optional `funding-release-summary.md`, manifest и bundle validation, затем показывает `evidence_status`, `release_evidence_ready`, `debug_evidence_ready`, blockers, first actions, run context, artifact checklist и локальные follow-up команды. Это release/runbook handoff поверх уже готового bundle, а не повторный smoke или новый data contract.
+
+Directory-level audit скачанного evidence bundle:
+
+```bash
+sh scripts/funding-release-evidence-audit.sh artifacts/funding-release
+```
+
+В CI wrapper audit включён по умолчанию через `FUNDING_RELEASE_CI_WRITE_AUDIT=1` и пишет `funding-release-audit.json`; Markdown readout включён через `FUNDING_RELEASE_CI_WRITE_AUDIT_MARKDOWN=1` и пишет `funding-release-audit.md`. Audit проверяет ожидаемые файлы bundle, JSON-валидность, status consistency между compact report, validation, manifest, bundle validation и review, а также markdown markers summary/handoff. Blocked release report может иметь `audit_status=passed`, если evidence bundle целостный; audit падает только при поломке формы, файлов или consistency. GitHub workflow добавляет `funding-release-audit.md` в step summary после `funding-release-summary.md`, чтобы downloaded bundle и CI summary показывали один и тот же audit readout.
+
+Evidence index для скачанного bundle:
+
+```bash
+sh scripts/funding-release-evidence-index.sh artifacts/funding-release
+```
+
+В CI wrapper index включён по умолчанию через `FUNDING_RELEASE_CI_WRITE_INDEX=1` и пишет `funding-release-index.json`; Markdown entrypoint включён через `FUNDING_RELEASE_CI_WRITE_INDEX_MARKDOWN=1` и пишет `funding-release-index.md`. Index читает только локальные artifact-файлы, показывает `index_status`, `evidence_status`, `audit_status`, `review_status`, ordered `Open First` список, blockers и локальные команды проверки. GitHub workflow сначала добавляет `funding-release-index.md` в step summary; если его нет, остаётся fallback на summary/audit parser.
+
+Evidence verify для скачанного bundle:
+
+```bash
+sh scripts/funding-release-evidence-verify.sh artifacts/funding-release
+```
+
+В CI wrapper verify включён по умолчанию через `FUNDING_RELEASE_CI_WRITE_VERIFY=1` и пишет `funding-release-verify.json`; Markdown readout включён через `FUNDING_RELEASE_CI_WRITE_VERIFY_MARKDOWN=1` и пишет `funding-release-verify.md`. Verify сверяет `funding-release-index.json` и `funding-release-audit.json`, при наличии сверяет review/manifest/report statuses и показывает `verification_status`, `blocking_mode`, `release_notes_ready`, `debug_review_ready` и `recommended_next_action`. По умолчанию valid blocked evidence не считается tooling failure; для release-notes gate можно добавить `FUNDING_RELEASE_VERIFY_REQUIRE_RELEASE_NOTES_READY=1`, а для debug-review gate — `FUNDING_RELEASE_VERIFY_REQUIRE_DEBUG_READY=1`. GitHub workflow показывает `funding-release-verify.md` сразу после index.
+
+Evidence notes для release notes/debug review:
+
+```bash
+sh scripts/funding-release-evidence-notes.sh artifacts/funding-release
+```
+
+В CI wrapper notes включён по умолчанию через `FUNDING_RELEASE_CI_WRITE_NOTES=1` и пишет `funding-release-notes.json`; Markdown snippet включён через `FUNDING_RELEASE_CI_WRITE_NOTES_MARKDOWN=1` и пишет `funding-release-notes.md`. Notes читает `funding-release-verify.json`, optional index/audit/review/manifest/report artifacts, показывает `notes_status`, `notes_mode`, `release_notes_ready`, `debug_review_ready`, blockers и paste-ready snippet. По умолчанию valid blocked evidence даёт debug review snippet и не считается tooling failure; для строгого release-notes handoff можно задать `FUNDING_RELEASE_NOTES_REQUIRE_READY=1`. GitHub workflow добавляет `funding-release-notes.md` после verify.
+
+Evidence archive для финальной фиксации downloaded bundle:
+
+```bash
+sh scripts/funding-release-evidence-archive.sh artifacts/funding-release
+```
+
+В CI wrapper archive включён по умолчанию через `FUNDING_RELEASE_CI_WRITE_ARCHIVE=1` и пишет `funding-release-archive.json`; Markdown readout включён через `FUNDING_RELEASE_CI_WRITE_ARCHIVE_MARKDOWN=1` и пишет `funding-release-archive.md`. Archive читает только локальные artifact-файлы, считает `size_bytes`, `sha256`, `json_valid`, сверяет `verify`/`notes` readiness и показывает `archive_status`, `archive_mode`, file counts, missing required files, blockers и next action. По умолчанию blocked valid evidence остаётся полноценным archive output для debug review; для строгого release-ready archive handoff можно задать `FUNDING_RELEASE_ARCHIVE_REQUIRE_RELEASE_READY=1`, тогда not-ready bundle вернёт exit `2`. Archive не включает сам себя в checksum table, чтобы итоговый файл оставался стабильным.
+
+Offline compare двух evidence bundles:
+
+```bash
+sh scripts/funding-release-evidence-compare.sh artifacts/funding-release-base artifacts/funding-release
+```
+
+Compare читает только локальные artifact-файлы двух директорий: обязательный `funding-release-verify.json` и optional notes/index/audit/review/manifest/report artifacts. Он показывает `compare_status=aligned|drift_detected|failed`, `comparison_mode`, diff count, blocking diff count, readiness/status drift, blocker drift и artifact presence drift. По умолчанию drift является runbook signal и не считается tooling failure; для strict compare handoff можно задать `FUNDING_RELEASE_COMPARE_REQUIRE_ALIGNED=1`, тогда drift вернёт exit `2`. Это offline проверка скачанных bundles, а не новый smoke, backend/API call или data contract.
+
+`funding-release-manifest.json` является индексом evidence bundle: он содержит `bundle_exit_code`, `report_exit_code`, `validation_exit_code`, release/validation statuses, required/optional blockers, first blocking/optional action, `run_context`, а также `size_bytes` и `sha256` для report/stdout/validation files. Для runbook сначала смотрите manifest, затем compact report, если нужно раскрыть blockers подробнее.
+
+Compact report включает `report_version`, `gate_status`, `release_gate_status`, `report_exit_code`, `exit_reason`, `release_gate_summary`, `release_gate_checks`, `readiness_gate_status`, `blocking_reasons`, `next_actions`, `run_context` с profile, format, output path, `ci` context, base/frontend/compare URL, strict mode и effective hard-gate flags, а также evidence fields: `readiness_checks`, `sources_with_rows`, `source_pair_statuses` и `compare_diff_fields`. `gate_status` отражает exit code smoke, `release_gate_status` даёт итоговый artifact status `passed|blocked|failed`, `report_exit_code` совпадает с итоговым кодом report, `exit_reason` объясняет его как `passed`, `smoke_failed`, `readiness_not_ready` или `compare_not_aligned`, а `release_gate_summary` показывает required/blocking ids, required/optional blockers, category blocker groups, first blocking action, action map и status counts по checks; эти поля не меняют `funding_qa_v0`.
+
+Если нужен report-level CI gate без strict smoke preset, добавьте `FUNDING_RELEASE_REPORT_REQUIRE_READY=1`: report вернёт non-zero при `readiness_gate_status=not_ready`, сохранив обычное поведение underlying smoke.
+
+Если preview/prod report должен обязательно включать compare, добавьте `FUNDING_RELEASE_REPORT_REQUIRE_COMPARE=1`: report вернёт non-zero, когда `COMPARE_BASE_URL` не задан или `compare_status` не равен `aligned`.
+
+`COMPARE_BASE_URL` добавляет compact `compare.summary`: `status`, `diff_count`, `diff_fields`, `ignored_fields`, `fail_on_diff`, base/compare row totals, base/compare `panel_ids` и `safety_flags_aligned`. Для hard gate можно добавить `FAIL_ON_DIFF=1`; volatile frontend/latest timestamp fields игнорируются, чтобы diff показывал contract drift, а не шум рендера или времени.
+
+Для локального окружения без накопленных funding rows можно временно задать `MIN_TOTAL_ROWS=0`. В preview/prod дефолтный `MIN_TOTAL_ROWS=1` должен оставаться guard against пустого funding data path. Contract фиксирует `panel_ids` (`funding_release_checklist`, `funding_source_status`, `funding_freshness_anomaly`, `funding_anomaly_detail`, `funding_history_diagnostics`, `funding_history_controls`, `funding_history_readiness`, `funding_source_comparison`, `funding_qa_drilldown`), frontend marker `funding_qa_view`, row counts, freshness/coverage/sync statuses, source-pair statuses и safety flags: `trading_enabled=false`, `execution_enabled=false`, `route_ranking_enabled=false`, `route_selection_enabled=false`, `numeric_route_cost_bps_enabled=false`, `diagnostic_carry_bps_enabled=false`. `contract.release_readiness` дополнительно даёт machine-readable release-prep summary: общий статус, checks по health/rows/source/frontend/compare/safety, missing frontend markers и sources with rows. Для release hard gate можно явно задать `FAIL_ON_RELEASE_NOT_READY=1`; тогда smoke падает, если `release_readiness.status` не равен `ready_for_preview_smoke`.
 
 Direct venue endpoints Hyperliquid, dYdX, Lighter, Aster и GMX дополнительно отдают `availability_summary`: rows, requested/matched/missing symbols, status counts, depth diagnostics availability, read-only safety flags, `provider_error_class` и `safe_use`. Для depth-capable Lighter/Aster summary включает `depth_diagnostics.freshness`: snapshot timestamp, observed timestamp, `age_ms`, display max-age policy, required stale-depth inputs и `may_emit_slippage_bps=false`. Error path остаётся compact: provider failures классифицируются как `timeout`, `rate_limit`, `empty_response`, `schema_drift`, `unavailable_endpoint`, `provider_unavailable` или `provider_http_error`, но raw provider payload и секреты не выводятся. Этот summary нужен для release smoke и UI/readiness диагностики; он не включает slippage bps, route ranking, route selection, numeric route cost bps или execution.
 
@@ -223,6 +398,8 @@ GitHub Actions:
 ```bash
 RELEASE_BRANCH=preview RELEASE_TARGET=1.4.0-rc.1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh
 ```
+
+Для docs-only подготовки следующего target до bump можно добавить `RELEASE_CHECK_DOCS=1`, например `RELEASE_TARGET=1.4.1 RELEASE_CHECK_DOCS=1 ALLOW_DIRTY=1 sh scripts/release-preflight.sh`.
 
 Если SSH secrets не настроены, deploy workflow завершится успешным skip и не будет ломать CI.
 На 2026-06-18 `Deploy Preview` для `preview@d3de35e` показал transient SSH reachability failure из GitHub runner: SSH port/login/app-dir diagnostics были нестабильны, а ручной запуск того же `scripts/deploy-compose-stack.sh` по SSH успешно обновил `/opt/deltagrid-preview` до `VERSION=1.3.2`. Workflow и deploy script усилены stage-aware diagnostics: при падении deploy выводит текущий этап, git/compose snapshot и последние backend/frontend logs без печати secrets. Для ручной проверки preview chart/asset candidates добавлен `scripts/preview-candidate-smoke.sh`; он проверяет `/charts`, `/assets`, OHLCV window endpoint для `HYPE/XRP/DOGE/ADA/LINK` и отсутствие candidate symbols на core-only страницах `Market Matrix`, `Arbitrage Scanner`, `Perp DEX`.
