@@ -1,5 +1,273 @@
 # Changelog — DeltaGrid
 
+## [2026-06-20] - [RELEASE] - v1.4.1 local intermediate
+- Скоуп батча закрыт одним блоком: 1) `VERSION` поднят до `1.4.1`; 2) `frontend/package.json` поднят до `1.4.1`; 3) root version в `frontend/package-lock.json` поднят до `1.4.1`; 4) README показывает текущую версию `v1.4.1`; 5) release docs фиксируют локальный intermediate статус; 6) `RELEASE_CHECK_DOCS=1` включён в финальный preflight; 7) funding CI status artifact остаётся частью evidence bundle; 8) ожидаемый локальный blocker `needs_funding_rows` не считается tooling bug; 9) production baseline `v1.4.0` не объявлялся обновлённым; 10) commit/tag/deploy не выполнялись.
+- `v1.4.1` подготовлен как локальная промежуточная patch/tooling версия для Funding release evidence и CI/runbook hardening.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [RELEASE] - v1.4.1 release candidate docs/runbook
+- Скоуп батча закрыт одним блоком: 1) `v1.4.1` зафиксирован как промежуточный patch/tooling target; 2) `scripts/release-preflight.sh` получил optional `RELEASE_CHECK_DOCS=1`; 3) добавлен `RELEASE_DOCS_FILES`; 4) docs check требует `RELEASE_TARGET` или expected version; 5) docs check проверяет упоминание `v<target>` в release docs; 6) default preflight behavior сохранён; 7) `RELEASES.md` получил runbook для docs-check; 8) `PROJECT_PLAN.md` обновил следующий шаг; 9) `BACKLOG.md` получил release-candidate checklist; 10) локальный docs-check preflight подготовлен для `v1.4.1`.
+- `v1.4.1` остаётся patch/tooling release candidate вокруг Funding release evidence: без backend API, БД, provider calls, frontend product flow и production trading signals.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release CI Final Status Batch v0
+- Скоуп батча закрыт одним блоком: 1) `scripts/funding-release-ci-report.sh` получил `FUNDING_RELEASE_CI_STATUS_FILE`; 2) добавлен guard `FUNDING_RELEASE_CI_WRITE_STATUS`; 3) wrapper пишет `funding-release-ci-status.json` после archive; 4) status фиксирует `final_status`; 5) status фиксирует `final_exit_code`; 6) status фиксирует `final_stage`; 7) status сохраняет exit codes всех evidence-стадий; 8) status подтягивает краткие report/verify/notes/archive поля; 9) GitHub workflow добавляет `CI Final Status` в step summary; 10) synthetic checks покрывают passed/blocked/env paths.
+- CI final status является runbook/readout слоем поверх уже созданного evidence bundle: он не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Evidence Archive Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-evidence-archive.sh`; 2) поддержан Markdown output; 3) поддержан JSON output; 4) поддержан text output; 5) archive проверяет required artifact inventory; 6) optional учитывает compare artifacts; 7) считает `size_bytes`, `sha256` и `json_valid`; 8) сверяет verify/notes readiness consistency; 9) `scripts/funding-release-ci-report.sh` пишет `funding-release-archive.json`/`.md`; 10) GitHub workflow добавляет archive readout в step summary.
+- Evidence archive является финальным offline checksum/readout слоем для уже созданного evidence bundle: он не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Evidence Compare Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-evidence-compare.sh`; 2) поддержан Markdown output; 3) поддержан JSON output; 4) поддержан text output; 5) compare требует `funding-release-verify.json` в двух директориях; 6) optional читает notes/index/audit/review/manifest/report artifacts; 7) сравнивает status/readiness drift; 8) сравнивает required/optional blocker drift; 9) сравнивает artifact presence drift; 10) добавлен strict gate `FUNDING_RELEASE_COMPARE_REQUIRE_ALIGNED=1`.
+- Evidence compare является offline readout слоем для двух уже созданных evidence bundles: он не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Evidence Notes Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-evidence-notes.sh`; 2) поддержан Markdown output; 3) поддержан JSON output; 4) поддержан text output; 5) notes требует `funding-release-verify.json`; 6) notes сверяет optional index/audit/review/manifest/report artifacts при наличии; 7) добавлен release notes snippet; 8) добавлен debug review snippet для blocked valid evidence; 9) `scripts/funding-release-ci-report.sh` пишет `funding-release-notes.json`/`.md`; 10) GitHub workflow добавляет notes readout в step summary после verify.
+- Evidence notes является paste-ready readout слоем для уже созданного evidence bundle: он не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Evidence Verify Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-evidence-verify.sh`; 2) поддержан text output; 3) поддержан JSON output; 4) поддержан Markdown output; 5) verify проверяет `funding-release-index.json` и `funding-release-audit.json`; 6) verify сверяет review/manifest/report statuses при наличии; 7) добавлены optional gates `FUNDING_RELEASE_VERIFY_REQUIRE_RELEASE_NOTES_READY` и `FUNDING_RELEASE_VERIFY_REQUIRE_DEBUG_READY`; 8) `scripts/funding-release-ci-report.sh` пишет `funding-release-verify.json`/`.md`; 9) GitHub workflow добавляет verify readout в step summary; 10) docs/runbook и failure-mode checks обновлены.
+- Evidence verify является финальным локальным readout слоем для уже созданного evidence bundle: он не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Evidence Index Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-evidence-index.sh`; 2) поддержан Markdown output; 3) поддержан JSON output; 4) поддержан text output; 5) index показывает ordered artifact map; 6) index показывает status rollup по review/audit/manifest; 7) index показывает required/optional blockers; 8) index показывает local review commands; 9) `scripts/funding-release-ci-report.sh` пишет `funding-release-index.md`/`.json`; 10) GitHub workflow сначала показывает index в step summary.
+- Evidence index является entrypoint/readout слоем поверх уже созданного evidence bundle, не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Audit Summary CI Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен artifact `funding-release-audit.md`; 2) добавлен env `FUNDING_RELEASE_CI_AUDIT_MARKDOWN_FILE`; 3) добавлен guard `FUNDING_RELEASE_CI_WRITE_AUDIT_MARKDOWN`; 4) wrapper пишет JSON audit; 5) wrapper пишет Markdown audit; 6) GitHub workflow задаёт audit Markdown env; 7) GitHub step summary добавляет audit Markdown после release summary; 8) fallback summary читает `funding-release-audit.json`; 9) docs/runbook обновлены; 10) synthetic checks покрывают passed/blocked/tamper/env paths.
+- Audit summary CI layer использует уже существующий `scripts/funding-release-evidence-audit.sh`, не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Evidence Audit Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-evidence-audit.sh`; 2) поддержан text output; 3) поддержан JSON output; 4) поддержан Markdown output; 5) audit проверяет expected files; 6) audit проверяет JSON-validity; 7) audit проверяет status consistency между report/validation/manifest/bundle validation/review; 8) audit проверяет summary/handoff markers; 9) `scripts/funding-release-ci-report.sh` пишет `funding-release-audit.json`; 10) GitHub workflow загружает audit в evidence bundle.
+- Evidence audit является directory-level проверкой скачанного `artifacts/funding-release`, не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Evidence Handoff Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-evidence-handoff.sh`; 2) поддержан Markdown output; 3) поддержан text output; 4) поддержан JSON output; 5) handoff показывает `evidence_status`; 6) handoff показывает artifact checklist; 7) handoff показывает required/optional blockers; 8) handoff показывает first actions и run context; 9) `scripts/funding-release-ci-report.sh` пишет `funding-release-handoff.md`; 10) GitHub workflow загружает handoff в evidence bundle.
+- Evidence handoff является release/runbook слоем поверх `funding-release-review.json`, summary, manifest и bundle validation, не запускает smoke заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Review Summary Artifact Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-review-summary.sh`; 2) поддержан Markdown output; 3) поддержан text output; 4) поддержан JSON output; 5) summary показывает `runbook_status`; 6) summary показывает required/optional blocker sections; 7) summary показывает first actions; 8) summary показывает run context; 9) summary показывает file integrity table; 10) `scripts/funding-release-ci-report.sh` и GitHub workflow используют `funding-release-summary.md`.
+- Review summary является presentation/readout слоем поверх `funding-release-review.json`, не валидирует bundle заново, не читает full smoke payload и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-20] - [PRODUCT/OPS] - Funding Release Bundle Review Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-bundle-review.sh`; 2) поддержан text output; 3) поддержан JSON review artifact; 4) review показывает bundle/report/validation exit codes; 5) review показывает validation statuses; 6) review показывает required/optional blockers и first actions; 7) review показывает file integrity summary без raw payload; 8) `scripts/funding-release-ci-report.sh` пишет `funding-release-review.json`; 9) GitHub summary сначала читает review artifact; 10) synthetic checks подтверждают passed/blocked/corrupt review paths.
+- Bundle review является runbook/readout слоем поверх manifest и validation artifacts, не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Bundle Manifest Validation Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-bundle-validate.sh`; 2) validator проверяет `manifest_version`; 3) проверяются bundle/report/validation exit-code semantics; 4) проверяются release/validation statuses; 5) проверяются required/optional blockers; 6) проверяются file presence, `size_bytes`, `sha256` и `json_valid`; 7) поддержаны text/json outputs; 8) `scripts/funding-release-ci-report.sh` пишет `funding-release-bundle-validation.json`; 9) GitHub summary показывает `bundle_validation_status`; 10) synthetic/tamper checks подтверждают pass/blocked/failure modes.
+- Bundle validation является CI/runbook проверкой evidence bundle поверх manifest, не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report Evidence Bundle Batch v0
+- Скоуп батча закрыт одним блоком: 1) `scripts/funding-release-ci-report.sh` пишет `funding-release-validation.json`; 2) добавлен `funding-release-manifest.json`; 3) manifest содержит bundle/report/validation exit codes; 4) manifest разделяет required/optional blockers и first blocking/optional action; 5) manifest содержит file sizes и sha256 для report/stdout/validation; 6) blocked report сохраняет исходный exit code после успешной validation/manifest; 7) GitHub summary читает manifest; 8) workflow artifact upload включает bundle; 9) runbook обновлён; 10) synthetic checks подтверждают passed/blocked bundle paths.
+- Evidence bundle является CI/runbook индексом поверх compact report и validation result, не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report Artifact Validation Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-report-validate.sh`; 2) validator проверяет обязательные поля compact report; 3) проверяются enum-статусы `gate_status`/`release_gate_status`/`exit_reason`; 4) проверяется consistency `release_gate_summary` с `release_gate_checks`; 5) проверяются safety invariants по `safety_status`/`unsafe_flags`; 6) проверяется `run_context.ci`; 7) `scripts/funding-release-ci-report.sh` запускает validation после report; 8) blocked report сохраняет свой exit code после успешной validation; 9) GitHub workflow включает artifact validation; 10) runbook обновлён.
+- Validation batch проверяет форму и инварианты compact artifact, но не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report CI Integration Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `scripts/funding-release-ci-report.sh`; 2) wrapper задаёт CI defaults и artifact directory; 3) добавлен optional stdout JSON file; 4) `scripts/funding-release-report.sh` получил preflight validation для bool/int env и artifact paths; 5) compact report получил `run_context.ci`; 6) добавлен manual GitHub Actions workflow `Funding Release Report`; 7) workflow сохраняет artifact до финального failure; 8) runbook обновлён; 9) локальные failure-mode checks добавлены в проверку.
+- CI integration остаётся report-level tooling поверх `funding_qa_v0`: backend API, provider calls, БД и frontend product flow не менялись.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report Artifact Output Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `FUNDING_RELEASE_REPORT_OUTPUT`; 2) text stdout может одновременно писать compact JSON artifact в файл; 3) JSON stdout также может дублироваться в artifact file; 4) `run_context` фиксирует output path и enabled flag; 5) write failure возвращает exit `4`; 6) default без env не изменён; 7) `FUNDING_RELEASE_REPORT_JSON` остаётся внутренним temp-файлом smoke JSON; 8) runbook обновлён.
+- Artifact output является optional report-level side effect для CI и не меняет `funding_qa_v0`, backend endpoints, provider calls, БД или frontend product flow.
+- Проверка: `sh -n` для funding smoke/report scripts, text+artifact write, JSON+artifact write, artifact write failure и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Gate Actions Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлена `category` для каждого `release_gate_checks` row; 2) добавлены `required_blocking_ids`; 3) добавлены `optional_blocking_ids`; 4) добавлены `blocker_groups` по категориям; 5) добавлен `first_blocking_action`; 6) добавлен `next_actions_by_check`; 7) text report печатает blocker groups и first action; 8) JSON artifact остаётся report-level summary; 9) документация обновлена.
+- Actions batch делает release artifact более применимым для CI/runbook, но остаётся производным слоем поверх `funding_qa_v0` без backend/API/provider/БД изменений.
+- Проверка: `sh -n` для funding smoke/report scripts, manual actions, CI readiness actions, CI compare actions, strict smoke actions и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Gate Checklist Batch v0
+- Скоуп батча закрыт одним блоком: 1) добавлен `release_gate_checks`; 2) добавлен `release_gate_summary`; 3) checks нормализованы по `smoke_contract`, `release_readiness`, `compare_alignment`, `data_health`, `funding_rows`, `source_coverage`, `frontend_markers`, `safety_boundary` и `report_profile`; 4) summary показывает total/required/blocking counts; 5) summary показывает `required_ids` и `blocking_ids`; 6) status counts добавлены для dashboard; 7) text report печатает compact gate checks; 8) JSON artifact остаётся коротким; 9) документация обновлена.
+- Checklist является report-level observability поверх `funding_qa_v0`: он не меняет smoke contract, backend endpoints, provider calls, БД или frontend product flow.
+- Проверка: `sh -n scripts/funding-release-report.sh`, manual checklist, CI readiness checklist, CI compare checklist, strict smoke checklist и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Gate Status v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `release_gate_status`; 2) статус принимает `passed`, `blocked` или `failed`; 3) `gate_status` оставлен как smoke-only поле; 4) readiness/compare report gates мапятся в `blocked`; 5) underlying smoke failure мапится в `failed`; 6) text/JSON report печатают новый статус; 7) документация обновлена.
+- Это верхнеуровневый report artifact status для CI/dashboard, а не изменение `funding_qa_v0`, provider flow, backend API или БД.
+- Проверка: `sh -n scripts/funding-release-report.sh`, manual passed, CI readiness blocked, CI compare blocked, strict smoke failed и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report Exit Reason v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `report_exit_code`; 2) добавлен `exit_reason`; 3) причины разделяют `passed`, `smoke_failed`, `readiness_not_ready` и `compare_not_aligned`; 4) JSON report возвращает тот же итоговый код, который записан в artifact; 5) text report печатает exit context; 6) smoke exit preservation сохранён; 7) документация обновлена.
+- Это observability metadata для release report, а не изменение `funding_qa_v0`, provider flow, backend API или БД.
+- Проверка: `sh -n scripts/funding-release-report.sh`, manual default report, CI readiness expected failure, CI compare expected failure, strict smoke expected failure и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report CI Profile v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `FUNDING_RELEASE_REPORT_PROFILE`; 2) профиль `manual` сохраняет текущие defaults; 3) профиль `ci` по умолчанию включает JSON report, require-ready и require-compare; 4) явные env overrides сохраняют приоритет; 5) `run_context.report_profile` фиксирует режим запуска; 6) text report печатает profile; 7) документация обновлена.
+- Это preset для CI/release artifacts поверх `scripts/funding-release-report.sh`, а не изменение `funding_qa_v0`, backend endpoints, provider flow или БД.
+- Проверка: `sh -n scripts/funding-release-report.sh`, manual default report, `ci` expected readiness failure, `ci` with ready override and compare aligned, require-compare expected failure и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Report Require Compare Gate v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `FUNDING_RELEASE_REPORT_REQUIRE_COMPARE`; 2) default `0` сохранён; 3) report получил `compare_gate_status`; 4) при `1` report возвращает non-zero, если compare не запускался или не `aligned`; 5) smoke failure exit code сохраняется; 6) text/JSON report показывают compare gate context; 7) документация обновлена.
+- Это report-level CI gate для preview/prod drift checks, а не изменение `funding_qa_v0`, provider flow или backend API.
+- Проверка: `sh -n scripts/funding-release-report.sh`, default report, require-compare aligned report, require-compare expected failure без `COMPARE_BASE_URL` и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Report Require Ready Gate v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `FUNDING_RELEASE_REPORT_REQUIRE_READY`; 2) default `0` сохранён; 3) при `1` report возвращает non-zero, если `readiness_gate_status != ready` и underlying smoke сам прошёл; 4) smoke failure exit code сохраняется; 5) `run_context` показывает `report_require_ready`; 6) text/JSON report поддерживают флаг; 7) документация обновлена.
+- Это report-level CI gate поверх compact summary, а не изменение `funding_qa_v0` или release smoke contract.
+- Проверка: `sh -n scripts/funding-release-report.sh`, default soft report, require-ready expected failure, strict expected failure и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Readiness Gate Report v0
+- Скоуп итерации закрыт одним блоком: 1) compact report получил `readiness_gate_status`; 2) добавлены `blocking_reasons`; 3) добавлены deduped `next_actions`; 4) soft smoke теперь явно отличает passed smoke от not-ready release readiness; 5) text report печатает blockers/actions; 6) JSON report сохраняет те же поля; 7) документация обновлена.
+- Report остаётся thin summary поверх `funding_qa_v0`: он не меняет smoke contract, backend endpoints, provider calls или БД.
+- Проверка: `sh -n scripts/funding-release-report.sh`, text report, JSON report parse, expected-failure strict JSON report и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report Evidence v0
+- Скоуп итерации закрыт одним блоком: 1) compact report получил `readiness_checks`; 2) добавлен `sources_with_rows`; 3) добавлены `source_pair_statuses`; 4) добавлены `compare_diff_fields`; 5) text report печатает эти evidence строки; 6) JSON report сохраняет те же поля; 7) документация обновлена.
+- Evidence fields объясняют причину `ready`/`blocked` без чтения полного `funding_qa_v0` payload и не меняют сам smoke contract.
+- Проверка: `sh -n scripts/funding-release-report.sh`, text report, JSON report parse, expected-failure strict JSON report и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report Context v0
+- Скоуп итерации закрыт одним блоком: 1) compact report получил `report_version`; 2) добавлен `gate_status`; 3) добавлен `run_context` с base/frontend/compare URL; 4) добавлен strict-mode context; 5) добавлены effective `fail_on_diff` и `fail_on_release_not_ready`; 6) text report показывает ключевой context; 7) JSON report сохраняет те же поля для CI.
+- Это metadata вокруг release report, а не изменение `funding_qa_v0` или backend/data-layer contract.
+- Проверка: `sh -n scripts/funding-release-report.sh`, text report, JSON report parse, expected-failure strict JSON report и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report JSON v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `FUNDING_RELEASE_REPORT_FORMAT`; 2) `scripts/funding-release-report.sh` поддерживает `text` и `json`; 3) default `text` сохранён; 4) compact JSON report содержит smoke exit, readiness, rows, frontend markers, compare и safety; 5) strict failure сохраняет non-zero exit code; 6) docs/runbook обновлены; 7) формат не меняет `funding_qa_v0`.
+- JSON report нужен для коротких CI artifacts и dashboards поверх уже существующего smoke output.
+- Проверка: `sh -n scripts/funding-release-report.sh`, soft text report, soft JSON report parse, expected-failure strict JSON report и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Report v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `scripts/funding-release-report.sh`; 2) report запускает release wrapper в `OUTPUT_JSON_ONLY=1`; 3) JSON contract парсится без raw payload; 4) печатается compact summary по readiness, rows, frontend markers, compare и safety; 5) exit code исходного smoke сохраняется; 6) strict failure остаётся видимым в report; 7) документация обновлена.
+- Report является удобным release artifact поверх `funding_qa_v0`, а не новым data/API contract.
+- Проверка: `sh -n` для funding smoke/report scripts, soft report smoke, expected-failure strict report smoke и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Smoke JSON Output v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен env `OUTPUT_JSON_ONLY`; 2) `scripts/funding-qa-smoke.sh` умеет печатать чистый JSON без human prefix/suffix; 3) `scripts/funding-release-smoke.sh` прокидывает этот режим и тоже убирает context line; 4) дефолтный human-readable output сохранён; 5) strict/soft presets не изменены; 6) JSON-only output пригоден для CI/report artifacts; 7) документация обновлена.
+- Это output-format режим поверх существующего `funding_qa_v0`, а не новый data/API contract.
+- Проверка: `sh -n` для обоих funding smoke scripts, JSON-only parse через Python, soft wrapper smoke, expected-failure strict wrapper smoke и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Smoke Wrapper v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `scripts/funding-release-smoke.sh`; 2) wrapper запускает существующий `scripts/funding-qa-smoke.sh` без дублирования Python-логики; 3) сохранён soft mode по умолчанию; 4) добавлен strict preset через `FUNDING_RELEASE_STRICT=1`; 5) strict preset включает `FAIL_ON_DIFF=1` и `FAIL_ON_RELEASE_NOT_READY=1`, если они не заданы явно; 6) wrapper печатает compact run context; 7) документация и release runbook обновлены.
+- Wrapper нужен для воспроизводимого preview/prod funding release smoke: он не меняет contract `funding_qa_v0`, не добавляет provider calls и не пишет в БД.
+- Проверка: `sh -n scripts/funding-release-smoke.sh`, `sh -n scripts/funding-qa-smoke.sh`, `git diff --check`, soft wrapper smoke и expected-failure strict wrapper smoke прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Readiness Hard Gate v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен env `FAIL_ON_RELEASE_NOT_READY`; 2) флаг прокинут в Python smoke; 3) smoke падает, если `contract.release_readiness.status` не `ready_for_preview_smoke`; 4) soft mode по умолчанию сохранён; 5) compare summary показывает `fail_on_release_not_ready`; 6) negative test на пустых локальных funding rows подтвердил controlled failure; 7) документация обновлена.
+- Это release hard gate только по явному флагу; локальный dev flow с `MIN_TOTAL_ROWS=0` остаётся мягким, если `FAIL_ON_RELEASE_NOT_READY=1` не задан.
+- Проверка: `sh -n scripts/funding-qa-smoke.sh`, `git diff --check`, soft same-base smoke и expected-failure smoke с `FAIL_ON_RELEASE_NOT_READY=1` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Readiness Smoke Summary v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен compact `release_readiness` в `funding_qa_v0`; 2) добавлен общий release status; 3) добавлены checks `data_health`, `funding_rows`, `source_coverage`, `frontend_markers`, `compare_support`, `safety_boundary`; 4) добавлены `missing_frontend_markers`; 5) добавлены `sources_with_rows`; 6) `release_readiness` участвует в compare diff; 7) same-base compare smoke проверен; 8) документация обновлена.
+- Summary не печатает raw payload и нужен для release/readiness диагностики: локально при пустых funding rows он честно возвращает `needs_funding_rows`, а не маскирует отсутствие данных.
+- Проверка: `sh -n scripts/funding-qa-smoke.sh`, `git diff --check` и same-base smoke `MIN_TOTAL_ROWS=0 RUN_FRONTEND_CHECK=0 COMPARE_BASE_URL=http://127.0.0.1:8000 FAIL_ON_DIFF=1` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding Release Checklist v0
+- Скоуп итерации закрыт одним большим блоком: 1) добавлен typed contract `FundingReleaseChecklistRow`; 2) добавлен live builder release-readiness; 3) проверяются data health и funding rows; 4) проверяется source coverage OKX/CoinGlass; 5) проверяется selected history workflow; 6) добавлена UI-панель `Funding Release Checklist`; 7) fixture fallback обновлён; 8) `scripts/funding-qa-smoke.sh` расширен marker/`panel_ids`; 9) документация и backlog обновлены.
+- Checklist является release/readiness слоем для `Overview`/`QA`: он помогает понять, можно ли запускать funding QA smoke и preview/prod compare, но не является market signal, strategy signal или routing gate.
+- Изменение использует существующие `/data/funding` и `/data/health`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build`, `git diff --check`, `sh -n scripts/funding-qa-smoke.sh` и funding QA smoke с локальным frontend прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding QA Compare Summary v0
+- Скоуп итерации закрыт одним блоком: 1) уточнён compare path в `scripts/funding-qa-smoke.sh`; 2) добавлен compact `compare.summary.status`; 3) добавлены `diff_count` и `diff_fields`; 4) явно перечислены ignored volatile fields; 5) добавлен `fail_on_diff`; 6) добавлены base/compare total rows; 7) добавлены base/compare panel ids; 8) добавлен `safety_flags_aligned`; 9) документация и backlog обновлены.
+- `COMPARE_BASE_URL` теперь даёт короткий release/readiness summary для preview/prod drift, сохраняя старый compact `contract` в output для обратной совместимости.
+- Проверка: `sh -n scripts/funding-qa-smoke.sh`, `git diff --check` и same-base smoke `MIN_TOTAL_ROWS=0 RUN_FRONTEND_CHECK=0 COMPARE_BASE_URL=http://127.0.0.1:8000 FAIL_ON_DIFF=1` прошли.
+- Граница сохранена: compare summary не является trading/routing gate и не включает execution, route ranking, route selection, diagnostic carry bps, fee bps total или numeric route cost bps.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding History Readiness v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен typed row contract `FundingHistoryReadinessRow`; 2) readiness считает persisted rows; 3) отдельно объясняет selected asset coverage; 4) отдельно объясняет selected source coverage; 5) показывает chart points readiness; 6) показывает numeric rate parsing readiness; 7) chart empty-state получил source-aware status/evidence/next action; 8) `scripts/funding-qa-smoke.sh` расширен marker/`panel_ids`; 9) документация и backlog обновлены.
+- Панель `Funding History Readiness` является read-only empty-state/QA слоем для выбранной funding history series; она объясняет, почему график пустой или тонкий, но не является strategy signal, provider ranking или route input.
+- Изменение использует существующие `/data/funding` и `/data/health`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build`, `git diff --check`, `sh -n scripts/funding-qa-smoke.sh` и funding QA smoke с локальным frontend прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding History Controls v0
+- Скоуп итерации закрыт одним блоком: 1) добавлены URL-параметры `asset`/`source` для `Funding History`; 2) введён typed row contract `FundingHistoryControlRow`; 3) history chart выбирает source-aware series; 4) добавлены asset/source segmented controls; 5) показываются rows/window/interval/range hints; 6) отображается chart readiness; 7) добавлен `Next Action`; 8) `scripts/funding-qa-smoke.sh` расширен marker/`panel_ids`; 9) документация и backlog обновлены.
+- Панель `Funding History Controls` является read-only UX/QA слоем поверх persisted funding rows; она помогает выбрать историю для просмотра, но не является strategy signal, provider ranking или route input.
+- Изменение использует существующие `/data/funding` и `/data/health`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build`, `git diff --check`, `sh -n scripts/funding-qa-smoke.sh` и funding QA smoke с локальным frontend прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding History Diagnostics v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `Funding History Diagnostics`; 2) введён typed row contract; 3) считаются observations/window/latest/interval; 4) считаются average rate и observed range; 5) status связан с freshness health; 6) добавлен `Next Action`; 7) панель показывается в `Overview` и `History`; 8) `scripts/funding-qa-smoke.sh` расширен marker/`panel_ids`; 9) документация и backlog обновлены.
+- Панель является history-window QA поверх persisted funding rows и помогает понять, хватает ли истории для графика/анализа; это не strategy signal и не route input.
+- Изменение использует существующие `/data/funding` и `/data/health`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build`, `git diff --check` и `sh -n scripts/funding-qa-smoke.sh` через Git Bash прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding QA View Grouping v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен отдельный `QA` view в `Funding`; 2) введён `showQaPanels`; 3) пять Funding QA panels сгруппированы в один compact block; 4) default `Overview` сохранил QA panels; 5) `/funding?view=qa` показывает QA-only workflow; 6) остальные Funding views больше не тянут весь QA block сверху; 7) `scripts/funding-qa-smoke.sh` проверяет `/funding?view=qa`; 8) добавлен frontend marker `funding_qa_view`; 9) документация и backlog обновлены.
+- Изменение улучшает UX/readability Funding screen без backend changes, новых provider calls, БД-изменений и production signals.
+- Проверка: `frontend` `npm run build`, `git diff --check` и `sh -n scripts/funding-qa-smoke.sh` через Git Bash прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding Anomaly Detail v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `Funding Anomaly Detail`; 2) введён typed row contract; 3) считаются samples/latest/baseline average/range/z-score; 4) anomaly status оставлен только как QA label; 5) добавлен `Next Review`; 6) порядок `BTC/ETH/SOL × OKX/CoinGlass` остаётся фиксированным без ranking; 7) добавлен fixture fallback; 8) `scripts/funding-qa-smoke.sh` расширен marker/`panel_ids`; 9) документация и backlog обновлены.
+- `Funding Anomaly Detail` показывает baseline statistics по persisted funding rows и объясняет, есть ли достаточно истории для оценки; это не strategy signal и не route input.
+- Панель строится поверх существующих `/data/funding`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build`, `git diff --check` и `sh -n scripts/funding-qa-smoke.sh` через Git Bash прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding QA Drilldown v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `Funding QA Drilldown`; 2) введён typed row contract; 3) funding rows связаны с `/data/health` freshness; 4) добавлена связь с coverage reasons; 5) добавлен sync health status; 6) выводится per-row `Next Action`; 7) порядок `BTC/ETH/SOL × OKX/CoinGlass` остаётся фиксированным без ranking; 8) `scripts/funding-qa-smoke.sh` расширен marker/`panel_ids` для drilldown; 9) документация и backlog обновлены.
+- Drilldown показывает loaded rows, latest row age, freshness reason, coverage reason, sync status и next action как data-QA подсказки, а не как trade/setup сигнал.
+- Панель строится поверх существующих `/data/funding` и `/data/health`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build`, `git diff --check` и `sh -n scripts/funding-qa-smoke.sh` через Git Bash прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/OPS] - Funding QA smoke contract v0
+- Скоуп итерации закрыт одним блоком: 1) добавлен `scripts/funding-qa-smoke.sh`; 2) проверяются `/data/health` и `/data/funding` для `BTC/ETH/SOL` по OKX/CoinGlass; 3) формируется compact `funding_qa_v0` contract; 4) проверяются панели `Funding Source Status`, `Funding Freshness & Anomaly`, `Funding Source Comparison`; 5) добавлены safety flags против trading/routing outputs; 6) raw payload не печатается; 7) поддержаны `BASE_URL`, `FRONTEND_URL`, `SYMBOLS`, `EXCHANGES`, `MIN_TOTAL_ROWS`, `RUN_FRONTEND_CHECK`; 8) поддержаны `COMPARE_BASE_URL` и `FAIL_ON_DIFF`; 9) документация и backlog обновлены.
+- Скрипт является release-safety/data-QA guard для funding analytics и использует только существующие read-only endpoints; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Локальная проверка: `bash -n scripts/funding-qa-smoke.sh` прошёл через Git Bash; backend-only smoke с `RUN_FRONTEND_CHECK=0 MIN_TOTAL_ROWS=0` прошёл. Дефолтный `MIN_TOTAL_ROWS=1` честно падает на текущем локальном backend, где funding rows равны `0`.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding Source Comparison v0
+- `Funding` получил read-only панель `Funding Source Comparison`: для `BTC/ETH/SOL` сравниваются последние OKX и CoinGlass funding rates, source delta, latest pair, data note и source-alignment status.
+- Source comparison является provider/data QA: строки идут в фиксированном порядке symbols, не сортируются по выгоде и не создают opportunities, route ranking, route selection или production trading signal.
+- Панель строится поверх существующих `/data/funding`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build` и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding Freshness & Anomaly v0
+- `Funding` получил read-only панель `Funding Freshness & Anomaly`: для `BTC/ETH/SOL` по OKX и CoinGlass показываются rows, latest age, latest rate, last change, data status и statistical anomaly status.
+- Anomaly status считается только как data-quality/statistical QA по уже загруженным funding rows: `Need more history`, `Stable baseline`, `Normal`, `Elevated` или `Stat outlier`; это не торговый сигнал и не route input.
+- Панель строится поверх существующих `/data/funding` и `/data/health`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- Проверка: `frontend` `npm run build` и `git diff --check` прошли.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
+## [2026-06-19] - [PRODUCT/UI] - Funding Source Status v0
+- `Funding` получил read-only панель `Funding Source Status`: OKX funding history и CoinGlass funding snapshots показывают loaded rows, latest age, freshness, coverage, sync и boundary.
+- Панель строится из уже загруженных `/data/funding` и `/data/health`; новых backend endpoints, provider calls, БД-изменений и production signals не добавлено.
+- `TerminalTable` получил гарантированный contained horizontal scroll для мобильных таблиц, чтобы широкие status/diagnostic rows не расширяли страницу.
+- Проверка: `frontend` `npm run build` прошёл; Browser mobile smoke для `/funding` подтвердил наличие панели и отсутствие page-level horizontal overflow. Desktop Browser smoke на старом локальном dev server был ограничен локальным `next dev`/`.next` chunk mismatch после build, а не product regression.
+- Граница сохранена: trading, execution, route ranking, route selection, diagnostic carry bps, fee bps total и numeric route cost bps не включались.
+
 ## [2026-06-18] - [RELEASE] - v1.4.0 production
 - `preview` смержен в `main` merge commit `3936c83`, `VERSION=1.4.0`; annotated tag `v1.4.0` создан и запушен.
 - Перед rollout создан свежий PostgreSQL backup `/opt/deltagrid/backups/deltagrid-v140-production_20260618T210020Z.sql.gz` (`4422613` bytes, gzip integrity check прошёл).

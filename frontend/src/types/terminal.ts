@@ -130,11 +130,135 @@ export interface FundingData {
   kpis: KpiMetric[];
   venues: string[];
   assets: string[];
+  releaseChecklist: FundingReleaseChecklistRow[];
+  sourceStatus: FundingSourceStatusRow[];
+  freshnessAnomalies: FundingFreshnessAnomalyRow[];
+  sourceComparisons: FundingSourceComparisonRow[];
+  qaDrilldown: FundingQaDrilldownRow[];
+  anomalyDetails: FundingAnomalyDetailRow[];
+  historyDiagnostics: FundingHistoryDiagnosticRow[];
+  historyControls: FundingHistoryControlRow[];
+  historyReadiness: FundingHistoryReadinessRow[];
   matrix: FundingMatrixCell[][];
   history: FundingRate[];
   arbitrage: FundingOpportunity[];
   longShortLegs: LongShortLeg[];
   predicted: FundingRate[];
+}
+
+export interface FundingSourceStatusRow {
+  source: string;
+  scope: string;
+  loadedRows: string;
+  latest: string;
+  freshness: string;
+  freshnessTone: "positive" | "negative" | "warning" | "neutral";
+  coverage: string;
+  coverageTone: "positive" | "negative" | "warning" | "neutral";
+  sync: string;
+  syncTone: "positive" | "negative" | "warning" | "neutral";
+  boundary: string;
+}
+
+export interface FundingReleaseChecklistRow {
+  area: string;
+  status: string;
+  statusTone: "positive" | "negative" | "warning" | "neutral";
+  evidence: string;
+  nextAction: string;
+  boundary: string;
+}
+
+export interface FundingSourceComparisonRow {
+  asset: string;
+  okxRate: string;
+  coinglassRate: string;
+  sourceDelta: string;
+  latestPair: string;
+  status: string;
+  statusTone: "positive" | "negative" | "warning" | "neutral";
+  dataNote: string;
+  dataTone: "positive" | "negative" | "warning" | "neutral";
+  boundary: string;
+}
+
+export interface FundingFreshnessAnomalyRow {
+  asset: string;
+  source: string;
+  observations: string;
+  latest: string;
+  latestRate: string;
+  lastChange: string;
+  dataStatus: string;
+  dataTone: "positive" | "negative" | "warning" | "neutral";
+  anomaly: string;
+  anomalyTone: "positive" | "negative" | "warning" | "neutral";
+  boundary: string;
+}
+
+export interface FundingQaDrilldownRow {
+  asset: string;
+  source: string;
+  loadedRows: string;
+  rowLatest: string;
+  freshness: string;
+  freshnessTone: "positive" | "negative" | "warning" | "neutral";
+  freshnessReason: string;
+  coverage: string;
+  coverageTone: "positive" | "negative" | "warning" | "neutral";
+  coverageReason: string;
+  sync: string;
+  syncTone: "positive" | "negative" | "warning" | "neutral";
+  nextAction: string;
+  boundary: string;
+}
+
+export interface FundingAnomalyDetailRow {
+  asset: string;
+  source: string;
+  samples: string;
+  latestRate: string;
+  baselineAverage: string;
+  observedRange: string;
+  zScore: string;
+  status: string;
+  statusTone: "positive" | "negative" | "warning" | "neutral";
+  nextReview: string;
+  boundary: string;
+}
+
+export interface FundingHistoryDiagnosticRow {
+  asset: string;
+  source: string;
+  observations: string;
+  window: string;
+  latest: string;
+  interval: string;
+  averageRate: string;
+  observedRange: string;
+  status: string;
+  statusTone: "positive" | "negative" | "warning" | "neutral";
+  nextAction: string;
+  boundary: string;
+}
+
+export interface FundingHistoryControlRow {
+  control: string;
+  selection: string;
+  status: string;
+  statusTone: "positive" | "negative" | "warning" | "neutral";
+  reason: string;
+  nextAction: string;
+  boundary: string;
+}
+
+export interface FundingHistoryReadinessRow {
+  check: string;
+  status: string;
+  statusTone: "positive" | "negative" | "warning" | "neutral";
+  evidence: string;
+  nextAction: string;
+  boundary: string;
 }
 
 export interface FundingMatrixCell {

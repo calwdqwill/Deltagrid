@@ -1,0 +1,374 @@
+name: Funding Release Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Funding backend base URL
+        required: true
+        default: https://deltagrid.pro
+      frontend_url:
+        description: Funding frontend URL
+        required: true
+        default: https://deltagrid.pro
+      compare_base_url:
+        description: Optional compare backend base URL
+        required: false
+        default: ""
+      require_compare:
+        description: Fail when compare is missing or not aligned
+        required: true
+        type: boolean
+        default: false
+      run_frontend_check:
+        description: Check frontend Funding markers
+        required: true
+        type: boolean
+        default: true
+      min_total_rows:
+        description: Minimum funding rows required by smoke
+        required: true
+        default: "1"
+      artifact_name:
+        description: Uploaded artifact name
+        required: true
+        default: funding-release-report
+
+concurrency:
+  group: funding-release-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Build funding release report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run funding release report
+        id: funding_report
+        continue-on-error: true
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          FRONTEND_URL: ${{ inputs.frontend_url }}
+          COMPARE_BASE_URL: ${{ inputs.compare_base_url }}
+          MIN_TOTAL_ROWS: ${{ inputs.min_total_rows }}
+          REQUIRE_COMPARE_INPUT: ${{ inputs.require_compare }}
+          RUN_FRONTEND_CHECK_INPUT: ${{ inputs.run_frontend_check }}
+          FUNDING_RELEASE_CI_ARTIFACT_DIR: artifacts/funding-release
+          FUNDING_RELEASE_CI_REPORT_FILE: funding-release-report.json
+          FUNDING_RELEASE_CI_VALIDATION_FILE: funding-release-validation.json
+          FUNDING_RELEASE_CI_MANIFEST_FILE: funding-release-manifest.json
+          FUNDING_RELEASE_CI_BUNDLE_VALIDATION_FILE: funding-release-bundle-validation.json
+          FUNDING_RELEASE_CI_REVIEW_FILE: funding-release-review.json
+          FUNDING_RELEASE_CI_SUMMARY_FILE: funding-release-summary.md
+          FUNDING_RELEASE_CI_HANDOFF_FILE: funding-release-handoff.md
+          FUNDING_RELEASE_CI_AUDIT_FILE: funding-release-audit.json
+          FUNDING_RELEASE_CI_AUDIT_MARKDOWN_FILE: funding-release-audit.md
+          FUNDING_RELEASE_CI_INDEX_FILE: funding-release-index.json
+          FUNDING_RELEASE_CI_INDEX_MARKDOWN_FILE: funding-release-index.md
+          FUNDING_RELEASE_CI_VERIFY_FILE: funding-release-verify.json
+          FUNDING_RELEASE_CI_VERIFY_MARKDOWN_FILE: funding-release-verify.md
+          FUNDING_RELEASE_CI_NOTES_FILE: funding-release-notes.json
+          FUNDING_RELEASE_CI_NOTES_MARKDOWN_FILE: funding-release-notes.md
+          FUNDING_RELEASE_CI_ARCHIVE_FILE: funding-release-archive.json
+          FUNDING_RELEASE_CI_ARCHIVE_MARKDOWN_FILE: funding-release-archive.md
+          FUNDING_RELEASE_CI_STATUS_FILE: funding-release-ci-status.json
+          FUNDING_RELEASE_CI_STDOUT_FILE: artifacts/funding-release/funding-release-report.stdout.json
+          FUNDING_RELEASE_CI_VALIDATE_ARTIFACT: "1"
+          FUNDING_RELEASE_CI_VALIDATE_BUNDLE: "1"
+          FUNDING_RELEASE_CI_WRITE_REVIEW: "1"
+          FUNDING_RELEASE_CI_WRITE_SUMMARY: "1"
+          FUNDING_RELEASE_CI_WRITE_HANDOFF: "1"
+          FUNDING_RELEASE_CI_WRITE_AUDIT: "1"
+          FUNDING_RELEASE_CI_WRITE_AUDIT_MARKDOWN: "1"
+          FUNDING_RELEASE_CI_WRITE_INDEX: "1"
+          FUNDING_RELEASE_CI_WRITE_INDEX_MARKDOWN: "1"
+          FUNDING_RELEASE_CI_WRITE_VERIFY: "1"
+          FUNDING_RELEASE_CI_WRITE_VERIFY_MARKDOWN: "1"
+          FUNDING_RELEASE_CI_WRITE_NOTES: "1"
+          FUNDING_RELEASE_CI_WRITE_NOTES_MARKDOWN: "1"
+          FUNDING_RELEASE_CI_WRITE_ARCHIVE: "1"
+          FUNDING_RELEASE_CI_WRITE_ARCHIVE_MARKDOWN: "1"
+          FUNDING_RELEASE_CI_WRITE_STATUS: "1"
+        run: |
+          set +e
+
+          if [ "$REQUIRE_COMPARE_INPUT" = "true" ]; then
+            export FUNDING_RELEASE_REPORT_REQUIRE_COMPARE=1
+          else
+            export FUNDING_RELEASE_REPORT_REQUIRE_COMPARE=0
+          fi
+
+          if [ "$RUN_FRONTEND_CHECK_INPUT" = "true" ]; then
+            export RUN_FRONTEND_CHECK=1
+          else
+            export RUN_FRONTEND_CHECK=0
+          fi
+
+          sh scripts/funding-release-ci-report.sh
+          status="$?"
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Summarize funding report
+        if: always()
+        run: |
+          append_ci_status() {
+            if [ ! -f artifacts/funding-release/funding-release-ci-status.json ]; then
+              return 0
+            fi
+            python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+
+          path = Path("artifacts/funding-release/funding-release-ci-status.json")
+          try:
+              status = json.loads(path.read_text(encoding="utf-8"))
+          except Exception as exc:
+              print("")
+              print("#### CI Final Status")
+              print(f"- final_status: `parse_error: {exc}`")
+              raise SystemExit(0)
+
+          stage_codes = status.get("stage_exit_codes") or {}
+          artifact_status = status.get("artifact_status") or {}
+          print("")
+          print("#### CI Final Status")
+          print(f"- final_status: `{status.get('final_status')}`")
+          print(f"- final_exit_code: `{status.get('final_exit_code')}`")
+          print(f"- final_stage: `{status.get('final_stage')}`")
+          print(f"- release_gate_status: `{artifact_status.get('release_gate_status')}`")
+          print(f"- exit_reason: `{artifact_status.get('exit_reason')}`")
+          print(f"- verification_status: `{artifact_status.get('verification_status')}`")
+          print(f"- archive_status: `{artifact_status.get('archive_status')}`")
+          compact_codes = ", ".join(
+              f"{name}={code}" for name, code in stage_codes.items() if code
+          )
+          print(f"- nonzero_stage_exit_codes: `{compact_codes or 'none'}`")
+          PY
+          }
+
+          if [ -f artifacts/funding-release/funding-release-index.md ]; then
+            cat artifacts/funding-release/funding-release-index.md >> "$GITHUB_STEP_SUMMARY"
+            if [ -f artifacts/funding-release/funding-release-verify.md ]; then
+              printf '\n' >> "$GITHUB_STEP_SUMMARY"
+              cat artifacts/funding-release/funding-release-verify.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -f artifacts/funding-release/funding-release-notes.md ]; then
+              printf '\n' >> "$GITHUB_STEP_SUMMARY"
+              cat artifacts/funding-release/funding-release-notes.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -f artifacts/funding-release/funding-release-archive.md ]; then
+              printf '\n' >> "$GITHUB_STEP_SUMMARY"
+              cat artifacts/funding-release/funding-release-archive.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            append_ci_status
+            exit 0
+          fi
+
+          if [ -f artifacts/funding-release/funding-release-summary.md ]; then
+            cat artifacts/funding-release/funding-release-summary.md >> "$GITHUB_STEP_SUMMARY"
+            if [ -f artifacts/funding-release/funding-release-audit.md ]; then
+              printf '\n' >> "$GITHUB_STEP_SUMMARY"
+              cat artifacts/funding-release/funding-release-audit.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -f artifacts/funding-release/funding-release-verify.md ]; then
+              printf '\n' >> "$GITHUB_STEP_SUMMARY"
+              cat artifacts/funding-release/funding-release-verify.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -f artifacts/funding-release/funding-release-notes.md ]; then
+              printf '\n' >> "$GITHUB_STEP_SUMMARY"
+              cat artifacts/funding-release/funding-release-notes.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -f artifacts/funding-release/funding-release-archive.md ]; then
+              printf '\n' >> "$GITHUB_STEP_SUMMARY"
+              cat artifacts/funding-release/funding-release-archive.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+            append_ci_status
+            exit 0
+          fi
+
+          append_ci_status
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+
+          manifest_path = Path("artifacts/funding-release/funding-release-manifest.json")
+          bundle_validation_path = Path("artifacts/funding-release/funding-release-bundle-validation.json")
+          review_path = Path("artifacts/funding-release/funding-release-review.json")
+          audit_path = Path("artifacts/funding-release/funding-release-audit.json")
+          verify_path = Path("artifacts/funding-release/funding-release-verify.json")
+          notes_path = Path("artifacts/funding-release/funding-release-notes.json")
+          archive_path = Path("artifacts/funding-release/funding-release-archive.json")
+          path = Path("artifacts/funding-release/funding-release-report.json")
+
+          def print_audit_readout():
+              if not audit_path.exists():
+                  return
+              print("")
+              print("#### Evidence Audit")
+              try:
+                  audit = json.loads(audit_path.read_text(encoding="utf-8"))
+              except Exception as exc:
+                  print(f"- audit_status: `parse_error: {exc}`")
+                  return
+              print(f"- audit_status: `{audit.get('audit_status')}`")
+              print(f"- evidence_status: `{audit.get('evidence_status')}`")
+              print(f"- ready_for_release_notes: `{audit.get('ready_for_release_notes')}`")
+              print(f"- ready_for_debug_review: `{audit.get('ready_for_debug_review')}`")
+              print(f"- audit_error_count: `{audit.get('error_count')}`")
+
+          def print_verify_readout():
+              if not verify_path.exists():
+                  return
+              print("")
+              print("#### Evidence Verify")
+              try:
+                  verify = json.loads(verify_path.read_text(encoding="utf-8"))
+              except Exception as exc:
+                  print(f"- verification_status: `parse_error: {exc}`")
+                  return
+              print(f"- verification_status: `{verify.get('verification_status')}`")
+              print(f"- blocking_mode: `{verify.get('blocking_mode')}`")
+              print(f"- release_notes_ready: `{verify.get('release_notes_ready')}`")
+              print(f"- debug_review_ready: `{verify.get('debug_review_ready')}`")
+              print(f"- verify_error_count: `{verify.get('error_count')}`")
+
+          def print_notes_readout():
+              if not notes_path.exists():
+                  return
+              print("")
+              print("#### Evidence Notes")
+              try:
+                  notes = json.loads(notes_path.read_text(encoding="utf-8"))
+              except Exception as exc:
+                  print(f"- notes_status: `parse_error: {exc}`")
+                  return
+              print(f"- notes_status: `{notes.get('notes_status')}`")
+              print(f"- notes_mode: `{notes.get('notes_mode')}`")
+              print(f"- release_notes_ready: `{notes.get('release_notes_ready')}`")
+              print(f"- debug_review_ready: `{notes.get('debug_review_ready')}`")
+              print(f"- notes_error_count: `{notes.get('error_count')}`")
+
+          def print_archive_readout():
+              if not archive_path.exists():
+                  return
+              print("")
+              print("#### Evidence Archive")
+              try:
+                  archive = json.loads(archive_path.read_text(encoding="utf-8"))
+              except Exception as exc:
+                  print(f"- archive_status: `parse_error: {exc}`")
+                  return
+              print(f"- archive_status: `{archive.get('archive_status')}`")
+              print(f"- archive_mode: `{archive.get('archive_mode')}`")
+              print(f"- file_count: `{archive.get('file_count')}`")
+              print(f"- missing_required_count: `{archive.get('missing_required_count')}`")
+              print(f"- archive_error_count: `{archive.get('error_count')}`")
+
+          print("### Funding Release Report")
+          if review_path.exists():
+              try:
+                  review = json.loads(review_path.read_text(encoding="utf-8"))
+              except Exception as exc:
+                  print(f"Could not parse bundle review: {exc}")
+              else:
+                  print(f"- review_status: `{review.get('review_status')}`")
+                  print(f"- recommended_next_action: `{review.get('recommended_next_action') or 'none'}`")
+                  print(f"- bundle_exit_code: `{review.get('bundle_exit_code')}`")
+                  print(f"- bundle_validation_status: `{review.get('bundle_validation_status') or 'missing'}`")
+                  print(f"- validation_status: `{review.get('validation_status')}`")
+                  print(f"- release_gate_status: `{review.get('release_gate_status')}`")
+                  print(f"- exit_reason: `{review.get('exit_reason')}`")
+                  print(f"- readiness_gate_status: `{review.get('readiness_gate_status')}`")
+                  print(f"- compare_gate_status: `{review.get('compare_gate_status')}`")
+                  print(f"- required_blocking_ids: `{', '.join(review.get('required_blocking_ids') or []) or 'none'}`")
+                  print(f"- optional_blocking_ids: `{', '.join(review.get('optional_blocking_ids') or []) or 'none'}`")
+                  report_file = (review.get("files") or {}).get("report") or {}
+                  print(f"- report_sha256: `{report_file.get('sha256') or 'none'}`")
+                  print_audit_readout()
+                  print_verify_readout()
+                  print_notes_readout()
+                  print_archive_readout()
+                  raise SystemExit(0)
+
+          if manifest_path.exists():
+              try:
+                  manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+              except Exception as exc:
+                  print(f"Could not parse bundle manifest: {exc}")
+              else:
+                  artifact_status = manifest.get("artifact_status") or {}
+                  report_summary = manifest.get("report_summary") or {}
+                  files = manifest.get("files") or {}
+                  report_file = files.get("report") or {}
+                  bundle_validation = {}
+                  if bundle_validation_path.exists():
+                      try:
+                          bundle_validation = json.loads(bundle_validation_path.read_text(encoding="utf-8"))
+                      except Exception as exc:
+                          bundle_validation = {"status": f"parse_error: {exc}"}
+                  required_blockers = report_summary.get("required_blocking_ids") or report_summary.get("blocking_ids") or []
+                  optional_blockers = report_summary.get("optional_blocking_ids") or []
+                  print(f"- bundle_exit_code: `{manifest.get('bundle_exit_code')}`")
+                  print(f"- bundle_validation_status: `{bundle_validation.get('status') or 'missing'}`")
+                  print(f"- validation_status: `{artifact_status.get('validation_status')}`")
+                  print(f"- release_gate_status: `{artifact_status.get('release_gate_status')}`")
+                  print(f"- exit_reason: `{artifact_status.get('exit_reason')}`")
+                  print(f"- readiness_gate_status: `{report_summary.get('readiness_gate_status')}`")
+                  print(f"- compare_gate_status: `{report_summary.get('compare_gate_status')}`")
+                  print(f"- required_blocking_ids: `{', '.join(required_blockers) or 'none'}`")
+                  print(f"- optional_blocking_ids: `{', '.join(optional_blockers) or 'none'}`")
+                  print(f"- first_blocking_action: `{report_summary.get('first_blocking_action') or 'none'}`")
+                  print(f"- first_optional_action: `{report_summary.get('first_optional_action') or 'none'}`")
+                  print(f"- report_sha256: `{report_file.get('sha256') or 'none'}`")
+                  print_audit_readout()
+                  print_verify_readout()
+                  print_notes_readout()
+                  print_archive_readout()
+                  raise SystemExit(0)
+
+          if not path.exists():
+              print("Compact report artifact was not created.")
+              raise SystemExit(0)
+
+          try:
+              report = json.loads(path.read_text(encoding="utf-8"))
+          except Exception as exc:
+              print(f"Could not parse compact report: {exc}")
+              raise SystemExit(0)
+
+          summary = report.get("release_gate_summary") or {}
+          print(f"- release_gate_status: `{report.get('release_gate_status')}`")
+          print(f"- exit_reason: `{report.get('exit_reason')}`")
+          print(f"- readiness_gate_status: `{report.get('readiness_gate_status')}`")
+          print(f"- compare_gate_status: `{report.get('compare_gate_status')}`")
+          print(f"- blocking_ids: `{', '.join(summary.get('blocking_ids') or []) or 'none'}`")
+          print(f"- first_blocking_action: `{summary.get('first_blocking_action') or 'none'}`")
+          print_audit_readout()
+          print_verify_readout()
+          print_notes_readout()
+          print_archive_readout()
+          PY
+
+      - name: Upload funding report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: artifacts/funding-release
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Fail on blocked funding release report
+        if: always() && steps.funding_report.outputs.exit_code != '0'
+        run: exit "${{ steps.funding_report.outputs.exit_code }}"

@@ -444,7 +444,7 @@ export function TerminalTable({
   className?: string;
 }) {
   return (
-    <div className={cn("overflow-x-auto", className)}>
+    <div className={cn("max-w-full overflow-x-auto", className)} style={{ overflowX: "auto" }}>
       <table className="w-full border-separate border-spacing-0 text-left text-xs">
         <thead>
           <tr>
